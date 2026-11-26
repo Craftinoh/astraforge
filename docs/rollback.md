@@ -1,10 +1,10 @@
 # Rollback procedure
 
-The source snapshot and local edits are isolated in the nested Git repository `third_party/nvidia-3070-VI`; its commits import the upstream snapshot, apply the Clippy fix, sync the current upstream documentation, port the physical-core worker count and two descriptor lifetime fixes, and use neutral launcher defaults. The latest source commit is `c6f1fc4`. The root workspace has no Git repository yet. No game runtime files were modified. Benchmark, build, launch, and prewarm logs/cache/data default outside the workspace.
+The source snapshot and local edits are imported under `third_party/nvidia-3070-VI` as a Git subtree. Its reachable commits import the upstream snapshot, apply the Clippy fix, sync documentation, port the physical-core worker count and two descriptor lifetime fixes, use neutral launcher defaults, and anonymize comments. The latest imported source commit is `e31aafd`. The root workspace is a Git repository on `main`. No game runtime files were modified. Benchmark, build, launch, and prewarm logs/cache/data default outside the workspace.
 
 To remove only the artifacts added by this investigation, delete these individual files:
 
-- `third_party/nvidia-3070-VI/` (the isolated source checkout, including its local `.git` history)
+- `third_party/nvidia-3070-VI/` (the source subtree; its history remains reachable from the project repository)
 
 - `tools/Build-VIctory.ps1`
 - `tools/Collect-VIctoryHardware.ps1`

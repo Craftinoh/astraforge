@@ -9,9 +9,9 @@ Prepare a profile-driven VIctory compatibility project. Start with NVIDIA RTX 30
 ## Workspace and source
 
 - Workspace: `workspace root`.
-- Main workspace is not currently a Git repository and has no remote configured.
-- Nested source repository: `third_party\nvidia-3070-VI`.
-- Nested source HEAD: `c6f1fc4` (`fix: keep default game data outside workspace`), following configurable-executable commit `337310f`.
+- Main workspace is now a Git repository on branch `main`, with the public GitHub remote `Craftinoh/victory-gpu-profiles`.
+- The NVIDIA source is imported at `third_party\nvidia-3070-VI` as a Git subtree, so its patch history remains reachable without a nested Git link.
+- Imported source HEAD: `e31aafd` (`docs: anonymize title-specific source comments`), following launcher commit `c6f1fc4`.
 - Source baseline: NVIDIA 8 GB derivative at `6e9c1dd9fb32daaa855f446560a4d1f8df5f8424`, descended from COOL_FOX Pareto-residency reference `f4b48ad766ddbec1a1867022cd42f7645b0dd55e`.
 - Source license: GPL-3.0. Local patch provenance is in `docs/source-credits.md` and the nested source `LOCAL-CHANGES.md`.
 - Root profile files: `profiles\rtx3070-profiles.json`; the new `profiles\gpu-profiles.json` currently describes only RTX 3070.
@@ -32,6 +32,7 @@ Raw hardware reports are local under `out\` and must not be published. A refresh
 6. `afbb784`: replace the copied launcher example data path with a neutral `GameFiles` directory; personal files remain external.
 7. `337310f`: accept the local game executable through `VICTORY_GAME_EXE`, defaulting to a generic filename.
 8. `c6f1fc4`: move the copied launcher's default data folder to `%LOCALAPPDATA%` so it cannot land inside the project workspace.
+9. `e31aafd`: anonymize title-specific source comments and examples without changing runtime behavior.
 
 These source changes have not yet passed a local Rust build or Windows GPU test because the pinned Rust/MSVC/DXC toolchain is unavailable.
 
@@ -53,8 +54,8 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 ## Current blockers and user update
 
 - User is installing the Xbox game on this PC. After installation, inspect only for a locally usable VIctory-compatible executable and keep all personal game data outside the repository. Current `VICTORY_GAME_DIR` is unset.
-- `cargo`, `rustc`, `rustfmt`, MSVC `cl/link`, DXC, and PresentMon are not currently available through the shell. Git 2.56.1 and GitHub CLI 2.106.0 are installed; the configured GitHub CLI session cannot be verified because API access is blocked and the saved token is reported invalid.
-- The owner authorized a public repository. The planned slug is `victory-gpu-profiles`, but creation and push have not succeeded. The workspace `.git` path is read-only in this execution environment, and GitHub API traffic is blocked here; no files were uploaded.
+- `cargo`, `rustc`, `rustfmt`, MSVC `cl/link`, DXC, and PresentMon are not currently available through the shell. Git 2.56.1 and GitHub CLI 2.106.0 are installed and GitHub authentication is valid.
+- The public repository `Craftinoh/victory-gpu-profiles` has been created. The local history includes the source subtree and all local patch commits; the first push is the next publication step.
 
 ## Publication and privacy rules
 
@@ -66,8 +67,8 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 ## Next actions
 
-1. With a valid GitHub login and writable Git metadata, create `victory-gpu-profiles` as a public repository and publish only the reviewed workspace files.
-2. Once the local installation and compiler toolchain are available, build Release/diagnostic variants and validate the launch path.
+1. Push the reviewed `main` history to the public repository and verify that no ignored local artifacts were published.
+2. Install/enable the pinned Rust, MSVC, DXC, and measurement toolchain, then build Release/diagnostic variants and validate the launch path.
 3. Collect repeated warm/cold gameplay cohorts, verify resolution, review rendering, and report measured memory and frame-time behavior.
 4. Add later GPU profiles only with hardware checks, source attribution, rollback notes, and repeated correctness/performance evidence.
 ## 2026-11-26 — GPU profile and public-report update
@@ -77,4 +78,11 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - Added `tools/Export-VIctoryPublicReport.ps1`, which rebuilds a shareable report from an allowlist and omits local capture/cache paths, raw telemetry, and executable names. The synthetic harness confirms that path fields are absent.
 - Updated the benchmark and launcher documentation, source/privacy policy, and rollback inventory. Anonymous scene labels are enforced at capture and export time.
 - PowerShell parser and synthetic benchmark tests pass after these changes. No Rust build, game launch, shader prewarm, visual review, or real gameplay measurement has occurred.
-- Git 2.56.1 and GitHub CLI 2.106.0 are present. The GitHub CLI session for the configured GitHub account reports an invalid token, and API access is blocked by this process environment; repository creation and push are therefore not yet verifiable. The main workspace still has no Git repository. No data has been uploaded.
+- Git 2.56.1 and GitHub CLI 2.106.0 are present and authenticated. The public repository has been created; the reviewed local tree contains no tracked game data, captures, binaries, personal paths, account names, or credentials.
+
+## 2026-11-26 — public repository preparation
+
+- Converted the workspace into a `main` Git repository and imported the NVIDIA source as a subtree while preserving all source commits through `e31aafd`.
+- Verified that the subtree is stored as normal files rather than a gitlink, and that `e31aafd` is reachable from the project history.
+- Scanned tracked files for personal paths, credentials, game/capture/binary paths, and prohibited public title/publisher strings; none remain in the current tree.
+- Created the public GitHub repository `Craftinoh/victory-gpu-profiles`. Publication verification remains pending until the first push completes.

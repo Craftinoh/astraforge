@@ -18,6 +18,7 @@ This project preserves the upstream GPL-3.0 license and original source notices.
 | Descriptor dynamic-range allocation retains heap identity | fxceless PR #1324 | `878dbd7` | Ported with regression test; local test pending |
 | Defer descriptor nulling/resource release while submissions are in flight | `Itsbatt/victory-unified` commit `768735a` | `6e91b7b` | Ported with regression test; local D3D12 validation pending |
 | Use a neutral default data directory and generic executable name in the copied launcher | Local privacy/documentation change | `afbb784`, `337310f`, `c6f1fc4` | `VICTORY_GAME_DIR` and `VICTORY_GAME_EXE` remain configurable; defaults stay outside the workspace |
+| Anonymize title-specific comments and command examples | Local documentation/privacy change | `e31aafd` | Comment-only; runtime behavior unchanged |
 
 ## Reviewed, not merged wholesale
 
