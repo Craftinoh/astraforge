@@ -625,6 +625,21 @@ pub(crate) fn release_dynamic(heap: usize, id: u64, first: u32, n: u32) {
     }
 }
 
+/// Finishes descriptor writes deferred while submissions could still read
+/// their old contents. The registry read lock keeps each heap alive.
+#[cfg(windows)]
+pub(crate) fn flush_idle_heaps() {
+    let heaps = SHADER_HEAPS.read().unwrap_or_else(|e| e.into_inner());
+    for &(_, _, at) in heaps.iter() {
+        // SAFETY: registered heaps stay alive while this read lock is held.
+        let heap = unsafe { &*(at as *const Heap) };
+        if let Some(Some(host)) = heap.host.get() {
+            host.flush_unmake();
+            host.texture_views_remade();
+        }
+    }
+}
+
 /// Runs `f` with the host heap of the title's largest view heap, if there is
 /// one (nothing is waited for).
 #[cfg(windows)]

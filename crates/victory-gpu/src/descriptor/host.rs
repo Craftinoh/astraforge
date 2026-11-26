@@ -139,6 +139,8 @@ pub(crate) struct HostHeap {
     written: Vec<std::sync::atomic::AtomicU32>,
     /// The record (view index and generation) each slot was last made from.
     made: Made,
+    /// Descriptor slots to null after the GPU is done using their old views.
+    pending_unmake: Mutex<std::collections::HashMap<u32, u64>>,
     /// The same for a slot whose descriptor is made and stays (else 0): what
     /// [`HostHeap::mirror`] asks first, without the lock. Changed under it.
     quick: Vec<std::sync::atomic::AtomicU64>,
@@ -1614,6 +1616,7 @@ impl HostHeap {
                 .map(|_| std::sync::atomic::AtomicU32::new(0))
                 .collect(),
             made: Made::new(count as usize),
+            pending_unmake: Mutex::default(),
             quick: (0..count).map(|_| std::sync::atomic::AtomicU64::new(0)).collect(),
             copied: Mutex::new(Vec::new()),
             waiting: Mutex::default(),
@@ -2128,7 +2131,7 @@ impl HostHeap {
     const WAITING_A_PASS: usize = 128;
 
     pub(crate) fn texture_views_remade(&self) -> usize {
-        if self.sampler {
+        if self.sampler || crate::host::flying() {
             return 0;
         }
         {
@@ -2547,6 +2550,20 @@ impl HostHeap {
 
     /// Makes host slot `index` null again, as it is before its view is
     /// made: a null view of the kind it held. Under its lock ([`Made`]).
+    fn unmake_key(&self, index: u32, key: u64) {
+        match view_at(key as u32, (key >> 32) as u32) {
+            Some(view) => null_for(&view, self.at(index)),
+            None => null_view(self.at(index)),
+        }
+        self.put(index);
+        self.clear_twin(index);
+        self.write_stride(index, 0);
+        self.keep(index, None);
+    }
+
+    /// Removes the view from bookkeeping now. If a submitted draw may still
+    /// read the slot, defer the descriptor write and resource release until
+    /// those submissions have settled.
     fn unmake(&self, index: u32) {
         self.quick_is(index, 0);
         let Some(key) = self.made.get(index) else {
@@ -2556,14 +2573,50 @@ impl HostHeap {
         if key == 0 {
             return;
         }
-        match view_at(key as u32, (key >> 32) as u32) {
-            Some(view) => null_for(&view, self.at(index)),
-            None => null_view(self.at(index)),
+        if crate::host::flying() {
+            let _ = self
+                .pending_unmake
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(index, key);
+            return;
         }
-        self.put(index);
-        self.clear_twin(index);
-        self.write_stride(index, 0);
-        self.keep(index, None);
+        let _ = self
+            .pending_unmake
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&index);
+        self.unmake_key(index, key);
+    }
+
+    /// Applies the deferred null writes once no GPU submission can still
+    /// read the old descriptors. A slot remade since it was queued is kept.
+    pub(crate) fn flush_unmake(&self) -> usize {
+        if crate::host::flying() {
+            return 0;
+        }
+        let pending: Vec<(u32, u64)> = self
+            .pending_unmake
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .iter()
+            .map(|(&index, &key)| (index, key))
+            .collect();
+        let mut flushed = 0;
+        for (index, key) in pending {
+            let _made = self.made.lock(index);
+            let mut queued = self.pending_unmake.lock().unwrap_or_else(|e| e.into_inner());
+            if queued.get(&index) != Some(&key) {
+                continue;
+            }
+            let _ = queued.remove(&index);
+            if self.made.get(index) == Some(0) {
+                drop(queued);
+                self.unmake_key(index, key);
+                flushed += 1;
+            }
+        }
+        flushed
     }
 
     /// The slots [`HostHeap::note_buffer`] found stale for slot `index`, with
@@ -5710,6 +5763,31 @@ mod tests {
         assert_eq!(a.free.load(Relaxed), free, "another heap released this range");
         a.release(a.id(), first, 2);
         assert_eq!(a.free.load(Relaxed), free + 2, "the allocating heap did not release its range");
+    }
+
+    #[test]
+    fn deferred_unmake_flushes_only_slots_still_cleared() {
+        let Some(heap) = HostHeap::new(false, 8) else {
+            return; // no host GPU
+        };
+        {
+            let _made = heap.made.lock(1);
+            heap.made.set(1, 0);
+        }
+        {
+            let _made = heap.made.lock(2);
+            heap.made.set(2, 42);
+        }
+        heap.pending_unmake
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .extend([(1, 100), (2, 200)]);
+
+        assert_eq!(heap.flush_unmake(), 1);
+        assert_eq!(heap.flush_unmake(), 0);
+        assert_eq!(heap.made.get(1), Some(0));
+        assert_eq!(heap.made.get(2), Some(42));
+        assert!(heap.pending_unmake.lock().unwrap_or_else(|e| e.into_inner()).is_empty());
     }
 
     #[test]
