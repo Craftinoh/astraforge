@@ -1,4 +1,4 @@
-# VIctory fork comparison for RTX 3070 Ampere
+# Upstream fork comparison for RTX 3070 Ampere
 
 Reviewed public repositories and their default-branch heads on 2026-11-26. These are maintainers' measurements on different builds and scenes; they are evidence for candidate changes, not a common benchmark set.
 

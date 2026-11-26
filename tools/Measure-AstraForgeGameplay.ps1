@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][string]$VictoryExe,
+    [Parameter(Mandatory = $true)][string]$RuntimeExe,
     [Parameter(Mandatory = $true)][string]$GameExe,
     [Parameter(Mandatory = $true)][ValidatePattern('^scene-[A-Za-z0-9_-]+$')][string]$Scenario,
     [Parameter(Mandatory = $true)][string]$PresentMonExe,
@@ -20,11 +20,11 @@ param(
     [string]$CacheDirectory,
     [string]$CacheSeedDirectory,
     [string]$DataDirectory,
-    [string]$OutputRoot = "$env:LOCALAPPDATA\VIctory\benchmarks"
+    [string]$OutputRoot = "$env:LOCALAPPDATA\AstraForge\benchmarks"
 )
 
 $ErrorActionPreference = 'Stop'
-Import-Module -Name (Join-Path $PSScriptRoot 'Victory-BenchmarkCommon.psm1') -Force
+Import-Module -Name (Join-Path $PSScriptRoot 'AstraForge-BenchmarkCommon.psm1') -Force
 
 function Get-AbsolutePath([string]$Path) {
     [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Path).Path)
@@ -258,7 +258,7 @@ function Get-NvidiaTelemetrySummary([string]$CsvPath) {
 
 $scriptRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $resolvedSourceRoot = (Resolve-Path -LiteralPath $SourceRoot).Path
-$victoryPath = Get-AbsolutePath $VictoryExe
+$victoryPath = Get-AbsolutePath $RuntimeExe
 $gamePath = Get-AbsolutePath $GameExe
 $gameRoot = Split-Path -Parent $gamePath
 $presentMonPath = Get-AbsolutePath $PresentMonExe
@@ -358,7 +358,7 @@ if ((Test-PathWithin $cacheDir $scriptRoot) -or (Test-PathWithin $cacheDir $reso
         (Test-PathWithin $cacheSeedDir $gameRoot) -or (Test-PathWithin $cacheSeedDir $dataDir) -or (Test-PathWithin $dataDir $cacheSeedDir) -or
         (Test-PathWithin $cacheSeedDir $outputDirectory) -or (Test-PathWithin $outputDirectory $cacheSeedDir) -or
         (Test-PathWithin $cacheSeedDir $cacheDir) -or (Test-PathWithin $cacheDir $cacheSeedDir)))) {
-    throw 'Cache e dati VIctory devono restare distinti, fuori dal repository e fuori dai file di gioco.'
+    throw 'Cache e dati AstraForge devono restare distinti, fuori dal repository e fuori dai file di gioco.'
 }
 $cacheExists = Test-Path -LiteralPath $cacheDir
 if ($cacheExists -and -not (Test-Path -LiteralPath $cacheDir -PathType Container)) { throw "CacheDirectory non è una cartella: $cacheDir" }
@@ -370,7 +370,7 @@ if ($CacheState -eq 'warm') {
     if (-not $CacheSeedDirectory) { throw 'CacheState=warm richiede -CacheSeedDirectory con una cache preparata e popolata.' }
     if ($cacheExists) { throw "La destinazione warm deve essere nuova per preservare il seed; destinazione già esistente: $cacheDir" }
     if (-not (Test-Path -LiteralPath $cacheSeedDir -PathType Container)) { throw "Cache seed non è una cartella: $cacheSeedDir" }
-    $cacheCopy = Copy-VictoryCacheSeed -SourceDirectory $cacheSeedDir -DestinationDirectory $cacheDir
+    $cacheCopy = Copy-AstraForgeCacheSeed -SourceDirectory $cacheSeedDir -DestinationDirectory $cacheDir
     $cacheSeedFingerprint = $cacheCopy.Fingerprint
     $cacheWasEmptyAtStart = $false
 } elseif ($CacheSeedDirectory) {
@@ -385,7 +385,7 @@ try {
     $dxDiag = Start-Process -FilePath $dxDiagExe -ArgumentList "/t `"$dxDiagPath`"" -PassThru -Wait -WindowStyle Hidden
     if ($dxDiag.ExitCode -ne 0) { Write-Warning "dxdiag exit code $($dxDiag.ExitCode)" }
 } catch { Write-Warning "dxdiag non disponibile: $($_.Exception.Message)" }
-& (Join-Path $PSScriptRoot 'Collect-VIctoryHardware.ps1') -DxDiagReportPath $dxDiagPath -OutputPath $hardwarePath | Out-Null
+& (Join-Path $PSScriptRoot 'Collect-AstraForgeHardware.ps1') -DxDiagReportPath $dxDiagPath -OutputPath $hardwarePath | Out-Null
 $hardwareReport = Get-Content -LiteralPath $hardwarePath -Raw | ConvertFrom-Json
 $expectedDeviceIds = @($gpuProfileConfig.adapter.deviceIds | ForEach-Object { ([string]$_).ToUpperInvariant() })
 $targetAdapter = @($hardwareReport.GPU.DxgiAdapters | Where-Object {
@@ -465,7 +465,7 @@ $victoryEnvironment = Get-ChildItem Env: | Where-Object { ($_.Name -like 'VICTOR
 [System.IO.File]::WriteAllText($environmentPath, ($victoryEnvironment | ConvertTo-Json -Depth 4), (New-Object System.Text.UTF8Encoding($false)))
 $victoryArguments = "run `"$gamePath`" --console $Console --execute"
 $runtimeExecutableSha256 = (Get-FileHash -LiteralPath $victoryPath -Algorithm SHA256).Hash
-Write-Host "Avvio VIctory. Scena: $Scenario; profilo console: $Console."
+Write-Host "Avvio runtime AstraForge. Scena: $Scenario; profilo console: $Console."
 $victoryProcess = Start-Process -FilePath $victoryPath -ArgumentList $victoryArguments -PassThru -WindowStyle Normal -RedirectStandardOutput $victoryStdout -RedirectStandardError $victoryStderr
 if ($CacheState -eq 'cold') {
     Write-Host 'Questa acquisizione parte da una cache VIctory vuota al lancio; la preparazione manuale della scena avviene prima del timer e può già compilare shader.'
@@ -485,7 +485,7 @@ try {
     if ($gameProcess) { $frameTarget = $gameProcess }
 } catch { }
 $sampleProcessIds = @($victoryProcess.Id, $frameTarget.Id) | Select-Object -Unique
-Write-Host "PresentMon PID $($frameTarget.Id) ($($frameTarget.ProcessName)); VIctory PID $($victoryProcess.Id)."
+Write-Host "PresentMon PID $($frameTarget.Id) ($($frameTarget.ProcessName)); Runtime PID $($victoryProcess.Id)."
 
 $gpuArguments = '--query-gpu=timestamp,utilization.gpu,utilization.memory,memory.total,memory.used,memory.free,clocks.current.graphics,clocks.current.memory,power.draw,temperature.gpu,pstate --format=csv,noheader,nounits --loop-ms=1000'
 $gpuProcess = Start-Process -FilePath $nvidiaSmi.Source -ArgumentList $gpuArguments -PassThru -WindowStyle Hidden -RedirectStandardOutput $gpuCsv -RedirectStandardError $gpuStderr
@@ -570,13 +570,13 @@ $summary = [ordered]@{
     SourceCommit = $sourceCommit
     SourceDirty = $sourceDirty
     CaptureStartUtc = $captureStart.ToString('o')
-    VictoryProcessId = $victoryProcess.Id
+    RuntimeProcessId = $victoryProcess.Id
     FrameTargetProcessId = $frameTarget.Id
     AnonymousGameTarget = 'anonymous-game'
     FrameTargetKind = if ($frameTarget.Id -eq $victoryProcess.Id) { 'victory-host-process' } else { 'game-process' }
     RuntimeFileVersion = (Get-Item -LiteralPath $victoryPath).VersionInfo.FileVersion
     RuntimeExecutableSha256 = $runtimeExecutableSha256
-    VictoryExitCode = if ($victoryProcess.HasExited) { $victoryProcess.ExitCode } else { $null }
+    RuntimeExitCode = if ($victoryProcess.HasExited) { $victoryProcess.ExitCode } else { $null }
     PresentMonExitCode = $presentMonProcess.ExitCode
     FrameMetrics = $frameSummary
     NvidiaTelemetry = $nvidiaSummary
@@ -602,8 +602,8 @@ $summary = [ordered]@{
         SystemMemory = $systemMemoryCsv
         CpuThreads = $threadCsv
         GraphicsEvents = $graphicsEventsCsv
-        VictoryStdout = $victoryStdout
-        VictoryStderr = $victoryStderr
+        RuntimeStdout = $victoryStdout
+        RuntimeStderr = $victoryStderr
         PresentMonStderr = $presentMonStderr
         Hardware = $hardwarePath
         Environment = $environmentPath

@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-function Get-VictoryDirectoryFingerprint {
+function Get-AstraForgeDirectoryFingerprint {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$Directory)
 
@@ -31,7 +31,7 @@ function Get-VictoryDirectoryFingerprint {
     } finally { $incrementalHash.Dispose() }
 }
 
-function Copy-VictoryCacheSeed {
+function Copy-AstraForgeCacheSeed {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][string]$SourceDirectory,
@@ -43,11 +43,11 @@ function Copy-VictoryCacheSeed {
     if (Test-Path -LiteralPath $destination) {
         throw "Cache copy destination must be new; existing files are preserved: $destination"
     }
-    $seedFingerprint = Get-VictoryDirectoryFingerprint -Directory $source
+    $seedFingerprint = Get-AstraForgeDirectoryFingerprint -Directory $source
     if ($seedFingerprint.Files -eq 0) { throw "Cache seed contains no files: $source" }
     New-Item -ItemType Directory -Force -Path $destination | Out-Null
     Get-ChildItem -LiteralPath $source -Force | Copy-Item -Destination $destination -Recurse -Force
-    $copyFingerprint = Get-VictoryDirectoryFingerprint -Directory $destination
+    $copyFingerprint = Get-AstraForgeDirectoryFingerprint -Directory $destination
     if ($copyFingerprint.Sha256 -cne $seedFingerprint.Sha256) {
         throw "Copied cache does not match its seed. Seed is preserved at '$source'; copy is isolated at '$destination'."
     }
@@ -58,4 +58,4 @@ function Copy-VictoryCacheSeed {
     }
 }
 
-Export-ModuleMember -Function Get-VictoryDirectoryFingerprint, Copy-VictoryCacheSeed
+Export-ModuleMember -Function Get-AstraForgeDirectoryFingerprint, Copy-AstraForgeCacheSeed

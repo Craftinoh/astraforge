@@ -2,12 +2,12 @@
 param(
     [string]$GameDir = $env:VICTORY_GAME_DIR,
     [string]$GameExecutableName = 'game.exe',
-    [string]$VictoryExe,
+    [string]$RuntimeExe,
     [string]$SourceRoot = (Join-Path $PSScriptRoot '..\third_party\nvidia-3070-VI'),
     [string]$GpuProfile = 'nvidia-rtx3070',
     [ValidateSet('Stability', 'Balanced', 'Performance', 'Quality')][string]$Profile = 'Balanced',
     [ValidateSet('series-s', 'series-x')][string]$Console,
-    [string]$OutputRoot = "$env:LOCALAPPDATA\VIctory\gpu",
+    [string]$OutputRoot = "$env:LOCALAPPDATA\AstraForge\gpu",
     [ValidateRange(0, 256)][int]$MinimumAvailableCommitGiB = 12,
     [switch]$AllowLowCommit,
     [switch]$AllowSeriesX
@@ -93,9 +93,9 @@ if ($resourceText -notmatch 'VICTORY_TEXTURE_ROOM_PERCENT' -or
     throw 'La semantica/range di VICTORY_TEXTURE_ROOM_PERCENT non corrisponde alla revisione verificata; non lancio un profilo non auditato.'
 }
 
-if ($VictoryExe) {
-    if (-not (Test-Path -LiteralPath $VictoryExe -PathType Leaf)) { throw "Eseguibile VIctory non trovato: $VictoryExe" }
-    $runner = (Resolve-Path -LiteralPath $VictoryExe).Path
+if ($RuntimeExe) {
+    if (-not (Test-Path -LiteralPath $RuntimeExe -PathType Leaf)) { throw "Eseguibile runtime AstraForge non trovato: $RuntimeExe" }
+    $runner = (Resolve-Path -LiteralPath $RuntimeExe).Path
 } else {
     $runnerCandidates = @(
         (Join-Path $repo 'victory-3d-rtx-pareto-residency.exe'),
@@ -104,13 +104,13 @@ if ($VictoryExe) {
     $runner = $runnerCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
 }
 if (-not $runner) {
-    throw 'Eseguibile VIctory assente. Prima servono il checkout sorgente e una build Release; tools/Build-VIctory.ps1 documenta i controlli.'
+    throw 'Eseguibile runtime AstraForge assente. Prima servono il checkout sorgente e una build Release; tools/Build-AstraForge.ps1 documenta i controlli.'
 }
 $runner = (Resolve-Path -LiteralPath $runner).Path
 
 $outputFull = Get-CanonicalPath $OutputRoot
 if (Test-WithinPath $outputFull $workspaceFull -or Test-WithinPath $outputFull $gameRoot) {
-    throw 'Log, cache e dati VIctory devono restare fuori dal repository e dai file di gioco.'
+    throw 'Log, cache e dati AstraForge devono restare fuori dal repository e dai file di gioco.'
 }
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $runDir = Join-Path $outputFull "$stamp-$GpuProfile-$Profile-$Console"
@@ -118,13 +118,13 @@ $cacheDir = Join-Path $env:LOCALAPPDATA "VIctory\$GpuProfile\cache"
 $dataDir = Join-Path $env:LOCALAPPDATA "VIctory\$GpuProfile\data"
 foreach ($managedPath in @($cacheDir, $dataDir)) {
     if (Test-WithinPath $managedPath $workspaceFull -or Test-WithinPath $managedPath $gameRoot -or Test-WithinPath $managedPath $repoFull) {
-        throw 'Cache e dati VIctory devono restare fuori dal workspace e dai file di gioco.'
+        throw 'Cache e dati AstraForge devono restare fuori dal workspace e dai file di gioco.'
     }
 }
 New-Item -ItemType Directory -Force -Path $runDir, $cacheDir, $dataDir | Out-Null
 
 # The inspected fork calls D3D12CreateDevice(NULL), so the first DXGI adapter matters.
-$probeScript = Join-Path $PSScriptRoot 'Collect-VIctoryHardware.ps1'
+$probeScript = Join-Path $PSScriptRoot 'Collect-AstraForgeHardware.ps1'
 $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 if (-not (Test-Path -LiteralPath $probeScript -PathType Leaf) -or -not (Test-Path -LiteralPath $windowsPowerShell -PathType Leaf)) {
     throw 'Probe hardware o Windows PowerShell non disponibile: non posso verificare l adapter DXGI predefinito.'
@@ -133,7 +133,7 @@ $hardwarePath = Join-Path $runDir 'hardware.json'
 $dxdiagPath = Join-Path $runDir 'dxdiag.txt'
 & $windowsPowerShell -NoProfile -ExecutionPolicy Bypass -File $probeScript -OutputPath $hardwarePath -DxDiagReportPath $dxdiagPath | Out-Null
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $hardwarePath -PathType Leaf)) {
-    throw 'La rilevazione hardware è fallita; VIctory non è stato avviato.'
+    throw 'La rilevazione hardware è fallita; il runtime AstraForge non è stato avviato.'
 }
 $hardware = Get-Content -LiteralPath $hardwarePath -Raw | ConvertFrom-Json
 $expectedDeviceIds = @($gpuProfileConfig.adapter.deviceIds | ForEach-Object { ([string]$_).ToUpperInvariant() })
@@ -246,11 +246,11 @@ try {
         Start-Sleep -Seconds 5
     }
     $process.Refresh()
-    Write-Host "VIctory terminato con exit code $($process.ExitCode)."
+    Write-Host "Runtime AstraForge terminato con exit code $($process.ExitCode)."
     Write-Host "Output: $stdoutPath"
     Write-Host "Errori: $stderrPath"
     Write-Host "Telemetria: $memoryCsv, $counterCsv"
-    if ($process.ExitCode -ne 0) { throw "VIctory terminato con exit code $($process.ExitCode)." }
+    if ($process.ExitCode -ne 0) { throw "Runtime AstraForge terminato con exit code $($process.ExitCode)." }
 } finally {
     foreach ($entry in $previousEnvironment.GetEnumerator()) { Set-Item "Env:$($entry.Key)" $entry.Value }
     Get-ChildItem Env: | Where-Object { $_.Name -like 'VICTORY_*' -and -not $previousEnvironment.ContainsKey($_.Name) } |

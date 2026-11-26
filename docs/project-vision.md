@@ -1,8 +1,8 @@
-# Project vision: VIctory GPU Profiles
+# Project vision: AstraForge
 
 ## What we are building
 
-We want to take VIctory beyond the usual vibe-coded emulator fork and make it a reference for how a compatibility project is designed, implemented, tested, documented, credited, and maintained.
+AstraForge is being built as a reference for how an open compatibility layer is designed, implemented, tested, documented, credited, and maintained. Its identity, tooling, hardware profiles, and verification process are independent from the imported engine base.
 
 That means the project should explain how it works, show which hardware profile is active, preserve the source and authorship of imported changes, measure actual application frames, publish reproducible evidence, and state what has not been verified. A patch should not become a “performance fix” just because it compiles or changes a counter.
 

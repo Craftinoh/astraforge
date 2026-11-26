@@ -149,7 +149,7 @@ function Assert-RunCohort([object[]]$Runs) {
         throw "Run '$($firstRun.Path)' must record a clean source commit. Pass -SourceRoot when capturing."
     }
     if ([string]$first.RuntimeExecutableSha256 -notmatch '^[A-Fa-f0-9]{64}$') {
-        throw "Run '$($firstRun.Path)' lacks a valid VIctory executable SHA-256. Capture it again with the updated benchmark script."
+        throw "Run '$($firstRun.Path)' lacks a valid runtime executable SHA-256. Capture it again with the updated benchmark script."
     }
     $referenceEnvironment = Get-ComparableEnvironmentMap $firstRun
     $referenceOverrides = @($first.RuntimeOverrideNames | Sort-Object) -join '|'

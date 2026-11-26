@@ -1,15 +1,15 @@
-# VIctory GPU Profiles — progress journal
+# AstraForge — progress journal
 
 This file is the durable task record. Update it when source, build, benchmark, hardware, publication, or user plans change.
 
 ## Current objective
 
-Prepare a profile-driven VIctory compatibility project. Start with NVIDIA RTX 3070 Ampere, target at least 30 real gameplay FPS with a 1% low of at least 30, and add AMD only in a later separately validated phase. Keep public benchmark reporting anonymous and do not identify the game title.
+Prepare AstraForge as a profile-driven Xbox compatibility layer. Start with NVIDIA RTX 3070 Ampere, target at least 30 real gameplay FPS with a 1% low of at least 30, and add AMD only in a later separately validated phase. Keep public benchmark reporting anonymous and do not identify the game title.
 
 ## Workspace and source
 
 - Workspace: `workspace root`.
-- Main workspace is now a Git repository on branch `main`, with the public GitHub remote `Craftinoh/victory-gpu-profiles`.
+- Main workspace is now a Git repository on branch `main`, with the public GitHub remote `Craftinoh/astraforge`.
 - The NVIDIA source is imported at `third_party\nvidia-3070-VI` as a Git subtree, so its patch history remains reachable without a nested Git link.
 - Imported source HEAD: `e31aafd` (`docs: anonymize title-specific source comments`), following launcher commit `c6f1fc4`.
 - Source baseline: NVIDIA 8 GB derivative at `6e9c1dd9fb32daaa855f446560a4d1f8df5f8424`, descended from COOL_FOX Pareto-residency reference `f4b48ad766ddbec1a1867022cd42f7645b0dd55e`.
@@ -38,13 +38,13 @@ These source changes have not yet passed a local Rust build or Windows GPU test 
 
 ## Workspace tooling and evidence
 
-- Hardware probe and current host report: `tools\Collect-VIctoryHardware.ps1`, `out\hardware-latest.json`.
+- Hardware probe and current host report: `tools\Collect-AstraForgeHardware.ps1`, `out\hardware-latest.json`.
 - Four RTX tuning candidates: Stability, Balanced, Performance, Quality. They differ by `VICTORY_TEXTURE_ROOM_PERCENT` and have not been measured locally.
-- Build helper: `tools\Build-VIctory.ps1`; it now creates a unique external Cargo target/artifact directory and records hashes. Thin LTO + native CPU is the Ryzen 7 7700X candidate build.
-- Runtime launch: `tools\Start-VIctoryGPU.ps1` reads `profiles\gpu-profiles.json`; the RTX 3070 wrapper remains available as `tools\Start-VIctory3070.ps1`. The profile-file path bug is fixed, and adapter, D3D12, wave-width, compute-capability, dedicated-memory, and commit checks are manifest-driven.
-- Shader prewarm: `tools\Prewarm-VIctory.ps1`; it accepts an isolated cache seed and writes a fingerprint manifest.
-- Gameplay capture: `tools\Measure-VIctoryGameplay.ps1`; comparison: `tools\Compare-VIctoryRuns.ps1`; cache functions: `tools\Victory-BenchmarkCommon.psm1`.
-- Synthetic test command: `tools\Test-VIctoryBenchmarkHarness.ps1`. The latest run passed cache seed cloning/mutation detection, three-run cold/warm comparisons, target evaluation, anonymous report export without local paths, and rejection of mismatched warm seeds and unclassified frames. All ten PowerShell scripts/modules parsed successfully after the GPU-profile refactor.
+- Build helper: `tools\Build-AstraForge.ps1`; it now creates a unique external Cargo target/artifact directory and records hashes. Thin LTO + native CPU is the Ryzen 7 7700X candidate build.
+- Runtime launch: `tools\Start-AstraForge.ps1` reads `profiles\gpu-profiles.json`; the RTX 3070 wrapper remains available as `tools\Start-AstraForge3070.ps1`. The profile-file path bug is fixed, and adapter, D3D12, wave-width, compute-capability, dedicated-memory, and commit checks are manifest-driven.
+- Shader prewarm: `tools\Prewarm-AstraForge.ps1`; it accepts an isolated cache seed and writes a fingerprint manifest.
+- Gameplay capture: `tools\Measure-AstraForgeGameplay.ps1`; comparison: `tools\Compare-AstraForgeRuns.ps1`; cache functions: `tools\AstraForge-BenchmarkCommon.psm1`.
+- Synthetic test command: `tools\Test-AstraForgeBenchmarkHarness.ps1`. The latest run passed cache seed cloning/mutation detection, three-run cold/warm comparisons, target evaluation, anonymous report export without local paths, and rejection of mismatched warm seeds and unclassified frames. All ten PowerShell scripts/modules parsed successfully after the GPU-profile refactor.
 - Release, diagnostic build, actual shader prewarm, and gameplay captures have not succeeded or been run. No local FPS result exists.
 
 ## Performance evidence and target risk
@@ -55,7 +55,7 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 - User is installing the Xbox game on this PC. After installation, inspect only for a locally usable VIctory-compatible executable and keep all personal game data outside the repository. Current `VICTORY_GAME_DIR` is unset.
 - `cargo`, `rustc`, `rustfmt`, MSVC `cl/link`, DXC, and PresentMon are not currently available through the shell. Git 2.56.1 and GitHub CLI 2.106.0 are installed and GitHub authentication is valid.
-- The public repository `Craftinoh/victory-gpu-profiles` has been created. The local history includes the source subtree and all local patch commits; the first push is the next publication step.
+- The public repository `Craftinoh/astraforge` has been created. The local history includes the source subtree and all local patch commits; the first push is the next publication step.
 
 ## Publication and privacy rules
 
@@ -75,7 +75,7 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 - Generalized gameplay measurement metadata to include the selected `GpuProfile` and adapter LUID; cohort comparisons now require the same GPU profile and adapter identity.
 - The benchmark harness and shader prewarm helper now load the hardware-profile manifest. Working cache/data defaults are namespaced by GPU profile; NVIDIA is still the only implemented entry.
-- Added `tools/Export-VIctoryPublicReport.ps1`, which rebuilds a shareable report from an allowlist and omits local capture/cache paths, raw telemetry, and executable names. The synthetic harness confirms that path fields are absent.
+- Added `tools/Export-AstraForgePublicReport.ps1`, which rebuilds a shareable report from an allowlist and omits local capture/cache paths, raw telemetry, and executable names. The synthetic harness confirms that path fields are absent.
 - Updated the benchmark and launcher documentation, source/privacy policy, and rollback inventory. Anonymous scene labels are enforced at capture and export time.
 - PowerShell parser and synthetic benchmark tests pass after these changes. No Rust build, game launch, shader prewarm, visual review, or real gameplay measurement has occurred.
 - Git 2.56.1 and GitHub CLI 2.106.0 are present and authenticated. The public repository has been created; the reviewed local tree contains no tracked game data, captures, binaries, personal paths, account names, or credentials.
@@ -85,4 +85,4 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - Converted the workspace into a `main` Git repository and imported the NVIDIA source as a subtree while preserving all source commits through `e31aafd`.
 - Verified that the subtree is stored as normal files rather than a gitlink, and that `e31aafd` is reachable from the project history.
 - Scanned tracked files for personal paths, credentials, game/capture/binary paths, and prohibited public title/publisher strings; none remain in the current tree.
-- Created the public GitHub repository `Craftinoh/victory-gpu-profiles`. Publication verification remains pending until the first push completes.
+- Created the public GitHub repository `Craftinoh/astraforge`. Publication verification remains pending until the first push completes.

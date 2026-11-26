@@ -2,9 +2,9 @@
 param()
 
 $ErrorActionPreference = 'Stop'
-$comparator = Join-Path $PSScriptRoot 'Compare-VIctoryRuns.ps1'
-$publicExporter = Join-Path $PSScriptRoot 'Export-VIctoryPublicReport.ps1'
-Import-Module -Name (Join-Path $PSScriptRoot 'Victory-BenchmarkCommon.psm1') -Force
+$comparator = Join-Path $PSScriptRoot 'Compare-AstraForgeRuns.ps1'
+$publicExporter = Join-Path $PSScriptRoot 'Export-AstraForgePublicReport.ps1'
+Import-Module -Name (Join-Path $PSScriptRoot 'AstraForge-BenchmarkCommon.psm1') -Force
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("victory-benchmark-test-{0}" -f [guid]::NewGuid().ToString('N'))
 $tempRootFull = [System.IO.Path]::GetFullPath($tempRoot)
 $tempBaseFull = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\') + '\'
@@ -100,13 +100,13 @@ try {
     $seedCopy = Join-Path $tempRootFull 'cache-fingerprint-copy'
     New-Item -ItemType Directory -Force -Path (Join-Path $seedSource 'nested') | Out-Null
     [System.IO.File]::WriteAllText((Join-Path $seedSource 'nested\pipeline.bin'), 'synthetic pipeline cache')
-    $cacheCopy = Copy-VictoryCacheSeed -SourceDirectory $seedSource -DestinationDirectory $seedCopy
+    $cacheCopy = Copy-AstraForgeCacheSeed -SourceDirectory $seedSource -DestinationDirectory $seedCopy
     if ($cacheCopy.Fingerprint.Files -ne 1 -or
-        (Get-VictoryDirectoryFingerprint -Directory $seedCopy).Sha256 -cne $cacheCopy.Fingerprint.Sha256) {
+        (Get-AstraForgeDirectoryFingerprint -Directory $seedCopy).Sha256 -cne $cacheCopy.Fingerprint.Sha256) {
         throw 'Synthetic cache clone did not preserve its content fingerprint.'
     }
     [System.IO.File]::AppendAllText((Join-Path $seedCopy 'nested\pipeline.bin'), 'changed')
-    if ((Get-VictoryDirectoryFingerprint -Directory $seedCopy).Sha256 -ceq $cacheCopy.Fingerprint.Sha256) {
+    if ((Get-AstraForgeDirectoryFingerprint -Directory $seedCopy).Sha256 -ceq $cacheCopy.Fingerprint.Sha256) {
         throw 'Synthetic cache mutation was not detected by the fingerprint.'
     }
     Write-Host 'PASS clones a warm cache without mutating the seed and detects content changes'

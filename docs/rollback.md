@@ -6,16 +6,16 @@ To remove only the artifacts added by this investigation, delete these individua
 
 - `third_party/nvidia-3070-VI/` (the source subtree; its history remains reachable from the project repository)
 
-- `tools/Build-VIctory.ps1`
-- `tools/Collect-VIctoryHardware.ps1`
-- `tools/Compare-VIctoryRuns.ps1`
-- `tools/Export-VIctoryPublicReport.ps1`
-- `tools/Measure-VIctoryGameplay.ps1`
-- `tools/Prewarm-VIctory.ps1`
-- `tools/Start-VIctory3070.ps1`
-- `tools/Start-VIctoryGPU.ps1`
-- `tools/Test-VIctoryBenchmarkHarness.ps1`
-- `tools/Victory-BenchmarkCommon.psm1`
+- `tools/Build-AstraForge.ps1`
+- `tools/Collect-AstraForgeHardware.ps1`
+- `tools/Compare-AstraForgeRuns.ps1`
+- `tools/Export-AstraForgePublicReport.ps1`
+- `tools/Measure-AstraForgeGameplay.ps1`
+- `tools/Prewarm-AstraForge.ps1`
+- `tools/Start-AstraForge3070.ps1`
+- `tools/Start-AstraForge.ps1`
+- `tools/Test-AstraForgeBenchmarkHarness.ps1`
+- `tools/AstraForge-BenchmarkCommon.psm1`
 - `profiles/rtx3070-profiles.json`
 - `profiles/gpu-profiles.json`
 - `docs/benchmark-procedure.md`
@@ -36,4 +36,4 @@ To remove only the artifacts added by this investigation, delete these individua
 - `out/hardware.json`
 - `out/hardware-latest.json`
 
-The scripts have not been run against a game binary. The public-report exporter and generic GPU profile launcher are workspace tooling. If they are run later, benchmark/build/prewarm output defaults under `%LOCALAPPDATA%\VIctory`; each build and cold/warm working cache receives its own directory. Remove only specific generated directories you want to discard. Do not remove the user's existing VIctory shader cache, immutable prewarm seed, or game saves as a rollback step.
+The scripts have not been run against a game binary. The public-report exporter and generic GPU profile launcher are workspace tooling. If they are run later, benchmark/build/prewarm output defaults under `%LOCALAPPDATA%\AstraForge`; each build and cold/warm working cache receives its own directory. Remove only specific generated directories you want to discard. Do not remove the user's existing VIctory shader cache, immutable prewarm seed, or game saves as a rollback step.

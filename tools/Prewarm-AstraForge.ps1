@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][string]$VictoryExe,
+    [Parameter(Mandatory = $true)][string]$RuntimeExe,
     [Parameter(Mandatory = $true)][string[]]$ShaderArchives,
     [string]$GpuProfile = 'nvidia-rtx3070',
     [switch]$WarmUsedPipelines,
@@ -10,7 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Import-Module -Name (Join-Path $PSScriptRoot 'Victory-BenchmarkCommon.psm1') -Force
+Import-Module -Name (Join-Path $PSScriptRoot 'AstraForge-BenchmarkCommon.psm1') -Force
 
 function Test-PathOverlap([string]$Left, [string]$Right) {
     $leftFull = [System.IO.Path]::GetFullPath($Left).TrimEnd('\')
@@ -20,7 +20,7 @@ function Test-PathOverlap([string]$Left, [string]$Right) {
         $rightFull.StartsWith($leftFull + '\', [System.StringComparison]::OrdinalIgnoreCase)
 }
 
-$exe = (Resolve-Path -LiteralPath $VictoryExe).Path
+$exe = (Resolve-Path -LiteralPath $RuntimeExe).Path
 $archives = @($ShaderArchives | ForEach-Object { (Resolve-Path -LiteralPath $_).Path })
 $gpuManifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\profiles\gpu-profiles.json') -Raw | ConvertFrom-Json
 $gpuProfileConfig = $gpuManifest.profiles.PSObject.Properties[$GpuProfile].Value
@@ -78,15 +78,15 @@ try {
         & $exe warm --used
         if ($LASTEXITCODE -ne 0) { throw "PSO warm-up fallito con exit code $LASTEXITCODE" }
     }
-    $cacheFingerprint = Get-VictoryDirectoryFingerprint -Directory $cachePath
+    $cacheFingerprint = Get-AstraForgeDirectoryFingerprint -Directory $cachePath
     if ($cacheFingerprint.Files -eq 0) { throw "Prewarm terminato senza file nella cache seed: $cachePath" }
     $git = Get-Command git.exe -ErrorAction SilentlyContinue
     $sourceCommit = if ($git) { (& $git.Source -C $executableRoot rev-parse HEAD 2>$null | Out-String).Trim() } else { $null }
     $manifest = [ordered]@{
         CapturedAt = (Get-Date).ToString('o')
         GpuProfile = $GpuProfile
-        VictoryExecutable = $exe
-        VictoryExecutableSha256 = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash
+        RuntimeExecutable = $exe
+        RuntimeExecutableSha256 = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash
         SourceRoot = $executableRoot
         SourceCommit = $sourceCommit
         ShaderArchives = $archives

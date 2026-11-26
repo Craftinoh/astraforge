@@ -4,8 +4,8 @@ param(
     [ValidateSet('Release', 'Diagnostic', 'Both')][string]$Mode = 'Both',
     [switch]$ThinLto,
     [switch]$NativeCpu,
-    [string]$LogRoot = "$env:LOCALAPPDATA\VIctory\builds\logs",
-    [string]$ArtifactRoot = "$env:LOCALAPPDATA\VIctory\builds\artifacts"
+    [string]$LogRoot = "$env:LOCALAPPDATA\AstraForge\builds\logs",
+    [string]$ArtifactRoot = "$env:LOCALAPPDATA\AstraForge\builds\artifacts"
 )
 
 $ErrorActionPreference = 'Stop'
