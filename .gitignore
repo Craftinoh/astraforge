@@ -1,0 +1,38 @@
+# Local hardware inventories and raw benchmark captures
+/out/
+/benchmarks/
+/captures/
+*.etl
+*.dmp
+
+# Build products and compiler caches
+/target/
+**/target/
+**/bin/
+**/obj/
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.lib
+*.exp
+*.cache
+
+# Personal game installs, dumps, saves, and configuration
+/GameFiles/
+/game/
+/games/
+/dumps/
+/saves/
+**/game_scarlett_master.exe
+**/victory.toml
+*.xvc
+*.xvd
+
+# Local credentials and machine/editor state
+.env
+.env.*
+*.user
+*.suo
+.vscode/
+.idea/
