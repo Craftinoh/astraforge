@@ -17,7 +17,9 @@ fn memory_status() -> Option<MEMORYSTATUSEX> {
 
 // The texture sweep may run for seconds inside a single submitted frame.
 static NEXT_COMMIT_SAMPLE: AtomicU64 = AtomicU64::new(0);
-static AVAILABLE_COMMIT: AtomicU64 = AtomicU64::new(u64::MAX);
+// Until Windows returns a valid sample, deny speculative growth instead of
+// treating an unavailable measurement as unlimited commit headroom.
+static AVAILABLE_COMMIT: AtomicU64 = AtomicU64::new(0);
 static RETRY_UPLOAD_AT: AtomicU64 = AtomicU64::new(0);
 
 pub(crate) fn allocation_error(error: &windows::core::Error) {
