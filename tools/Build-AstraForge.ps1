@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$SourceRoot = (Join-Path $PSScriptRoot '..\third_party\nvidia-3070-VI'),
+    [string]$SourceRoot,
     [ValidateSet('Release', 'Diagnostic', 'Both')][string]$Mode = 'Both',
     [switch]$ThinLto,
     [switch]$NativeCpu,
@@ -9,6 +9,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($SourceRoot)) {
+    $SourceRoot = Join-Path $PSScriptRoot '..\third_party\nvidia-3070-VI'
+}
 $root = (Resolve-Path -LiteralPath $SourceRoot).Path
 $manifest = Join-Path $root 'Cargo.toml'
 $toolchainFile = Join-Path $root 'rust-toolchain.toml'
@@ -30,6 +33,8 @@ if (-not $compiler) { Write-Warning 'cl.exe non trovato nel PATH; alcuni crate n
 Push-Location $root
 try {
     # Run the proxy while inside SourceRoot so rustup honors this repository's rust-toolchain.toml.
+    $rustVersion = (& $rustc.Source --version).Trim()
+    $cargoVersion = (& $cargo.Source --version).Trim()
     $hostTarget = (& $rustc.Source -vV | Where-Object { $_ -like 'host:*' } | Select-Object -First 1) -replace '^host:\s*', ''
     if ($hostTarget -ne 'x86_64-pc-windows-msvc') {
         throw "Target Rust attivo $hostTarget; serve x86_64-pc-windows-msvc per questa build Windows."
@@ -85,7 +90,7 @@ try {
     Write-Host "Build ID: $buildId"
     Write-Host "Artifact directory: $buildDirectory"
     Write-Host "Toolchain: $((Get-Content -LiteralPath $toolchainFile -Raw).Trim())"
-    Write-Host "Rust: $((& $rustc.Source --version).Trim()); target: $hostTarget"
+    Write-Host "Rust: $rustVersion; Cargo: $cargoVersion; target: $hostTarget"
     Write-Host "MSVC linker: $($linker.Source)"
     if (Get-Command dxc.exe -ErrorAction SilentlyContinue) { Write-Host "DXC: $((Get-Command dxc.exe).Source)" }
     else { Write-Warning 'dxc.exe non trovato; il progetto potrebbe usare un DXC distribuito/risolto a runtime.' }
@@ -134,7 +139,8 @@ try {
         SourceCommit = $sourceCommit
         SourceDirty = ($sourceStatus.Count -gt 0)
         Toolchain = (Get-Content -LiteralPath $toolchainFile -Raw).Trim()
-        RustVersion = (& $rustc.Source --version).Trim()
+        RustVersion = $rustVersion
+        CargoVersion = $cargoVersion
         HostTarget = $hostTarget
         Mode = $Mode
         ThinLto = [bool]$ThinLto
