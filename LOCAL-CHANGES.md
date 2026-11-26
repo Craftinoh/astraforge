@@ -2,8 +2,10 @@
 
 Upstream snapshot imported from `grimygunnz/nvidia-3070-VI` commit `6e9c1dd9fb32daaa855f446560a4d1f8df5f8424` (2026-11-26). Its original `LICENSE` is retained. The file list and upstream Git blob IDs are in `.source-manifest.json`.
 
+Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. That commit changes only `docs/nvidia-8gb.md`; the local copy of that file is synchronized to its blob `083f560cfa9dc798d16c1924f3b13ed062f1da10`. No runtime source changed between these revisions.
+
 ## Local changes
 
-- `crates/victory-formats/src/texture.rs`: parenthesize `(i * 7)` before shifting in a test fixture expression. This preserves Rust operator-precedence behavior and fixes the latest upstream CI's `clippy::precedence` error under `-D warnings` (run `45877144008`). It still needs local `cargo clippy --all-targets -- -D warnings` and `cargo test --workspace` verification.
+- `crates/victory-formats/src/texture.rs`: parenthesize `(i * 7)` before shifting in a test fixture expression. This preserves Rust operator-precedence behavior and fixes the upstream CI's `clippy::precedence` error under `-D warnings` (runs `45877144008` and `45880961297`). It still needs local `cargo clippy --all-targets -- -D warnings` and `cargo test --workspace` verification.
 
-No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the restricted environment exposed repository files through the read-only GitHub API rather than Git transport. A local Git history will record the imported snapshot and this small patch separately.
+No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the restricted environment exposed repository files through the read-only GitHub API rather than Git transport. A local Git history records the imported snapshot, Clippy fix, and upstream documentation sync separately.
