@@ -4,6 +4,10 @@
 
 AstraForge is being built as a reference for how an open compatibility layer is designed, implemented, tested, documented, credited, and maintained. Its identity, tooling, hardware profiles, and verification process are independent from the imported engine base.
 
+Among the upstream forks reviewed during the RTX 3070 investigation, AstraForge is the only one whose central architecture is designed for fast, repeatable integration by other contributors. A new contribution should arrive as a small source patch, a declarative hardware profile, a reproducible validation route, and a provenance entry. This keeps vendor work composable and makes review, rollback, and comparison practical.
+
+The long-term goal is for this contract to become a standard: projects should be able to share fixes and GPU profiles without rebuilding a monolithic fork for every card. The standard is earned through compatibility, evidence, stable schemas, and clear attribution rather than by the project name alone.
+
 That means the project should explain how it works, show which hardware profile is active, preserve the source and authorship of imported changes, measure actual application frames, publish reproducible evidence, and state what has not been verified. A patch should not become a “performance fix” just because it compiles or changes a counter.
 
 ## Hardware strategy

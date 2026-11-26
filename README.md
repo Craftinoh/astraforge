@@ -4,6 +4,8 @@ An open-source Windows compatibility layer built around architecture-aware GPU p
 
 The goal is to move beyond a typical vibe-coded emulator fork: make the implementation, build, GPU profiles, measurements, attribution, limitations, and rollback process clear enough that other compatibility projects can use them as a model.
 
+Among the upstream forks reviewed for this work, AstraForge is the only project organized around integration itself: hardware support, runtime tuning, source provenance, validation, and public evidence follow one documented contract. The aim is to let contributors add a GPU profile or a focused engine patch quickly, without copying an entire vendor fork or losing authorship and test evidence. AstraForge is being built to become a reusable standard for open compatibility projects.
+
 ## Project status
 
 - Source baseline: COOL_FOX Pareto-residency, through the NVIDIA 8 GB derivative.
@@ -29,7 +31,7 @@ Requirements include the repository-pinned Rust toolchain, Windows MSVC build to
 
 The source targets the first DXGI adapter. The NVIDIA profile launcher checks that the RTX 3070 is first before starting the renderer. Thin LTO and native CPU code generation are build candidates for the Ryzen 7 7700X CPU submission path; their performance effect is not yet measured.
 
-See [the project vision](docs/project-vision.md), [the progress journal](docs/progress-journal.md), [the launcher profiles](docs/launcher-profiles.md), [the benchmark procedure](docs/benchmark-procedure.md), and [the source credits](docs/source-credits.md).
+See [the project vision](docs/project-vision.md), [the integration architecture](docs/integration-architecture.md), [the progress journal](docs/progress-journal.md), [the launcher profiles](docs/launcher-profiles.md), [the benchmark procedure](docs/benchmark-procedure.md), and [the source credits](docs/source-credits.md).
 
 ## Anonymous benchmark policy
 

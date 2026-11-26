@@ -4,7 +4,7 @@ if not "%~1"=="" if /i not "%~1"=="pareto-residency" (
   echo Usage: Play-VIctory.cmd pareto-residency 1>&2
   exit /b 2
 )
-if not defined VICTORY_GAME_DIR set "VICTORY_GAME_DIR=%LOCALAPPDATA%\VIctory\GameFiles"
+if not defined VICTORY_GAME_DIR set "VICTORY_GAME_DIR=%LOCALAPPDATA%\AstraForge\GameFiles"
 if not defined VICTORY_GAME_EXE set "VICTORY_GAME_EXE=%VICTORY_GAME_DIR%\game.exe"
 if not exist "%VICTORY_GAME_EXE%" (
   echo Set VICTORY_GAME_EXE to your own local game executable. 1>&2

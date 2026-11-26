@@ -25,6 +25,7 @@ To remove only the artifacts added by this investigation, delete these individua
 - `docs/RTX3070-variable-audit.md`
 - `docs/fork-comparison.md`
 - `docs/launcher-profiles.md`
+- `docs/integration-architecture.md`
 - `docs/project-vision.md`
 - `docs/source-credits.md`
 - `docs/progress-journal.md`
