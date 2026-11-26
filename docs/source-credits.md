@@ -19,6 +19,9 @@ This project preserves the upstream GPL-3.0 license and original source notices.
 | Defer descriptor nulling/resource release while submissions are in flight | `Itsbatt/victory-unified` commit `768735a` | `6e91b7b` | Ported with regression test; local D3D12 validation pending |
 | Use a neutral default data directory and generic executable name in the copied launcher | Local privacy/documentation change | `afbb784`, `337310f`, `c6f1fc4` | `VICTORY_GAME_DIR` and `VICTORY_GAME_EXE` remain configurable; defaults stay outside the workspace |
 | Anonymize title-specific comments and command examples | Local documentation/privacy change | `e31aafd` | Comment-only; runtime behavior unchanged |
+| Reserve a null descriptor before the portable heap's dynamic descriptor tail | Local fix after model-assisted review and independent source audit; no upstream patch copied | `f8b6af5` | Adds a regression test for disjoint shader-clamp and dynamic ranges; validated by the GPU library test suite |
+| Start commit-headroom admission at zero until the first valid Windows sample | Local fail-closed memory-safety change; no upstream patch copied | `42435bf` | Failed initial sampling can defer speculative uploads instead of treating commit headroom as unlimited |
+| Correct two indirect-budget regression-test fixtures | Local test-only corrections | `468b79b` | Test inputs and expected accepted work now match the shader's all-or-nothing budget semantics |
 
 ## Reviewed, not merged wholesale
 

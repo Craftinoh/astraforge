@@ -1,5 +1,13 @@
 # Change log
 
+## 2026-11-27 — Ampere descriptor safety and local builds
+
+- On the 1,000,000-view portable D3D12 heap, moved the shader clamp's null slot ahead of the fixed 2^18 dynamic descriptor tail. Title-visible descriptors are limited to the range before that sentinel, preventing an out-of-range title index from reading a live per-draw descriptor. Added a regression test for the disjoint ranges.
+- Initialized cached system commit headroom to zero until Windows returns a valid `GlobalMemoryStatusEx` sample. A failed initial sample now pauses speculative texture/staging admission rather than treating the memory budget as unlimited.
+- Corrected two indirect-budget test fixtures after GPU execution showed their expected values contradicted the all-or-nothing budget semantics. The indirect shader behavior itself is unchanged.
+- Built Release and diagnostic executables using the pinned Rust 1.98.1 MSVC toolchain, Rust Thin LTO, one release codegen unit, and native CPU code generation. See the progress journal for the final clean-source build ID and manifest location.
+- The `victory-gpu` library suite passed 340 tests; 34 were ignored. The full workspace suite passed 934 tests; 47 were ignored and 0 failed. A clean-source build is being produced after committing these changes. No gameplay launch, visual review, shader prewarm, or FPS capture has occurred; no performance gain is claimed.
+
 ## 2026-11-26 — RTX 3070 runtime scaffolding
 
 - Added four launcher profiles tied to the audited `grimygunnz/nvidia-3070-VI` source snapshot. They differ only in the verified dynamic `VICTORY_TEXTURE_ROOM_PERCENT` control (80/85/90/95); all are marked as unbenchmarked on this PC.

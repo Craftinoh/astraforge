@@ -39,10 +39,21 @@ Public benchmark summaries use aliases such as `scene-01` and `scene-02`. They o
 
 No game binaries, dumps, keys, personal saves, caches, private credentials, or raw hardware inventory belong in this repository. `.gitignore` excludes local captures and common game-data paths.
 
+## Contributor review workflow
+
+AI-assisted review is optional. A first-pass coding review can run through OpenCode with the currently listed `opencode/deepseek-v4.1-flash-free` model; free-model availability is controlled by its provider and can change. Keep reviews focused on source files and public documentation, never include credentials or personal game data, and verify every proposed change against the full call path, build, and tests. Model output is review input, not correctness or performance evidence. No provider key is stored in this repository.
+
+```powershell
+opencode run --model opencode/deepseek-v4.1-flash-free `
+  "Review the current diff for concrete D3D12 lifetime and RTX 3070 risks. Do not edit files; cite exact paths and lines."
+```
+
+See the [OpenCode model guide](https://opencode.ai/docs/console/models/) for the current model catalog and [DeepSeek's OpenCode setup guide](https://api-docs.deepseek.com/quick_start/agent_integrations/opencode/) for a separate, user-key-based DeepSeek API connection.
+
 ## Attribution and license
 
 The source is GPL-3.0. Keep upstream copyright notices and the local change ledger with every source change. See [source credits and provenance](docs/source-credits.md) and `third_party/nvidia-3070-VI/LOCAL-CHANGES.md`. This is an independent community project and is not affiliated with NVIDIA, AMD, Microsoft, or the upstream VIctory maintainers.
 
 ## Verification limits
 
-PowerShell harness checks pass locally. This environment has not produced a Release or diagnostic binary and has not captured gameplay FPS. Local runtime compatibility still needs to be checked before gameplay testing. Treat the 30 FPS target as an acceptance criterion, not a performance promise.
+The pinned Rust/MSVC toolchain and local D3D12 unit tests are now available; the exact Release/diagnostic artifact IDs and test results are recorded in the progress journal. No gameplay FPS capture exists yet, so runtime compatibility, visual quality, and the 30 FPS target remain unverified.

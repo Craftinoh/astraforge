@@ -1,6 +1,6 @@
 # Rollback procedure
 
-The source snapshot and local edits are imported under `third_party/nvidia-3070-VI` as a Git subtree. Its reachable commits import the upstream snapshot, apply the Clippy fix, sync documentation, port the physical-core worker count and two descriptor lifetime fixes, use neutral launcher defaults, and anonymize comments. The latest imported source commit is `e31aafd`. The root workspace is a Git repository on `main`. No game runtime files were modified. Benchmark, build, launch, and prewarm logs/cache/data default outside the workspace.
+The source snapshot and local edits are imported under `third_party/nvidia-3070-VI` as a Git subtree. Its reachable history includes the upstream snapshot, the Clippy fix, documentation sync, physical-core worker port, descriptor lifetime fixes, neutral launcher defaults, comment anonymization, and the newer descriptor-residency correctness fix. Root-level commits keep each local change reversible on `main`. No game runtime files were modified. Benchmark, build, launch, and prewarm logs/cache/data default outside the workspace.
 
 To remove only the artifacts added by this investigation, delete these individual files:
 
@@ -37,4 +37,4 @@ To remove only the artifacts added by this investigation, delete these individua
 - `out/hardware.json`
 - `out/hardware-latest.json`
 
-The scripts have not been run against a game binary. The public-report exporter and generic GPU profile launcher are workspace tooling. If they are run later, benchmark/build/prewarm output defaults under `%LOCALAPPDATA%\AstraForge`; each build and cold/warm working cache receives its own directory. Remove only specific generated directories you want to discard. Do not remove the user's existing VIctory shader cache, immutable prewarm seed, or game saves as a rollback step.
+The scripts have not been run against a game binary. The public-report exporter and generic GPU profile launcher are workspace tooling. Benchmark/build/prewarm output defaults under `%LOCALAPPDATA%\AstraForge`; each build and cold/warm working cache receives its own directory. Remove only specific generated directories you want to discard. Do not remove the user's existing shader cache, immutable prewarm seed, or game saves as a rollback step.

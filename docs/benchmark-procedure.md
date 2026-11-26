@@ -4,7 +4,7 @@ The harness measures actual PresentMon presents for the game executable when it 
 
 ## Requirements
 
-- A built `victory.exe` from the exact source revision under test. The local checkout is `third_party\nvidia-3070-VI`; source builds, profiles, and benchmark summaries must record the nested Git commit.
+- A built `victory.exe` from the exact source revision under test. The source is imported at `third_party\nvidia-3070-VI` as a Git subtree; build manifests record the root commit and dirty state so the exact integrated source is identifiable.
 - Personal game executable and data outside the source repository.
 - PresentMon v2 command-line executable.
 - NVIDIA `nvidia-smi` for GPU/clock/power telemetry.
@@ -24,7 +24,7 @@ The per-machine optimized candidate is:
 .\tools\Build-AstraForge.ps1 -Mode Both -ThinLto -NativeCpu
 ```
 
-It enables Rust Thin LTO and the Ryzen 7 7700X's native instruction target, including AVX2 where supported. Thin LTO is a compile-time option and is unrelated to runtime `VICTORY_THIN`. A default build can be produced separately with `-Mode Both`; each build receives a unique target/artifact directory outside the checkout, so the Release and diagnostic executables do not overwrite one another. The helper emits a manifest with source commit, flags, and executable hashes. These compiler options may reduce CPU-side submission and shader preparation overhead, but the gameplay effect is unmeasured until the same route is benchmarked. It has not completed here: Cargo/rustc, MSVC, and DXC are unavailable. The first build attempt stopped at the missing `cargo.exe` before compiling any code.
+It enables Rust Thin LTO and the Ryzen 7 7700X's native instruction target, including AVX2 where supported. Thin LTO is a compile-time option and is unrelated to runtime `VICTORY_THIN`. A default build can be produced separately with `-Mode Both`; each build receives a unique target/artifact directory outside the checkout, so the Release and diagnostic executables do not overwrite one another. The helper emits a manifest with source commit, flags, and executable hashes. The first optimized Release and diagnostic build has now completed with the repository-pinned Rust 1.98.1, MSVC, and DXC; the build ID and toolchain evidence are in the progress journal. The compiler effect on gameplay remains unmeasured until the same route is benchmarked.
 
 Pass the Release artifact printed by the build helper to the profile launcher; changing runtime profiles does not require another build:
 

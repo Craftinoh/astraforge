@@ -9,7 +9,7 @@ Prepare AstraForge as a profile-driven Xbox compatibility layer. Start with NVID
 ## Workspace and source
 
 - Workspace: `workspace root`.
-- Main workspace is now a Git repository on branch `main`, with the public GitHub remote `Craftinoh/astraforge`.
+- Main workspace is a Git repository on branch `main`, with the public remote configured.
 - The NVIDIA source is imported at `third_party\nvidia-3070-VI` as a Git subtree, so its patch history remains reachable without a nested Git link.
 - Imported source HEAD: `e31aafd` (`docs: anonymize title-specific source comments`), following launcher commit `c6f1fc4`.
 - Source baseline: NVIDIA 8 GB derivative at `6e9c1dd9fb32daaa855f446560a4d1f8df5f8424`, descended from COOL_FOX Pareto-residency reference `f4b48ad766ddbec1a1867022cd42f7645b0dd55e`.
@@ -33,8 +33,11 @@ Raw hardware reports are local under `out\` and must not be published. A refresh
 7. `337310f`: accept the local game executable through `VICTORY_GAME_EXE`, defaulting to a generic filename.
 8. `c6f1fc4`: move the copied launcher's default data folder to `%LOCALAPPDATA%` so it cannot land inside the project workspace.
 9. `e31aafd`: anonymize title-specific source comments and examples without changing runtime behavior.
+10. `468b79b`: correct two indirect-budget test fixtures without changing runtime shader behavior.
+11. `f8b6af5`: reserve the portable heap's null sentinel before the 2^18 dynamic descriptor tail; adds a no-overlap regression test.
+12. `42435bf`: start commit-headroom admission at zero until Windows provides a valid sample.
 
-These source changes have not yet passed a local Rust build or Windows GPU test because the pinned Rust/MSVC/DXC toolchain is unavailable.
+At the time of the initial import, the pinned Rust/MSVC/DXC toolchain was unavailable. The current source has since passed the pinned Windows build and GPU-library tests recorded below.
 
 ## Workspace tooling and evidence
 
@@ -45,7 +48,7 @@ These source changes have not yet passed a local Rust build or Windows GPU test 
 - Shader prewarm: `tools\Prewarm-AstraForge.ps1`; it accepts an isolated cache seed and writes a fingerprint manifest.
 - Gameplay capture: `tools\Measure-AstraForgeGameplay.ps1`; comparison: `tools\Compare-AstraForgeRuns.ps1`; cache functions: `tools\AstraForge-BenchmarkCommon.psm1`.
 - Synthetic test command: `tools\Test-AstraForgeBenchmarkHarness.ps1`. The latest run passed cache seed cloning/mutation detection, three-run cold/warm comparisons, target evaluation, anonymous report export without local paths, and rejection of mismatched warm seeds and unclassified frames. All ten PowerShell scripts/modules parsed successfully after the GPU-profile refactor.
-- Release, diagnostic build, actual shader prewarm, and gameplay captures have not succeeded or been run. No local FPS result exists.
+- The optimized Release and diagnostic builds compile with the pinned toolchain. A first artifact was produced while the source edits were uncommitted; a clean-source build is pending the documentation commit. Shader prewarm and gameplay captures have not been run. No local FPS result exists.
 
 ## Performance evidence and target risk
 
@@ -53,9 +56,9 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 ## Current blockers and user update
 
-- User is installing the Xbox game on this PC. After installation, inspect only for a locally usable VIctory-compatible executable and keep all personal game data outside the repository. Current `VICTORY_GAME_DIR` is unset.
-- `cargo`, `rustc`, `rustfmt`, MSVC `cl/link`, DXC, and PresentMon are not currently available through the shell. Git 2.56.1 and GitHub CLI 2.106.0 are installed and GitHub authentication is valid.
-- The public repository `Craftinoh/astraforge` is live on branch `main`. Commit `f436e04` is the first published AstraForge-branded revision and includes the source subtree and local patch history.
+- The game directory remains unset. When local files become available, inspect the installation for a compatible executable and keep all personal data outside the repository.
+- Rust 1.98.1, the Windows MSVC linker, DXC, and PresentMon are installed. The RTX 3070 remains the first DXGI adapter; gameplay compatibility and captures are still pending.
+- The public remote is live on branch `main`; keep account names and local machine paths out of published documentation.
 
 ## Publication and privacy rules
 
@@ -67,9 +70,9 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 ## Next actions
 
-1. Install/enable the pinned Rust, MSVC, DXC, and measurement toolchain, then build Release/diagnostic variants and validate the launch path.
-2. Use `coding-pro` through the configured API alias for focused source reviews; independently verify every finding against the full call graph and local tests.
-3. Collect repeated warm/cold gameplay cohorts, verify resolution, review rendering, and report measured memory and frame-time behavior.
+1. Complete the clean-source Release/diagnostic build, then run the profile and shader-prewarm preflights.
+2. The user reports OP Coding is healthy behind a local-only API key. No inference has been sent from this workspace; keep the endpoint and key private and validate that integration only when explicitly requested.
+3. Once the local game directory is ready, capture repeatable cold/warm gameplay cohorts, inspect rendering, and report measured memory and frame-time behavior.
 4. Add later GPU profiles only with hardware checks, source attribution, rollback notes, and repeated correctness/performance evidence.
 ## 2026-11-26 — GPU profile and public-report update
 
@@ -85,11 +88,20 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - Converted the workspace into a `main` Git repository and imported the NVIDIA source as a subtree while preserving all source commits through `e31aafd`.
 - Verified that the subtree is stored as normal files rather than a gitlink, and that `e31aafd` is reachable from the project history.
 - Scanned tracked files for personal paths, credentials, game/capture/binary paths, and prohibited public title/publisher strings; none remain in the current tree.
-- Created and published the public GitHub repository `Craftinoh/astraforge`; `main` and the local branch both pointed to `f436e04` after the first push.
+- Created and published the public GitHub repository; `main` and the local branch both pointed to `f436e04` after the first push.
 
 ## 2026-11-26 — integration architecture and delegated review
 
 - Added `docs/integration-architecture.md` to define the source-patch, GPU-profile, runtime-preset, build, benchmark, provenance, and rollback contracts used by AstraForge.
 - Public presentation now states the scoped differentiator supported by the reviewed fork set: AstraForge is the only reviewed project organized primarily around fast, repeatable integration by contributors.
-- Configured `coding-pro` at the user-provided OpenAI-compatible endpoint as a delegated code reviewer. The first descriptor-lifetime review proposed race/deadlock blockers, but two central claims conflict with the full source: `flush_unmake` holds the per-slot `Made` lock across the state check and drops the queue mutex before `unmake_key`. Those findings are not accepted without a second review using the surrounding call graph and local tests.
-- Rustup installation is in progress. MSVC, DXC, PresentMon, Release build, diagnostic build, and gameplay validation remain pending.
+- A previous model-assisted descriptor-lifetime review proposed race/deadlock blockers. Manual source tracing confirmed `flush_unmake` holds the per-slot `Made` lock across the state check and drops the queue mutex before `unmake_key`; those findings were not treated as defects without supporting evidence.
+- At that time, Rustup, MSVC, DXC, PresentMon, builds, and gameplay validation remained pending; the toolchain and builds were completed on 2026-11-27.
+
+## 2026-11-27 — local validation and Ampere correctness fixes
+
+- Fixed a descriptor-range overlap identified in a model-assisted review and confirmed independently: the portable one-million-view heap now keeps the shader null-clamp slot immediately before a fixed 2^18 dynamic-descriptor tail. Title descriptor mirrors are capped before that sentinel. A unit test checks that the title, null, and dynamic ranges cannot overlap.
+- Made host commit-headroom admission fail closed until the first valid `GlobalMemoryStatusEx` sample. A failed initial sample can no longer be interpreted as unlimited available commit.
+- Corrected two indirect-budget test fixtures: the host test now leaves too little budget for its follow-up dispatch, and the WARP assertion counts only accepted jobs. Runtime shader logic was unchanged by these test corrections.
+- `cargo test --locked -p victory-gpu --lib -- --test-threads=1`: 340 passed, 0 failed, 34 ignored. The full `cargo test --locked --workspace -- --test-threads=1` run also passed: 934 passed, 0 failed, 47 ignored, including 281 shader-translator tests. Both runs include D3D12/WARP coverage; they validate unit behavior, not gameplay.
+- A first Release plus diagnostic build succeeded with Rust/Cargo 1.98.1, MSVC 14.44, DXC, Thin LTO, one release codegen unit, and `-C target-cpu=native`. Its manifest correctly marked the source tree dirty because the tested patches had not yet been committed. A clean-manifest build is pending the documentation commit; the first artifact is not the final reproducible artifact.
+- No game launch, shader prewarm, visual review, or gameplay benchmark has occurred. No FPS or performance gain is claimed.
