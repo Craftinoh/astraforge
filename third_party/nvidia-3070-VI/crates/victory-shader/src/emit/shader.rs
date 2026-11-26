@@ -146,14 +146,15 @@ pub(crate) struct Geometry {
     pub max_vertices: u32,
 }
 
-/// The null slot every host view heap keeps at its end (0: no limit). Shaders translated while
-/// it is set read that slot for any view index at or past it. A read past a heap's end is
-/// undefined: a host that caps its heap (NVIDIA at 1 000 000 views; a retail game's heap is
-/// larger) hung its GPU (GPU-based validation: "descriptor heap index out of bounds"), and AMD
-/// RDNA3 took a page fault and removed the device.
+/// The descriptor slot shader view indices clamp to (0: no limit). Shaders
+/// translated while it is set read that slot at or past it. On the portable
+/// one-million-view host, this sentinel precedes a reserved dynamic-descriptor
+/// tail. Without the clamp, an index past a host heap's end is undefined: a
+/// capped NVIDIA heap hung the GPU (GPU-based validation: "descriptor heap
+/// index out of bounds"), and AMD RDNA3 took a page fault and removed the device.
 static VIEW_LIMIT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
-/// See [`VIEW_LIMIT`]: `null_slot` is the last slot of the host's view heap, kept null.
+/// See [`VIEW_LIMIT`]: `null_slot` is the descriptor index kept null for shader clamping.
 pub fn set_view_heap_limit(null_slot: u32) {
     VIEW_LIMIT.store(null_slot, std::sync::atomic::Ordering::Relaxed);
 }
@@ -484,7 +485,7 @@ impl Shader {
         props: (u32, u32),
         bounded: bool,
     ) -> V {
-        // a view index past the host heap (`set_view_heap_limit`) reads its null slot instead
+        // a view index outside the host's title-visible range (`set_view_heap_limit`) reads its null slot instead
         // (the raw twins of buffer views lie past it: such an index comes bounded)
         let limit = if bounded { 0 } else { VIEW_LIMIT.load(std::sync::atomic::Ordering::Relaxed) };
         // (as `dx.op.binary` UMin: a compare and select emitted here made the bitcode invalid)
