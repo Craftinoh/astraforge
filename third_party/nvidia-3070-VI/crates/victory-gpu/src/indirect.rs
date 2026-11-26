@@ -2696,7 +2696,9 @@ void main(uint3 g : SV_GroupID, uint i : SV_GroupIndex) {
             }
             sig.unwrap()
         };
-        // Three records of 65,535 x 16 groups: about half the budget each.
+        // Three records of 65,535 x 16 groups: each is 1,024 below half
+        // the budget, leaving only 2,048 after two have run. A 33-group
+        // record asks for 2,112 and therefore must not run after them.
         let Some((big, big_ptr)) = host.shared_buffer(3 * u64::from(STRIDE)) else {
             return;
         };
@@ -2716,13 +2718,13 @@ void main(uint3 g : SV_GroupID, uint i : SV_GroupIndex) {
                     12,
                 );
             }
-            std::ptr::copy_nonoverlapping([1u32, 1, 1].as_ptr().cast::<u8>(), small_ptr, 12);
+            std::ptr::copy_nonoverlapping([33u32, 1, 1].as_ptr().cast::<u8>(), small_ptr, 12);
             std::ptr::write_bytes(hits_ptr, 0, 256);
         }
         // SAFETY: a live buffer.
         let hits_gpu = unsafe { hits_buf.GetGPUVirtualAddress() };
         for round in 0..2 {
-            // Spends the budget (clamped, not executed), then one group.
+            // Leaves too little budget after the big records for the 33 groups.
             bound(&list, (&big, 0), None, (KIND_DISPATCH, STRIDE, 3)).unwrap();
             let scratch = bound(&list, (&small, 0), None, (KIND_DISPATCH, STRIDE, 1)).unwrap();
             // SAFETY: an open list; the worker's root signature and
@@ -2739,12 +2741,12 @@ void main(uint3 g : SV_GroupID, uint i : SV_GroupIndex) {
             list.reset();
             // SAFETY: the list has run; a mapped buffer.
             let hits = unsafe { (hits_ptr as *const u32).read_volatile() };
-            // The small record comes after the big ones spent the budget:
-            // it runs empty, in every round alike (none carries over).
+            // The small record comes after the big ones leave too little
+            // budget: it runs empty (none carries over between submissions).
             assert_eq!(hits, 0, "round {round}: the spent budget empties the record after it");
         }
         // A recording with only the small record: the budget is empty
-        // again, so it runs.
+        // again, so all 33 groups run.
         let scratch = bound(&list, (&small, 0), None, (KIND_DISPATCH, STRIDE, 1)).unwrap();
         // SAFETY: as above.
         unsafe {
@@ -2759,7 +2761,7 @@ void main(uint3 g : SV_GroupID, uint i : SV_GroupIndex) {
         list.reset();
         // SAFETY: the list has run; a mapped buffer.
         let hits = unsafe { (hits_ptr as *const u32).read_volatile() };
-        assert_eq!(hits, 1, "the budget starts empty at the next submission");
+        assert_eq!(hits, 33, "the budget starts empty at the next submission");
     }
 
     /// Records the dispatch records `groups` (three words each, `step`
@@ -3192,7 +3194,9 @@ void main(uint3 group : SV_GroupID, uint3 thread : SV_DispatchThreadID) {
             };
             assert_eq!(out.iter().filter(|&&v| v == 1 << 22).count(), filled, "{times} times {records}: {out:?}");
             assert!(out.iter().all(|&v| v == 0 || v == 1 << 22));
-            assert_eq!(spent, BUDGET.min((1 << 26) * times * records as u32));
+            // Oversized jobs that do not fit run empty and spend nothing;
+            // only records present in `out` count toward the budget.
+            assert_eq!(spent, BUDGET.min((1 << 26) * times * filled as u32));
         }
     }
 
