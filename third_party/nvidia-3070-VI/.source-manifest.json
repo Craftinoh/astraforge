@@ -1,0 +1,1549 @@
+{
+  "repository": "grimygunnz/nvidia-3070-VI",
+  "commit": "6e9c1dd9fb32daaa855f446560a4d1f8df5f8424",
+  "license": "GPL-3.0 (upstream LICENSE retained)",
+  "files": [
+    {
+      "path": ".cargo/config.toml",
+      "blob": "9741f113e7d9232f8ce681fe876bc3f6105d81ad",
+      "mode": "100644",
+      "size": 49
+    },
+    {
+      "path": ".gitattributes",
+      "blob": "e06f16ef008a43b57b474be764a79d564a7a30a2",
+      "mode": "100644",
+      "size": 127
+    },
+    {
+      "path": ".githooks/pre-commit",
+      "blob": "1b89c975a8f8973bda0171289bd7ccb871001205",
+      "mode": "100644",
+      "size": 128
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "blob": "80e6a359ed3834950f60120e97d4e950fae42f1e",
+      "mode": "100644",
+      "size": 816
+    },
+    {
+      "path": ".gitignore",
+      "blob": "ac9edc3adc5f7670cf87134b9792f9987df4d45f",
+      "mode": "100644",
+      "size": 1320
+    },
+    {
+      "path": ".victory-root",
+      "blob": "b4827501d71b2e3add61a5fc405db060f2711bae",
+      "mode": "100644",
+      "size": 257
+    },
+    {
+      "path": "Cargo.lock",
+      "blob": "29bab8c72233fbd9552e646c79316bc9439df0d7",
+      "mode": "100644",
+      "size": 22158
+    },
+    {
+      "path": "Cargo.toml",
+      "blob": "4e21b692d66103d990003164b6f1e4f700bc4086",
+      "mode": "100644",
+      "size": 2730
+    },
+    {
+      "path": "LICENSE",
+      "blob": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "mode": "100644",
+      "size": 35149
+    },
+    {
+      "path": "Play-VIctory.cmd",
+      "blob": "38410ddb674437a679f8da53283b4f9fce8b8f19",
+      "mode": "100644",
+      "size": 2178
+    },
+    {
+      "path": "README.md",
+      "blob": "a0e1f908aec152ac1e4217a877f24dcf6c5c8e6a",
+      "mode": "100644",
+      "size": 5781
+    },
+    {
+      "path": "apps/victory/Cargo.toml",
+      "blob": "5fddd5b226721a3046e2c8ed8fc2c10403ee2925",
+      "mode": "100644",
+      "size": 903
+    },
+    {
+      "path": "apps/victory/src/census.rs",
+      "blob": "6520bb678f1e397d00a2b65936fbcf134a2d5844",
+      "mode": "100644",
+      "size": 10562
+    },
+    {
+      "path": "apps/victory/src/inspect.rs",
+      "blob": "15a7ff7d94bf000c74d165bf9428569ed40f3508",
+      "mode": "100644",
+      "size": 4669
+    },
+    {
+      "path": "apps/victory/src/main.rs",
+      "blob": "659a65bc055fc6b792e2d5f48b00c218b3db7939",
+      "mode": "100644",
+      "size": 9401
+    },
+    {
+      "path": "apps/victory/src/replay.rs",
+      "blob": "38af935bc23c1633714fddad607cd08635aebc19",
+      "mode": "100644",
+      "size": 19686
+    },
+    {
+      "path": "apps/victory/src/run.rs",
+      "blob": "a64fc23b8be48face0e69990c6a1534b538362ee",
+      "mode": "100644",
+      "size": 20737
+    },
+    {
+      "path": "apps/victory/src/shader.rs",
+      "blob": "1c2028546e2980625fd10d105eff5e540f2750ce",
+      "mode": "100644",
+      "size": 9416
+    },
+    {
+      "path": "apps/victory/src/translate.rs",
+      "blob": "faa68c1206487fa96c4356ce4eb45a17930b4ec7",
+      "mode": "100644",
+      "size": 38816
+    },
+    {
+      "path": "apps/victory/src/warm.rs",
+      "blob": "42faad49b0f52203575d197d94f05aade1a2d6f4",
+      "mode": "100644",
+      "size": 9068
+    },
+    {
+      "path": "apps/victory/tests/census.rs",
+      "blob": "8a2bdae598cece00bdb8220da1a40c42d1a733e5",
+      "mode": "100644",
+      "size": 1130
+    },
+    {
+      "path": "crates/victory-core/Cargo.toml",
+      "blob": "19f69d58bfbbd33be634448a196b869023f8ed2c",
+      "mode": "100644",
+      "size": 551
+    },
+    {
+      "path": "crates/victory-core/src/config.rs",
+      "blob": "eb2d85e2b6f2050c3b284dac23857a06b696675c",
+      "mode": "100644",
+      "size": 8162
+    },
+    {
+      "path": "crates/victory-core/src/lib.rs",
+      "blob": "011df7e121ad65d453c0168da90c19be94f1433e",
+      "mode": "100644",
+      "size": 428
+    },
+    {
+      "path": "crates/victory-core/src/logging.rs",
+      "blob": "b4175420b1e56ee5d75355b33d07d4cd5ecb808b",
+      "mode": "100644",
+      "size": 1161
+    },
+    {
+      "path": "crates/victory-core/src/policy.rs",
+      "blob": "d49acc494c03223f0cb2c2a833a18ed9019a1357",
+      "mode": "100644",
+      "size": 5778
+    },
+    {
+      "path": "crates/victory-formats/Cargo.toml",
+      "blob": "6f3efd957875a75872711b064ce670774da53303",
+      "mode": "100644",
+      "size": 288
+    },
+    {
+      "path": "crates/victory-formats/examples/texture_layout_bench.rs",
+      "blob": "53c3936d9d5b0a00e8575a3cccaaefabe61ae5d1",
+      "mode": "100644",
+      "size": 2512
+    },
+    {
+      "path": "crates/victory-formats/src/bcpack-tables.bin",
+      "blob": "1e548501764588b06e2ed47aa7fed263cd797f3b",
+      "mode": "100644",
+      "size": 77982
+    },
+    {
+      "path": "crates/victory-formats/src/bcpack.rs",
+      "blob": "c8d35378df7fab633cc4370a74655b4bd7db9ac7",
+      "mode": "100644",
+      "size": 57273
+    },
+    {
+      "path": "crates/victory-formats/src/lib.rs",
+      "blob": "f3641779fe4580d3ce3232dc26e985e26a95d392",
+      "mode": "100644",
+      "size": 374
+    },
+    {
+      "path": "crates/victory-formats/src/texture.rs",
+      "blob": "e52d639ed9a0fcdc03436e258c95fdcbae460a91",
+      "mode": "100644",
+      "size": 58978
+    },
+    {
+      "path": "crates/victory-formats/src/xma.rs",
+      "blob": "02c01bd4e4fdda0693a36e7c877aad19de9ecd87",
+      "mode": "100644",
+      "size": 69534
+    },
+    {
+      "path": "crates/victory-formats/src/xma/tables.rs",
+      "blob": "bf8fc43f4c3dec014c072a161982ce220e88ae8a",
+      "mode": "100644",
+      "size": 18596
+    },
+    {
+      "path": "crates/victory-game/Cargo.toml",
+      "blob": "92170b42fd1b55d3486ef5853c1a423b6c67e86d",
+      "mode": "100644",
+      "size": 346
+    },
+    {
+      "path": "crates/victory-game/src/lib.rs",
+      "blob": "affa682b483c9faa6f46ce102315ef3132ae43fc",
+      "mode": "100644",
+      "size": 878
+    },
+    {
+      "path": "crates/victory-game/src/sgd5.rs",
+      "blob": "5605b516228e4348189c332446ef50c1c04e8480",
+      "mode": "100644",
+      "size": 8475
+    },
+    {
+      "path": "crates/victory-gpu/Cargo.toml",
+      "blob": "16c749514e962273295983c68ea3adbc034e5a2d",
+      "mode": "100644",
+      "size": 1516
+    },
+    {
+      "path": "crates/victory-gpu/build.rs",
+      "blob": "9dcfa610025756d08939d13ee9cc50ce977fb58c",
+      "mode": "100644",
+      "size": 1762
+    },
+    {
+      "path": "crates/victory-gpu/src/ab.rs",
+      "blob": "56922e4f087a45a5866d8957f45300ffdd84bbc7",
+      "mode": "100644",
+      "size": 4773
+    },
+    {
+      "path": "crates/victory-gpu/src/ambient.rs",
+      "blob": "b9ec7637a06318188ac96bc14a8cb2b000d3d96a",
+      "mode": "100644",
+      "size": 21097
+    },
+    {
+      "path": "crates/victory-gpu/src/book.rs",
+      "blob": "469952d3120f4cc9de46e1e6043803b80658ebae",
+      "mode": "100644",
+      "size": 28967
+    },
+    {
+      "path": "crates/victory-gpu/src/capture.rs",
+      "blob": "937f5600d85c7e93826c002a0e2998b288dc716f",
+      "mode": "100644",
+      "size": 34805
+    },
+    {
+      "path": "crates/victory-gpu/src/compose.rs",
+      "blob": "dfcf50bd88d8144c8388281d81aa34cadedda2bd",
+      "mode": "100644",
+      "size": 12437
+    },
+    {
+      "path": "crates/victory-gpu/src/console.rs",
+      "blob": "ab7252c576deb431de078510ed9c4782b0d47726",
+      "mode": "100644",
+      "size": 1481
+    },
+    {
+      "path": "crates/victory-gpu/src/copystat.rs",
+      "blob": "3bbb9dd6a16256df8eeb61177900e30bcf22570b",
+      "mode": "100644",
+      "size": 59111
+    },
+    {
+      "path": "crates/victory-gpu/src/cores.rs",
+      "blob": "5877268a086b8027f4ee89f583a52ad52c5024a3",
+      "mode": "100644",
+      "size": 7722
+    },
+    {
+      "path": "crates/victory-gpu/src/descriptor.rs",
+      "blob": "9c3cc2e0f9e7b5343676e5ad298e4225a7bad240",
+      "mode": "100644",
+      "size": 72174
+    },
+    {
+      "path": "crates/victory-gpu/src/descriptor/host.rs",
+      "blob": "176970ba08ce4d1a6fd0f8ba4d75e0f8eba397e9",
+      "mode": "100644",
+      "size": 263414
+    },
+    {
+      "path": "crates/victory-gpu/src/device.rs",
+      "blob": "953639cc36df0e778234087f94a805dbe9e43967",
+      "mode": "100644",
+      "size": 26886
+    },
+    {
+      "path": "crates/victory-gpu/src/draw.rs",
+      "blob": "e05304c85d76f70cf761dec3e2966ca6108c2107",
+      "mode": "100644",
+      "size": 223722
+    },
+    {
+      "path": "crates/victory-gpu/src/dxgi.rs",
+      "blob": "5dfb2180f05e5a1f404146c8b017945428bc1687",
+      "mode": "100644",
+      "size": 11936
+    },
+    {
+      "path": "crates/victory-gpu/src/faultbook.rs",
+      "blob": "1b0db43af51c52cc03d64e01cb35e7ce5a70c1f5",
+      "mode": "100644",
+      "size": 4293
+    },
+    {
+      "path": "crates/victory-gpu/src/fence.rs",
+      "blob": "3ca3d41558e6858fd43d1c1a9fe52b18a7bfdf0f",
+      "mode": "100644",
+      "size": 9975
+    },
+    {
+      "path": "crates/victory-gpu/src/frame.rs",
+      "blob": "8bf432f82290a86125e9a1bb981e7193606271b9",
+      "mode": "100644",
+      "size": 9118
+    },
+    {
+      "path": "crates/victory-gpu/src/host.rs",
+      "blob": "e5a885f939f6315b7c15f4c6b8d88507b293dcc6",
+      "mode": "100644",
+      "size": 482169
+    },
+    {
+      "path": "crates/victory-gpu/src/host/aside.rs",
+      "blob": "b46cf61aaa2027387dea128752a620fe82941038",
+      "mode": "100644",
+      "size": 4007
+    },
+    {
+      "path": "crates/victory-gpu/src/host/awake.rs",
+      "blob": "14f6ea5b74ffab67aa64418a6898f8fb92b3d81e",
+      "mode": "100644",
+      "size": 10172
+    },
+    {
+      "path": "crates/victory-gpu/src/host/card_steps.rs",
+      "blob": "166addd3013a61fdfc7d347083d734babb52d4ad",
+      "mode": "100644",
+      "size": 60067
+    },
+    {
+      "path": "crates/victory-gpu/src/host/indirects.rs",
+      "blob": "282b008d5cb504c5b69046433f91d545512d3eb4",
+      "mode": "100644",
+      "size": 5996
+    },
+    {
+      "path": "crates/victory-gpu/src/host/panel.rs",
+      "blob": "a3d2f9b71e633d88aa06c6aa1f1d766f301d39eb",
+      "mode": "100644",
+      "size": 19843
+    },
+    {
+      "path": "crates/victory-gpu/src/host/place.rs",
+      "blob": "b5a7bb7638cb58f727f519ca9ec80bcd2645a9d6",
+      "mode": "100644",
+      "size": 14041
+    },
+    {
+      "path": "crates/victory-gpu/src/host/send.rs",
+      "blob": "a397db8096a88f9a21b7fb7ef505fb6cf6cebe5e",
+      "mode": "100644",
+      "size": 13729
+    },
+    {
+      "path": "crates/victory-gpu/src/host/spans.rs",
+      "blob": "e8bd804905addfa9ca13c1e80ef810c045dda4fc",
+      "mode": "100644",
+      "size": 8589
+    },
+    {
+      "path": "crates/victory-gpu/src/host/stamps.rs",
+      "blob": "6abbcfb3912aeea001c46cf5c35ae57a1b73dc93",
+      "mode": "100644",
+      "size": 6981
+    },
+    {
+      "path": "crates/victory-gpu/src/host/torn.rs",
+      "blob": "5faef193db390be55490df901b31b1236399e0f4",
+      "mode": "100644",
+      "size": 13636
+    },
+    {
+      "path": "crates/victory-gpu/src/host/traffic.rs",
+      "blob": "f74c6ef549d88dd96046d74810a5d5e417a33e7b",
+      "mode": "100644",
+      "size": 3212
+    },
+    {
+      "path": "crates/victory-gpu/src/host/upcheck.rs",
+      "blob": "d82a0c91f4bd3c7fc5e3128947333830fafa5ede",
+      "mode": "100644",
+      "size": 57730
+    },
+    {
+      "path": "crates/victory-gpu/src/indirect.rs",
+      "blob": "e50f572ca2980df1d5322f344638662939c0b7c2",
+      "mode": "100644",
+      "size": 181342
+    },
+    {
+      "path": "crates/victory-gpu/src/indirect/batch.rs",
+      "blob": "d4f192d1e6d4fa8fd462568ec35d31c049b6638e",
+      "mode": "100644",
+      "size": 11110
+    },
+    {
+      "path": "crates/victory-gpu/src/indirect/bench.rs",
+      "blob": "0e233dbaa0b46e511fc0e9fa4dc11eb5853ea210",
+      "mode": "100644",
+      "size": 19914
+    },
+    {
+      "path": "crates/victory-gpu/src/inplace.rs",
+      "blob": "28f570e5f758016b3a743fa87caba9a707dfe42c",
+      "mode": "100644",
+      "size": 69956
+    },
+    {
+      "path": "crates/victory-gpu/src/land.rs",
+      "blob": "a67fe0bc61c98735773f000e7c72e23b28cbf249",
+      "mode": "100644",
+      "size": 31013
+    },
+    {
+      "path": "crates/victory-gpu/src/land/tests.rs",
+      "blob": "7e59e9d33d58563c0a3496337317b1019013b6a9",
+      "mode": "100644",
+      "size": 21686
+    },
+    {
+      "path": "crates/victory-gpu/src/lib.rs",
+      "blob": "d7bf845b8de4e79936accd9e74ee0d9daf2e5c13",
+      "mode": "100644",
+      "size": 3256
+    },
+    {
+      "path": "crates/victory-gpu/src/list.rs",
+      "blob": "11e39ca69a53723b435a2b02701c70e6a2dd708f",
+      "mode": "100644",
+      "size": 95296
+    },
+    {
+      "path": "crates/victory-gpu/src/list/thin.rs",
+      "blob": "fe9277dd8d4feb2b4dcf2271f18f6adebb0ced34",
+      "mode": "100644",
+      "size": 34752
+    },
+    {
+      "path": "crates/victory-gpu/src/memory.rs",
+      "blob": "b0300943538efc0320735ca5966bcad10656c114",
+      "mode": "100644",
+      "size": 53916
+    },
+    {
+      "path": "crates/victory-gpu/src/object.rs",
+      "blob": "6671d4b2e4f0e3ad92038087d9ef15ff701737ce",
+      "mode": "100644",
+      "size": 20379
+    },
+    {
+      "path": "crates/victory-gpu/src/picked.rs",
+      "blob": "3c9dd208599c64e94a2d7579b70478d5484dd30d",
+      "mode": "100644",
+      "size": 15691
+    },
+    {
+      "path": "crates/victory-gpu/src/pipeline.rs",
+      "blob": "33c238bdf8fcf128f94117b3484e6ea571233b98",
+      "mode": "100644",
+      "size": 36032
+    },
+    {
+      "path": "crates/victory-gpu/src/pipeline/host.rs",
+      "blob": "9c68fd60d826afe546ecf2040ac8341e0dcbbd9f",
+      "mode": "100644",
+      "size": 63790
+    },
+    {
+      "path": "crates/victory-gpu/src/pipeline/known.rs",
+      "blob": "762f920228db76e0e685c28d3347e930c3c0024d",
+      "mode": "100644",
+      "size": 18004
+    },
+    {
+      "path": "crates/victory-gpu/src/pipeline/library.rs",
+      "blob": "a7e974b96379d442759852ebc5611a49a5430b8c",
+      "mode": "100644",
+      "size": 40387
+    },
+    {
+      "path": "crates/victory-gpu/src/pipeline/make.rs",
+      "blob": "a57b8677ad860e9c6d96eee0c0448f53d4878010",
+      "mode": "100644",
+      "size": 26424
+    },
+    {
+      "path": "crates/victory-gpu/src/pool.rs",
+      "blob": "cde4cdbc36646f3d53b4477d10546bd6af3a3805",
+      "mode": "100644",
+      "size": 29476
+    },
+    {
+      "path": "crates/victory-gpu/src/popwatch.rs",
+      "blob": "4e4410f108ad68a365a0ccf7330782186398682b",
+      "mode": "100644",
+      "size": 17483
+    },
+    {
+      "path": "crates/victory-gpu/src/primitive.rs",
+      "blob": "2eea1bbfff5511f87ba715ef3c3361d265b24d55",
+      "mode": "100644",
+      "size": 14277
+    },
+    {
+      "path": "crates/victory-gpu/src/profile.rs",
+      "blob": "26792f4861cc4bda4b5fde07623b9be414d4fef8",
+      "mode": "100644",
+      "size": 112823
+    },
+    {
+      "path": "crates/victory-gpu/src/profile/tests.rs",
+      "blob": "16c57243c1202af43e03f96d59da1a610681370e",
+      "mode": "100644",
+      "size": 37283
+    },
+    {
+      "path": "crates/victory-gpu/src/query.rs",
+      "blob": "749859a569d112a5dc10b3a4dfc54da3a47b7336",
+      "mode": "100644",
+      "size": 4991
+    },
+    {
+      "path": "crates/victory-gpu/src/queue.rs",
+      "blob": "f0035fd6f7e1b93d51221e6fce9e29a4c3075194",
+      "mode": "100644",
+      "size": 50997
+    },
+    {
+      "path": "crates/victory-gpu/src/queue/behind.rs",
+      "blob": "813155c6663264fe42eb6c10a0fa09a4ddf17699",
+      "mode": "100644",
+      "size": 43125
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/edit.rs",
+      "blob": "e4f1f984578bf12d01bb4c4a2479ce8190dadc15",
+      "mode": "100644",
+      "size": 30778
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/gpu.rs",
+      "blob": "97ff62ef3cba77c1a45c0957b4384892c3716220",
+      "mode": "100644",
+      "size": 15196
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/hook.rs",
+      "blob": "e18c3c386e741de71dd59427a95e0a02c608156b",
+      "mode": "100644",
+      "size": 11176
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/mod.rs",
+      "blob": "5fd0b0632deeccf9da20a26918d636f5644ca687",
+      "mode": "100644",
+      "size": 531
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/play.rs",
+      "blob": "3c122283b3d0b88bc10f650868693b03adf87ea6",
+      "mode": "100644",
+      "size": 140010
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/play/diverge.rs",
+      "blob": "de9da1744adcf10f6f4fe5ae58a1412d9c14b0d5",
+      "mode": "100644",
+      "size": 54384
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/play/look.rs",
+      "blob": "62df3bc82d189b02c3a2b65036d296934e9b8542",
+      "mode": "100644",
+      "size": 19443
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/play/merge.rs",
+      "blob": "daddcd02ef41e6bc63a89cac8e3d53d7a945db7c",
+      "mode": "100644",
+      "size": 11038
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/play/pixel.rs",
+      "blob": "e79fce976bd1ccd6a64adbb0fb160ac91baa1d38",
+      "mode": "100644",
+      "size": 31630
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/play/upcopies.rs",
+      "blob": "e2a9cba904f470b70e1459fc63fbde0f46e34b0d",
+      "mode": "100644",
+      "size": 14094
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/pso.rs",
+      "blob": "aec3fbc89df1f73b8d744197a1b9bc5760c7265c",
+      "mode": "100644",
+      "size": 14940
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/record.rs",
+      "blob": "70a1fa48dfa84937f5f5c5193cd8737845fbf378",
+      "mode": "100644",
+      "size": 85848
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/snap.rs",
+      "blob": "6c69042ac21bee509bc818339be7a025a9abbe9d",
+      "mode": "100644",
+      "size": 49078
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/states.rs",
+      "blob": "b7379f4620a14fb94369d0d77541770d74dcd13d",
+      "mode": "100644",
+      "size": 7713
+    },
+    {
+      "path": "crates/victory-gpu/src/replay/wire.rs",
+      "blob": "a5623c24f1462cf4d3e25728aa95616b78c6f99f",
+      "mode": "100644",
+      "size": 28736
+    },
+    {
+      "path": "crates/victory-gpu/src/residency.rs",
+      "blob": "0e701e5df7600790a122b998d3bafdea4c06d493",
+      "mode": "100644",
+      "size": 8009
+    },
+    {
+      "path": "crates/victory-gpu/src/resource.rs",
+      "blob": "fe0eccb64152f2f46215855d09b474a74c63ab66",
+      "mode": "100644",
+      "size": 176754
+    },
+    {
+      "path": "crates/victory-gpu/src/root.rs",
+      "blob": "116f93b15ea6b47a724b2c38516174e689273d44",
+      "mode": "100644",
+      "size": 20691
+    },
+    {
+      "path": "crates/victory-gpu/src/safecopy.rs",
+      "blob": "66bb68ad1edb670eadf9469cb8c5d7cb3e72db86",
+      "mode": "100644",
+      "size": 29809
+    },
+    {
+      "path": "crates/victory-gpu/src/sampler.rs",
+      "blob": "2132273d9ffbe4a17a2a5f2c12617a2e6ec6d7d8",
+      "mode": "100644",
+      "size": 7688
+    },
+    {
+      "path": "crates/victory-gpu/src/shader_cache.rs",
+      "blob": "b291e117cf0db1d0578a4ba0368fb8f997a2360c",
+      "mode": "100644",
+      "size": 14964
+    },
+    {
+      "path": "crates/victory-gpu/src/shadow.rs",
+      "blob": "c69d51e27e95e9949d3b740172439e2e72c7a3a1",
+      "mode": "100644",
+      "size": 252541
+    },
+    {
+      "path": "crates/victory-gpu/src/signature.rs",
+      "blob": "e8ba49ba89f1d02f70a29f1261e645038b768faa",
+      "mode": "100644",
+      "size": 9464
+    },
+    {
+      "path": "crates/victory-gpu/src/switch.rs",
+      "blob": "b5ef27715d27954fbfd97b560c444571771c07a7",
+      "mode": "100644",
+      "size": 2253
+    },
+    {
+      "path": "crates/victory-gpu/src/tdr.rs",
+      "blob": "de0509b0a3a1d653d002ab04e44f60849069e316",
+      "mode": "100644",
+      "size": 4696
+    },
+    {
+      "path": "crates/victory-gpu/src/texback.rs",
+      "blob": "cf7b0e32648dbed653202c048048a9b0ded76c10",
+      "mode": "100644",
+      "size": 10871
+    },
+    {
+      "path": "crates/victory-gpu/src/texture.rs",
+      "blob": "e74973896108ee9af494a44fdc5b82f9840e1ac4",
+      "mode": "100644",
+      "size": 103909
+    },
+    {
+      "path": "crates/victory-gpu/src/texture/ahead.rs",
+      "blob": "2cfdde6a36d382ae74c1554f1c9384c2d9266829",
+      "mode": "100644",
+      "size": 20118
+    },
+    {
+      "path": "crates/victory-gpu/src/tiles.rs",
+      "blob": "6d3c3d8daab6dccf68734759aa175a093e2e1c4e",
+      "mode": "100644",
+      "size": 73070
+    },
+    {
+      "path": "crates/victory-gpu/src/timeline.rs",
+      "blob": "3bdbcf7513d9546f230f7636fc129c0fb0ab5905",
+      "mode": "100644",
+      "size": 2364
+    },
+    {
+      "path": "crates/victory-gpu/src/timeline/hooks.rs",
+      "blob": "83afa26cc4d7054eb9874e428bae9e5d0d5282e5",
+      "mode": "100644",
+      "size": 14544
+    },
+    {
+      "path": "crates/victory-gpu/src/timeline/record.rs",
+      "blob": "fb3b517cac65cdf3ae755e13ecbf1ba5b6f50a35",
+      "mode": "100644",
+      "size": 22337
+    },
+    {
+      "path": "crates/victory-gpu/src/timeline/report.rs",
+      "blob": "d07a5e8b50c36d9870d17d0e1a570d00e8ab0327",
+      "mode": "100644",
+      "size": 41469
+    },
+    {
+      "path": "crates/victory-gpu/src/titlewrite.rs",
+      "blob": "946fa88102abcf84fce2847829b14964593221ca",
+      "mode": "100644",
+      "size": 16626
+    },
+    {
+      "path": "crates/victory-gpu/src/titlewrite/decode.rs",
+      "blob": "11343c95f754840d0d89c7324c60ce18bce160fa",
+      "mode": "100644",
+      "size": 27545
+    },
+    {
+      "path": "crates/victory-gpu/src/upload.rs",
+      "blob": "d6f60e55a9ca901c23a9f6401eb580d85677c8ff",
+      "mode": "100644",
+      "size": 6992
+    },
+    {
+      "path": "crates/victory-gpu/src/watch.rs",
+      "blob": "72feff2496614f050c0a1468b2f7b7657fa42dcd",
+      "mode": "100644",
+      "size": 194392
+    },
+    {
+      "path": "crates/victory-gpu/src/watch_stress.rs",
+      "blob": "1530ebaddf8706e7ffd12e466ab6b38f906f9552",
+      "mode": "100644",
+      "size": 12230
+    },
+    {
+      "path": "crates/victory-gpu/tests/replay.rs",
+      "blob": "9f80bc945504e3212d819df46bedaf511b65fe70",
+      "mode": "100644",
+      "size": 68808
+    },
+    {
+      "path": "crates/victory-gpu/tests/replay_big.rs",
+      "blob": "9f6039962fb9491b48dd29561cdf190bf55a2eba",
+      "mode": "100644",
+      "size": 14570
+    },
+    {
+      "path": "crates/victory-hle/Cargo.toml",
+      "blob": "d91f14fe2b80bc354f6b2f81ff750dad53efb88f",
+      "mode": "100644",
+      "size": 1641
+    },
+    {
+      "path": "crates/victory-hle/src/host.rs",
+      "blob": "51998217463669a669fe057001616a4272e375fa",
+      "mode": "100644",
+      "size": 9917
+    },
+    {
+      "path": "crates/victory-hle/src/image_watch.rs",
+      "blob": "e5d6856fdafa7b9939392e20acd2899ad1c39e7a",
+      "mode": "100644",
+      "size": 3820
+    },
+    {
+      "path": "crates/victory-hle/src/lib.rs",
+      "blob": "2a522f79d2cce6b91400bab7cbcb40bc9563a990",
+      "mode": "100644",
+      "size": 4920
+    },
+    {
+      "path": "crates/victory-hle/src/modules/apu.rs",
+      "blob": "9027da0a4592504e133117905f49b50b4d5a54b2",
+      "mode": "100644",
+      "size": 23607
+    },
+    {
+      "path": "crates/victory-hle/src/modules/audio.rs",
+      "blob": "0951144440d4879a283ff97a09bbab059fbce8a9",
+      "mode": "100644",
+      "size": 52503
+    },
+    {
+      "path": "crates/victory-hle/src/modules/audio/capture.rs",
+      "blob": "f39bb3daec4a154a9e681c565698b4148630977d",
+      "mode": "100644",
+      "size": 9301
+    },
+    {
+      "path": "crates/victory-hle/src/modules/d3d12x.rs",
+      "blob": "a5de7c41d3f25e0f7a39ad25bd22d4b3ac96d414",
+      "mode": "100644",
+      "size": 4731
+    },
+    {
+      "path": "crates/victory-hle/src/modules/display.rs",
+      "blob": "527b7dc56dcb23266de4f87046ae73d16cc4c59e",
+      "mode": "100644",
+      "size": 6854
+    },
+    {
+      "path": "crates/victory-hle/src/modules/dsp.rs",
+      "blob": "87c456aed3ff25ecc7b3244bde7ff1eaee359231",
+      "mode": "100644",
+      "size": 9310
+    },
+    {
+      "path": "crates/victory-hle/src/modules/dstorage.rs",
+      "blob": "14911cd5085f469520ca794841f899a6a4764bf8",
+      "mode": "100644",
+      "size": 96971
+    },
+    {
+      "path": "crates/victory-hle/src/modules/files.rs",
+      "blob": "1dacc107e7f8be26f6433b1d052b0b7378ad44c4",
+      "mode": "100644",
+      "size": 36310
+    },
+    {
+      "path": "crates/victory-hle/src/modules/gameinput.rs",
+      "blob": "d8e705636f1c61b68b7556745647a6b4e6af409f",
+      "mode": "100644",
+      "size": 57264
+    },
+    {
+      "path": "crates/victory-hle/src/modules/kernel.rs",
+      "blob": "de8954664c5c52765d2402a3c94dc687491c237d",
+      "mode": "100644",
+      "size": 32033
+    },
+    {
+      "path": "crates/victory-hle/src/modules/lifecycle.rs",
+      "blob": "09c6baa69c86654b0536f6adebfbd14ecd705e1a",
+      "mode": "100644",
+      "size": 21518
+    },
+    {
+      "path": "crates/victory-hle/src/modules/media.rs",
+      "blob": "9e63092aff6036b2b12cf30fe1f34bf33675464b",
+      "mode": "100644",
+      "size": 20739
+    },
+    {
+      "path": "crates/victory-hle/src/modules/mod.rs",
+      "blob": "7f8a9310feafcf3da395484345edb347d7bbbd51",
+      "mode": "100644",
+      "size": 1746
+    },
+    {
+      "path": "crates/victory-hle/src/modules/net.rs",
+      "blob": "d7360c51f54edbea82bea3ccc5d5e23f0d4dcc8e",
+      "mode": "100644",
+      "size": 36474
+    },
+    {
+      "path": "crates/victory-hle/src/modules/rpcrt4.rs",
+      "blob": "ca9eac0443a89247b65b63b644b90e0501d1b94f",
+      "mode": "100644",
+      "size": 13478
+    },
+    {
+      "path": "crates/victory-hle/src/modules/speech.rs",
+      "blob": "15e8eca869662fbcc72733bc417dad1e0295a428",
+      "mode": "100644",
+      "size": 5485
+    },
+    {
+      "path": "crates/victory-hle/src/modules/storage.rs",
+      "blob": "600cbad97c0586d5d125895d968f81824dd5450d",
+      "mode": "100644",
+      "size": 7993
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xasync.rs",
+      "blob": "d08d4f6bf1b44e1668ca2c6353e271cdedf7a569",
+      "mode": "100644",
+      "size": 58428
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xg.rs",
+      "blob": "eb78ec58bea2183cb75adb2409e0de78607324a5",
+      "mode": "100644",
+      "size": 24939
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xgame.rs",
+      "blob": "e1bc885eae4ab52d534b36b8cf469e8c22c79f4c",
+      "mode": "100644",
+      "size": 10211
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xgameruntime.rs",
+      "blob": "b3f5963fce980cfde3df233e46bc3aea4f30aef4",
+      "mode": "100644",
+      "size": 11897
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xgamesave.rs",
+      "blob": "29db201987d10563f005d3f4fde8e00134cb2216",
+      "mode": "100644",
+      "size": 54338
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xgameui.rs",
+      "blob": "f93fa1b0d5b012c0e042600fa17dfde1d45762df",
+      "mode": "100644",
+      "size": 15003
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xmem.rs",
+      "blob": "e074582a162f365a282b1447cac84b02a21c9ec2",
+      "mode": "100644",
+      "size": 101419
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xnetworking.rs",
+      "blob": "01bc552a1707ce357238392c5643e27a1602e93f",
+      "mode": "100644",
+      "size": 8991
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xpackage.rs",
+      "blob": "9fad9a30f5271e76b9c5e312b0482de36f3f96ec",
+      "mode": "100644",
+      "size": 12851
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xstore.rs",
+      "blob": "4cb6eb56b11081bec9c675a76b5e81fa8a14df87",
+      "mode": "100644",
+      "size": 20686
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xsystem.rs",
+      "blob": "bf091eb4e885f6a8116908e186f19571ebd6eefc",
+      "mode": "100644",
+      "size": 12933
+    },
+    {
+      "path": "crates/victory-hle/src/modules/xuser.rs",
+      "blob": "60193815942717b2f436b7f39953f043d3ae44b0",
+      "mode": "100644",
+      "size": 14234
+    },
+    {
+      "path": "crates/victory-hle/src/registry.rs",
+      "blob": "e8744b48e784f9a467598d4b618fbf9fce373354",
+      "mode": "100644",
+      "size": 2530
+    },
+    {
+      "path": "crates/victory-hle/src/runtime.rs",
+      "blob": "b4f8dbea7eaf0216283be3a6f65d9ae1fe7379bc",
+      "mode": "100644",
+      "size": 12619
+    },
+    {
+      "path": "crates/victory-hle/tests/no_dll_planting.rs",
+      "blob": "4018ee31433951cb5814d553da270376f1c8a90d",
+      "mode": "100644",
+      "size": 1036
+    },
+    {
+      "path": "crates/victory-loader/Cargo.toml",
+      "blob": "0f3497b00e2cd929c3e155a10bcf27a762252d98",
+      "mode": "100644",
+      "size": 956
+    },
+    {
+      "path": "crates/victory-loader/src/console_insn.rs",
+      "blob": "1be130bbf596567dbfa9e6a6616be1417d90f15c",
+      "mode": "100644",
+      "size": 31517
+    },
+    {
+      "path": "crates/victory-loader/src/console_insn_decode.rs",
+      "blob": "08142f8b7373960659abc0f986bb767b6422f63c",
+      "mode": "100644",
+      "size": 11984
+    },
+    {
+      "path": "crates/victory-loader/src/crash.rs",
+      "blob": "f22dbabc13e66a7a52457229ab2f1951d1da8da9",
+      "mode": "100644",
+      "size": 61127
+    },
+    {
+      "path": "crates/victory-loader/src/lib.rs",
+      "blob": "c99eba4050f20fbd4042b8db8b636f7f1875f710",
+      "mode": "100644",
+      "size": 2608
+    },
+    {
+      "path": "crates/victory-loader/src/prepare.rs",
+      "blob": "c8935081bf0a661a2a6d343629e4bc67c19e565a",
+      "mode": "100644",
+      "size": 11611
+    },
+    {
+      "path": "crates/victory-loader/src/profile.rs",
+      "blob": "d9142dbe3e6a5e4dcbc779164834a7756f146607",
+      "mode": "100644",
+      "size": 7288
+    },
+    {
+      "path": "crates/victory-loader/src/publish.rs",
+      "blob": "b1f7896c6cafda551f6d630de2d944262b4aee8d",
+      "mode": "100644",
+      "size": 2930
+    },
+    {
+      "path": "crates/victory-loader/src/resolve.rs",
+      "blob": "2da129176f5532f4c82477fe59cdc8fffcf78611",
+      "mode": "100644",
+      "size": 927
+    },
+    {
+      "path": "crates/victory-loader/src/stacks.rs",
+      "blob": "2e2b727b737b14e024a9b3e4cc67be3592dec31c",
+      "mode": "100644",
+      "size": 9072
+    },
+    {
+      "path": "crates/victory-loader/src/threads.rs",
+      "blob": "903aebd4cffc7e4a9a05b12f98068697a972f6f3",
+      "mode": "100644",
+      "size": 16411
+    },
+    {
+      "path": "crates/victory-loader/src/thunks.rs",
+      "blob": "48a799823ce5a434093272a6dadeb2f3cdb698f0",
+      "mode": "100644",
+      "size": 6926
+    },
+    {
+      "path": "crates/victory-loader/src/tls.rs",
+      "blob": "3f65dd2306d7ee146250c8a4c2388129e3000cf8",
+      "mode": "100644",
+      "size": 8688
+    },
+    {
+      "path": "crates/victory-loader/src/windows.rs",
+      "blob": "a0375efd5af0e55c715521979d16d028177f5f4d",
+      "mode": "100644",
+      "size": 16454
+    },
+    {
+      "path": "crates/victory-loader/src/write_sites.rs",
+      "blob": "f1167e3702345fc4e6ee5146ad7df107f4b7f2bd",
+      "mode": "100644",
+      "size": 23316
+    },
+    {
+      "path": "crates/victory-loader/tests/load_probe.rs",
+      "blob": "cf1111bda1668869164642525a40f2145cb86c8a",
+      "mode": "100644",
+      "size": 9920
+    },
+    {
+      "path": "crates/victory-loader/tests/title_dlls.rs",
+      "blob": "49101bf8cc8832cdfe3a8f5c0f6e71429c265dc5",
+      "mode": "100644",
+      "size": 622
+    },
+    {
+      "path": "crates/victory-pe/Cargo.toml",
+      "blob": "0f7c457eed8037776e8c5f2213adf7f9d5560951",
+      "mode": "100644",
+      "size": 331
+    },
+    {
+      "path": "crates/victory-pe/src/image.rs",
+      "blob": "b22808bfba0ce59ab1e9d1e6110d1d0251bf4707",
+      "mode": "100644",
+      "size": 24988
+    },
+    {
+      "path": "crates/victory-pe/src/implib.rs",
+      "blob": "9378a7be03c7861dc25650ff60f921cbcb9bf8f4",
+      "mode": "100644",
+      "size": 20362
+    },
+    {
+      "path": "crates/victory-pe/src/layout.rs",
+      "blob": "3960fdbb8a0e03812065c46f463fb2a8d74fce2e",
+      "mode": "100644",
+      "size": 10588
+    },
+    {
+      "path": "crates/victory-pe/src/lib.rs",
+      "blob": "89cd915536e39a19363c8677dfcebc8a4f463f81",
+      "mode": "100644",
+      "size": 1150
+    },
+    {
+      "path": "crates/victory-pipeline/Cargo.toml",
+      "blob": "f5d5ccb338b8e7c157bdddf5206058e3588674fb",
+      "mode": "100644",
+      "size": 470
+    },
+    {
+      "path": "crates/victory-pipeline/src/cache.rs",
+      "blob": "9692d2935d7b4a95eac3ed39f22476c39114d8ec",
+      "mode": "100644",
+      "size": 7635
+    },
+    {
+      "path": "crates/victory-pipeline/src/lib.rs",
+      "blob": "c417e5c1a6142558de11ba840ab18997d331d2b2",
+      "mode": "100644",
+      "size": 988
+    },
+    {
+      "path": "crates/victory-shader/Cargo.toml",
+      "blob": "0c03ffaaabb900ef6d6527aa1f36c60d0d22aa1c",
+      "mode": "100644",
+      "size": 1115
+    },
+    {
+      "path": "crates/victory-shader/benches/guard_runs.rs",
+      "blob": "ae0149251f1b1320329c3554048c10cf74831efd",
+      "mode": "100644",
+      "size": 1449
+    },
+    {
+      "path": "crates/victory-shader/build.rs",
+      "blob": "b10212507580930db77c14d9757f942bb6b3e09c",
+      "mode": "100644",
+      "size": 2543
+    },
+    {
+      "path": "crates/victory-shader/src/bvh.rs",
+      "blob": "3f79f8220195a1c6c406a8708d255e932fa051d1",
+      "mode": "100644",
+      "size": 29743
+    },
+    {
+      "path": "crates/victory-shader/src/dxbc.rs",
+      "blob": "8d5bd73ee2c4cf30aaa62b147605f30d9cfb3484",
+      "mode": "100644",
+      "size": 6100
+    },
+    {
+      "path": "crates/victory-shader/src/dxil.rs",
+      "blob": "8c7a71ce62bc023cd7d21671754029ca76e2a106",
+      "mode": "100644",
+      "size": 6706
+    },
+    {
+      "path": "crates/victory-shader/src/emit/bitcode.rs",
+      "blob": "18e0a31d7aa28a283ae9a11df74943daca5bf7ec",
+      "mode": "100644",
+      "size": 42014
+    },
+    {
+      "path": "crates/victory-shader/src/emit/bitcode/census.rs",
+      "blob": "03eeccfd7bf1681fc642af57e2335d2ef3e406d8",
+      "mode": "100644",
+      "size": 6164
+    },
+    {
+      "path": "crates/victory-shader/src/emit/bitcode/opt.rs",
+      "blob": "d3ce5cd3ad44b09528379de542d8b73a5fc9749d",
+      "mode": "100644",
+      "size": 86278
+    },
+    {
+      "path": "crates/victory-shader/src/emit/container.rs",
+      "blob": "9ed2b78bd017f5c6243fc9561b2ea152b216ab99",
+      "mode": "100644",
+      "size": 17260
+    },
+    {
+      "path": "crates/victory-shader/src/emit/cube_lod_tests.rs",
+      "blob": "96c79a3878b38bf2058be32f7d7712123b7ec163",
+      "mode": "100644",
+      "size": 5121
+    },
+    {
+      "path": "crates/victory-shader/src/emit/diff_tests.rs",
+      "blob": "68115d754057a107c26f0c71c1428d023ddf72e0",
+      "mode": "100644",
+      "size": 52325
+    },
+    {
+      "path": "crates/victory-shader/src/emit/host.rs",
+      "blob": "8bfb9d7f9faff06c3dc68a6d3d9cbf8c8f0b498d",
+      "mode": "100644",
+      "size": 63952
+    },
+    {
+      "path": "crates/victory-shader/src/emit/intersect.rs",
+      "blob": "b32afa897dc2fe2d8b7157f0b9097e0a4cc81923",
+      "mode": "100644",
+      "size": 26190
+    },
+    {
+      "path": "crates/victory-shader/src/emit/intersect_tests.rs",
+      "blob": "f2eddab68b4280e213517077472aa538261c4754",
+      "mode": "100644",
+      "size": 26063
+    },
+    {
+      "path": "crates/victory-shader/src/emit/lower.rs",
+      "blob": "000330fe541b4f0899eaf1065fdffe36cfb414ae",
+      "mode": "100644",
+      "size": 585460
+    },
+    {
+      "path": "crates/victory-shader/src/emit/mod.rs",
+      "blob": "9aeeaf5cb7345d510baeb4aee1811f903ed31ef3",
+      "mode": "100644",
+      "size": 126881
+    },
+    {
+      "path": "crates/victory-shader/src/emit/own_bits.rs",
+      "blob": "64aaba8f5602bbd595432e7ab8f62bd1d9391891",
+      "mode": "100644",
+      "size": 36847
+    },
+    {
+      "path": "crates/victory-shader/src/emit/permlane_tests.rs",
+      "blob": "3e6826ca84373ec55706ddc94a29bf35259bab48",
+      "mode": "100644",
+      "size": 10804
+    },
+    {
+      "path": "crates/victory-shader/src/emit/probe_tests.rs",
+      "blob": "fd109ba573ea01a41dcf41baf87386025597257e",
+      "mode": "100644",
+      "size": 3055
+    },
+    {
+      "path": "crates/victory-shader/src/emit/rect.rs",
+      "blob": "9ec80fd8e8f8ec1f4eb792632bff2d74f5c95fae",
+      "mode": "100644",
+      "size": 19230
+    },
+    {
+      "path": "crates/victory-shader/src/emit/sampler.rs",
+      "blob": "ca010e593d55f5fed31cfbe76c192744ab4fa8e3",
+      "mode": "100644",
+      "size": 7483
+    },
+    {
+      "path": "crates/victory-shader/src/emit/shader.rs",
+      "blob": "4d5f921906219f29c82a783e29d38810b6f988de",
+      "mode": "100644",
+      "size": 40756
+    },
+    {
+      "path": "crates/victory-shader/src/emit/size_tests.rs",
+      "blob": "9c78bf442a86c6ecc42a18dcdc1f4cdfca6da082",
+      "mode": "100644",
+      "size": 13499
+    },
+    {
+      "path": "crates/victory-shader/src/emit/threading.rs",
+      "blob": "01bd4febafaf9bcdcab831da0821ce4e16a68dfb",
+      "mode": "100644",
+      "size": 7671
+    },
+    {
+      "path": "crates/victory-shader/src/emit/validator.rs",
+      "blob": "32171c748b2c129a1b4f35b0a33580cfc88ed793",
+      "mode": "100644",
+      "size": 7713
+    },
+    {
+      "path": "crates/victory-shader/src/emit/valu_tests.rs",
+      "blob": "662245260a2c883706311ef017d88b844c9d8dba",
+      "mode": "100644",
+      "size": 90564
+    },
+    {
+      "path": "crates/victory-shader/src/emit/waterfall_tests.rs",
+      "blob": "85e2b1a1be1f88510626bf7a7974328bc41389ad",
+      "mode": "100644",
+      "size": 16818
+    },
+    {
+      "path": "crates/victory-shader/src/emit/wave.rs",
+      "blob": "56f981bde7bddc25bf32abf51f82f4c9b82b272b",
+      "mode": "100644",
+      "size": 47844
+    },
+    {
+      "path": "crates/victory-shader/src/emit/wave64_tests.rs",
+      "blob": "5d1557bdfeb8ac5edc767af07b6a664ec63464c8",
+      "mode": "100644",
+      "size": 31452
+    },
+    {
+      "path": "crates/victory-shader/src/gfx10/fields.rs",
+      "blob": "bcc0dd3e36eba7849f5d3ade38c684491e57cf1a",
+      "mode": "100644",
+      "size": 30491
+    },
+    {
+      "path": "crates/victory-shader/src/gfx10/mod.rs",
+      "blob": "719b346ff131dcd7b30d25a29e7ce5edb61c4122",
+      "mode": "100644",
+      "size": 18074
+    },
+    {
+      "path": "crates/victory-shader/src/gfx10/opcodes.rs",
+      "blob": "d1ba275aac7d832ca2e2feefe5a3f671f6c797b7",
+      "mode": "100644",
+      "size": 42194
+    },
+    {
+      "path": "crates/victory-shader/src/gfx10/sp3.rs",
+      "blob": "6f0795f12e2c52ceb96e71796754616e2f3b1213",
+      "mode": "100644",
+      "size": 30420
+    },
+    {
+      "path": "crates/victory-shader/src/io.rs",
+      "blob": "ba53eb0591d04fbf7bea9a77421d7beaef88d1e7",
+      "mode": "100644",
+      "size": 33908
+    },
+    {
+      "path": "crates/victory-shader/src/ir.rs",
+      "blob": "cb79fb6684c4040e8fb8feb068d3062c4b2a83f1",
+      "mode": "100644",
+      "size": 79988
+    },
+    {
+      "path": "crates/victory-shader/src/lib.rs",
+      "blob": "30b195262ecc61a3bf8372c956f5269f1c7045f7",
+      "mode": "100644",
+      "size": 1291
+    },
+    {
+      "path": "crates/victory-shader/src/native.rs",
+      "blob": "b5c0222df313f9d744a07bace8787b4e13b3be45",
+      "mode": "100644",
+      "size": 46105
+    },
+    {
+      "path": "crates/victory-shader/src/resource.rs",
+      "blob": "7c96a79eff66bce3793d6a1cca07eddc2b5f7176",
+      "mode": "100644",
+      "size": 166933
+    },
+    {
+      "path": "crates/victory-shader/src/spill.rs",
+      "blob": "a0feb6aeb38795a4218a137505b2842a7172569d",
+      "mode": "100644",
+      "size": 14632
+    },
+    {
+      "path": "crates/victory-shader/src/structure.rs",
+      "blob": "719805d84a9ded2a488cdaea5ba9b7496f2e8d19",
+      "mode": "100644",
+      "size": 70530
+    },
+    {
+      "path": "docs/README-cool_fox.md",
+      "blob": "2f98b05f9b230eaa1c38c2bd343bd8c1dcc9b589",
+      "mode": "100644",
+      "size": 6724
+    },
+    {
+      "path": "docs/README-fxceless.md",
+      "blob": "44885da0fad46fd0302280843340a172d68827c7",
+      "mode": "100644",
+      "size": 20560
+    },
+    {
+      "path": "docs/architecture.md",
+      "blob": "90baaf9b6648ef3d8e017605ffbb0abdc138b3d8",
+      "mode": "100644",
+      "size": 5399
+    },
+    {
+      "path": "docs/asset-policy.md",
+      "blob": "e895aade40fa26890ac1c80aee6727530a779ec1",
+      "mode": "100644",
+      "size": 2591
+    },
+    {
+      "path": "docs/bug-journal.md",
+      "blob": "f41e72a8abd10e795089f285c5e0d54c65a219da",
+      "mode": "100644",
+      "size": 10372
+    },
+    {
+      "path": "docs/findings.md",
+      "blob": "a21dc4ad7ec50e1ba6d5b7ba3af855db2dc91d7a",
+      "mode": "100644",
+      "size": 6516
+    },
+    {
+      "path": "docs/fork-ray-tracing.md",
+      "blob": "bbca8717c66ad7d28da6ac2f272f222403908d89",
+      "mode": "100644",
+      "size": 10125
+    },
+    {
+      "path": "docs/nvidia-8gb.md",
+      "blob": "203837964c289481cfb04a6e712a06f30b387392",
+      "mode": "100644",
+      "size": 13945
+    },
+    {
+      "path": "docs/replay.md",
+      "blob": "11c01d65f397753e6231603116efc853871cf78a",
+      "mode": "100644",
+      "size": 10976
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "blob": "080921b01e3424fe578ea90aaea25d16c70af919",
+      "mode": "100644",
+      "size": 123
+    },
+    {
+      "path": "rustfmt.toml",
+      "blob": "8d1691c59ec3a8442ab9b1df3090a2a505e1f72e",
+      "mode": "100644",
+      "size": 48
+    },
+    {
+      "path": "scripts/play-guarded.ps1",
+      "blob": "ca963a9c79d42804b4ca5239e477ab3338ee6ecb",
+      "mode": "100644",
+      "size": 6078
+    },
+    {
+      "path": "scripts/play.ps1",
+      "blob": "10fda8b3c112227f06cbbc98609fa88444c7068e",
+      "mode": "100644",
+      "size": 2330
+    },
+    {
+      "path": "scripts/score.ps1",
+      "blob": "37a56bc9f96fd65cfeeb5092857b65be9d0c23f2",
+      "mode": "100644",
+      "size": 2393
+    },
+    {
+      "path": "tests/fixtures/hle-probe/Cargo.lock",
+      "blob": "354c81d8f1c395ff66a0538729d21399e3306671",
+      "mode": "100644",
+      "size": 153
+    },
+    {
+      "path": "tests/fixtures/hle-probe/Cargo.toml",
+      "blob": "6c7f87b22102bee1c7895465fadb18426bcce2c9",
+      "mode": "100644",
+      "size": 481
+    },
+    {
+      "path": "tests/fixtures/hle-probe/build.rs",
+      "blob": "45ab457ed05885bb4e07afd182c0b1b108cf33c6",
+      "mode": "100644",
+      "size": 143
+    },
+    {
+      "path": "tests/fixtures/hle-probe/src/lib.rs",
+      "blob": "1eca794ce381242c400aa966da4a57192c1df74e",
+      "mode": "100644",
+      "size": 3994
+    },
+    {
+      "path": "victory.example.toml",
+      "blob": "6aa1afe4662ba8ca2e6c011097de75b23b592b9e",
+      "mode": "100644",
+      "size": 778
+    },
+    {
+      "path": "xtask/Cargo.toml",
+      "blob": "d8e74bfea844790ab2001d9ee57448c3772b381a",
+      "mode": "100644",
+      "size": 348
+    },
+    {
+      "path": "xtask/src/main.rs",
+      "blob": "911ed8087c47ac828c320ed0c675f1e601a82eaf",
+      "mode": "100644",
+      "size": 1547
+    },
+    {
+      "path": "xtask/src/policy.rs",
+      "blob": "a0dc01447f2a6b5bbbf78fd23fbd063b1f893848",
+      "mode": "100644",
+      "size": 10082
+    }
+  ]
+}
