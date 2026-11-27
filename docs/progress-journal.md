@@ -429,3 +429,25 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
   - Vice-Tay #343 (`aa917f3f`, share completed heap-sync rounds);
   - Vice-Tay `b9ef9252` (plan card steps once);
   - fxceless `VICTORY_DYNAMIC_WAIT` (lock stall fix).
+
+## 2026-11-27 (late night) — where the CPU goes, scratch-pool fix, BCPack assessment
+
+- Host buffer churn: a diagnostics-only count of upload and shared buffers by requesting source line was added (`note_made_at`). In about 100 s of play the largest sources were:
+  - list scratch chunks: about 4,800 upload buffers;
+  - list uploads: about 2,900 shared;
+  - title-memory windows (`shadow.rs`): about 900 shared, 4 GB.
+- Cause of the scratch churn: the sweep emptied the scratch pool every second under host memory pressure. Free physical memory stays near 1.3 GB, under the 3 GB mark, while the process holds about 17 GB.
+- Fix `54e24f3`: keep the newest 64 MB (`VICTORY_SPARE_UNDER_PRESSURE_MB`, `0` restores the old behaviour).
+  - Six interleaved runs of one binary: scratch creations −78 %, all host buffers about −30 %.
+  - Internal fps unchanged (new 9.3/9.7/10.8, old 9.2/9.9/10.8). Churn was not the frame-rate limit.
+- CPU by named thread, from the stack-dump thread names joined with `process-threads.csv` (run K):
+  - Loading (208 CPU-s): D3D background threads 31 %, title and unnamed threads 29 %, our pipeline threads 25 %, DirectStorage/BCPack 7 %.
+  - World (494 CPU-s): title and unnamed threads (including the driver's) 50 %, list translation 16 %, DirectStorage/BCPack 8 %, submit 6 %.
+- Pipeline library: all 2,773 host pipelines were loaded from the library (`made=0`) within 29 s of launch. The driver's background CPU at start-up is that load, not recompilation. "World reached" in automated runs also includes menus crossed by scripted input every 3 s, so it is not pure loading time.
+- BCPack assessment:
+  - Decoding is 7–8 % of process CPU in both phases, and the decoded data must land in title memory, which our texture path then re-reads and uploads.
+  - A GPU decoder (candidate: `POMXARK/bcpack-gpu-sdk`, MIT/Apache, 2 days old, self-reported benchmarks, prebuilt DXIL) would add a GPU→CPU→GPU round trip unless the texture path is redesigned to receive decoded blocks directly.
+  - Not pursued now. If revisited: rebuild its HLSL from source, verify byte-exact output against `victory-formats::bcpack` on local streams, then measure loading time.
+  - `Geolm/bc_packed` is a different format (its own BC re-compressor), not Xbox BCPack.
+- Tests: `victory-gpu` lib 357 passed / 34 ignored, and with diagnostics 416 / 35.
+- Next: the frame is serialized on the single submit thread (82–147 ms worked per frame, title threads waiting 50–87 ms at presents). It needs a submit-path trace with timestamps per phase (heap sync, card steps, copy-back) rather than more stack samples.
