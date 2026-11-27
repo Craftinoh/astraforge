@@ -991,6 +991,12 @@ fn create() -> windows::core::Result<Host> {
 }
 
 impl Host {
+    /// PCI vendor ID of the adapter running the host device.
+    pub(crate) fn adapter_vendor_id(&self) -> Option<u32> {
+        // SAFETY: a plain query on the adapter retained with this device.
+        unsafe { self.adapter.as_ref()?.GetDesc1() }.ok().map(|desc| desc.VendorId)
+    }
+
     /// The driver's version, as the system counts it (0: not known).
     pub(crate) fn driver(&self) -> i64 {
         let adapter = self.adapter.as_ref();
