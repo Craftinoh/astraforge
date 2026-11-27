@@ -27,7 +27,9 @@ The contributor can report a machine profile without editing shader code. If the
 3. Capture a local hardware inventory:
 
    ```powershell
-   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Collect-AstraForgeHardware.ps1
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Collect-AstraForgeHardware.ps1 `
+     -OutputPath .\out\hardware-latest.json `
+     -DxDiagReportPath .\out\dxdiag-latest.txt
    ```
 
    The raw report under `out/` is local and ignored by Git. Use `docs/templates/hardware-report.template.md` to prepare a separately reviewed, sanitized handoff. Record unknown and user-reported values as such; do not infer effective memory clocks, ReBAR, feature support, or adapter selection.

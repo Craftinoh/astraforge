@@ -9,7 +9,9 @@ Copy [`templates/hardware-report.template.md`](templates/hardware-report.templat
 The local collector is:
 
 ```powershell
-.\tools\Collect-AstraForgeHardware.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Collect-AstraForgeHardware.ps1 `
+  -OutputPath .\out\hardware-latest.json `
+  -DxDiagReportPath .\out\dxdiag-latest.txt
 ```
 
 It writes a raw report below ignored `out/`. Review and manually sanitize it before sharing. Check `git status --short` and the final diff so a raw report cannot be accidentally staged.
