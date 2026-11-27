@@ -129,3 +129,9 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - At 2026-11-27 01:23 CET, Windows reported 10.05 GiB available commit, below the launcher's default 12 GiB preflight floor. `nvidia-smi` reported 1,660 MiB used and 6,358 MiB free globally; this is desktop-wide and not per-process title residency. DXGI reported 7,249 MiB budget for the collector process, which is not the eventual renderer process budget.
 - Source audit confirms runtime code already queries the renderer's own `IDXGIAdapter3` local/non-local budgets and adapts title-buffer residency to local DXGI budget. The current presenter obtains swap-chain dimensions from the title's presented resource. Its two-plane compositor scales planes during composition, but there is no verified independent 1280x720 internal render control or separately configured 1920x1080 output path.
 - The raw hardware and DxDiag files stay under ignored `out/`; they are not published. No game directory was configured, so no launch or gameplay measurement was attempted.
+
+## 2026-11-27 — workspace lint audit
+
+- Ran the repository-pinned `cargo clippy --locked --workspace --all-targets --message-format=short` against the imported source using the external build target directory. Clippy exited successfully with warnings, not errors.
+- Remaining warnings span redundant `drop(Copy)` expressions, an unannotated function-pointer transmute, precedence/style suggestions, dead diagnostic/test helpers, and a large enum layout. No blanket `cargo clippy --fix` was run; each warning needs call-path and behavior review before changing upstream source.
+- Rechecked the existing Release and diagnostic executable hashes and Release `--help`; both artifacts remain available outside Git. These checks do not add gameplay, image-quality, or FPS evidence.
