@@ -760,6 +760,37 @@ pub(crate) static PREPARING: [std::sync::atomic::AtomicU64; 4] = [
 /// For the memory line: against what is alive, they show what was let go.
 pub(crate) static MADE: [std::sync::atomic::AtomicU64; 6] = [const { std::sync::atomic::AtomicU64::new(0) }; 6];
 
+/// Diagnostics: upload and shared buffers made, by the source line that
+/// asked for them (count, bytes). Said at every 512th, the ten busiest,
+/// to find which buffers a pool would spare the driver from making and
+/// destroying every frame.
+#[cfg(feature = "diagnostics")]
+type MadeAt = std::collections::HashMap<(&'static str, u32, bool), (u64, u64)>;
+#[cfg(feature = "diagnostics")]
+static MADE_AT: std::sync::Mutex<Option<MadeAt>> = std::sync::Mutex::new(None);
+
+#[cfg(feature = "diagnostics")]
+fn note_made_at(at: &'static std::panic::Location<'static>, shared: bool, size: u64) {
+    let mut map = MADE_AT.lock().unwrap_or_else(|e| e.into_inner());
+    let map = map.get_or_insert_with(Default::default);
+    let entry = map.entry((at.file(), at.line(), shared)).or_default();
+    entry.0 += 1;
+    entry.1 += size;
+    let all: u64 = map.values().map(|v| v.0).sum();
+    if all.is_multiple_of(512) {
+        let mut top: Vec<_> = map.iter().collect();
+        top.sort_by_key(|(_, v)| std::cmp::Reverse(v.0));
+        let said: Vec<String> = top
+            .iter()
+            .take(10)
+            .map(|((file, line, shared), (n, bytes))| {
+                format!("{file}:{line} {} {n}x {} MB", if *shared { "shared" } else { "upload" }, bytes >> 20)
+            })
+            .collect();
+        tracing::info!(made = all, "host buffers made by where they were asked for: {}", said.join("; "));
+    }
+}
+
 /// What of that is alive now, for the memory line (`MADE` counts what was
 /// ever made: 42,607 upload buffers, 77.9 GB, in five minutes of run 60,
 /// and nothing said how many were alive): host lists; the lists' scratch
@@ -1905,6 +1936,20 @@ impl<T> Spare<T> {
         Some(self.kept.remove(at).0)
     }
 
+    /// Lets go of the things kept longest until at most `most` bytes stay,
+    /// and hands them back (to be freed outside the lock). The newest stay:
+    /// [`Spare::take`] looks for the one given last first.
+    fn trim_to(&mut self, most: u64) -> Vec<(T, u64)> {
+        let mut gone = 0;
+        let mut left = self.bytes;
+        while left > most && gone < self.kept.len() {
+            left -= self.kept[gone].1;
+            gone += 1;
+        }
+        self.bytes = left;
+        self.kept.drain(..gone).collect()
+    }
+
     /// Keeps `thing` (`size` bytes) unless that takes the kept bytes past
     /// `most`: then it comes back.
     fn give(&mut self, thing: T, size: u64, most: u64) -> Option<T> {
@@ -1978,16 +2023,41 @@ fn give_chunks(chunks: Vec<(Chunk, u64)>) {
     drop(freed);
 }
 
-/// Drops spare scratch chunks kept idle when host memory is pressured.
+/// The bytes of spare scratch chunks kept while host memory is pressured
+/// (`VICTORY_SPARE_UNDER_PRESSURE_MB`, 64; 0: none, as before).
+///
+/// The sweep asks once a second, and on a 32 GB PC running the title free
+/// physical memory stays near 1.3 GB, under the 3 GB mark: every second the
+/// pool was emptied, and the next lists made their chunks anew. In one
+/// automated 720p run that was about 4,800 upload buffers made and freed in
+/// 100 s of play (`host.rs` list scratch, by the diagnostics count of where
+/// host buffers are made), each one a creation, a residency call and a
+/// destruction in the driver; stack samples found the submitting thread
+/// waiting on the driver's lock while another thread freed allocations.
+/// Keeping the newest 64 MB spares those and gives the rest back.
+fn spare_under_pressure() -> u64 {
+    static MOST: OnceLock<u64> = OnceLock::new();
+    *MOST.get_or_init(|| {
+        std::env::var("VICTORY_SPARE_UNDER_PRESSURE_MB")
+            .ok()
+            .and_then(|v| v.trim().parse::<u64>().ok())
+            .map_or(64 << 20, |mb| mb.min(1024) << 20)
+    })
+}
+
+/// Lets go of spare scratch chunks kept idle when host memory is pressured,
+/// all but the newest [`spare_under_pressure`] bytes of them.
 fn trim_spare_chunks() {
     let freed: Vec<(Chunk, u64)> = {
         let mut spare = SPARE.lock().unwrap_or_else(|e| e.into_inner());
         if spare.kept.is_empty() {
             return;
         }
-        spare.bytes = 0;
-        std::mem::take(&mut spare.kept)
+        spare.trim_to(spare_under_pressure())
     };
+    if freed.is_empty() {
+        return;
+    }
     let count = freed.len() as u64;
     let bytes: u64 = freed.iter().map(|(_, s)| *s).sum();
     ALIVE[1].fetch_sub(count, Ordering::Relaxed);
@@ -8677,9 +8747,12 @@ impl Host {
         }
     }
 
+    #[track_caller]
     pub(crate) fn upload_buffer(&self, size: u64) -> Option<(ID3D12Resource, *mut u8)> {
         MADE[0].fetch_add(1, Ordering::Relaxed);
         MADE[1].fetch_add(size, Ordering::Relaxed);
+        #[cfg(feature = "diagnostics")]
+        note_made_at(std::panic::Location::caller(), false, size);
         let heap = D3D12_HEAP_PROPERTIES {
             Type: D3D12_HEAP_TYPE_UPLOAD,
             ..Default::default()
@@ -9563,9 +9636,12 @@ impl Host {
     /// it is fast too) and shaders read and write: for host copies of title
     /// memory that shaders write, which upload memory cannot be. Starts in
     /// the common state (buffers move out of it implicitly).
+    #[track_caller]
     pub(crate) fn shared_buffer(&self, size: u64) -> Option<(ID3D12Resource, *mut u8)> {
         MADE[2].fetch_add(1, Ordering::Relaxed);
         MADE[3].fetch_add(size, Ordering::Relaxed);
+        #[cfg(feature = "diagnostics")]
+        note_made_at(std::panic::Location::caller(), true, size);
         let heap = D3D12_HEAP_PROPERTIES {
             Type: D3D12_HEAP_TYPE_CUSTOM,
             CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_WRITE_BACK,
@@ -9993,6 +10069,29 @@ mod spare {
         assert_eq!(spare.take(4), Some(1));
         assert_eq!(spare.take(4), None);
         assert_eq!(spare.take(1), Some(2));
+        assert_eq!(spare.bytes, 0);
+        assert!(spare.kept.is_empty());
+    }
+
+    /// Under host memory pressure the oldest kept things go and the newest
+    /// stay within the given bytes; 0 lets everything go, as before.
+    #[test]
+    fn trimming_keeps_the_newest_within_the_bytes() {
+        let mut spare: Spare<u32> = Spare::new();
+        for (thing, size) in [(1, 4), (2, 2), (3, 4), (4, 1)] {
+            assert_eq!(spare.give(thing, size, 100), None);
+        }
+        assert_eq!(spare.bytes, 11);
+        // Within 5 bytes: the two oldest go (4 + 2), 3 and 4 stay.
+        let gone: Vec<u32> = spare.trim_to(5).into_iter().map(|(t, _)| t).collect();
+        assert_eq!(gone, [1, 2]);
+        assert_eq!(spare.bytes, 5);
+        assert_eq!(spare.take(1), Some(4));
+        // Already within: nothing goes.
+        assert!(spare.trim_to(8).is_empty());
+        assert_eq!(spare.bytes, 4);
+        // Zero: everything goes.
+        assert_eq!(spare.trim_to(0).len(), 1);
         assert_eq!(spare.bytes, 0);
         assert!(spare.kept.is_empty());
     }
