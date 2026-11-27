@@ -26,7 +26,7 @@ For a hands-on split where one contributor validates a GPU profile while the mai
 
 Coding agents must follow [AGENTS.md](AGENTS.md). The [AI contributor guide](docs/AI_CONTRIBUTOR_GUIDE.md) explains the source tree, validation levels, provenance, privacy rules, and includes a task prompt. Copy [the task brief](docs/templates/AI_TASK_PROMPT.md) for each model-assisted change. Pull requests use the repository checklist in `.github/PULL_REQUEST_TEMPLATE.md`.
 
-For an exact continuation of the current RTX 3070 work, read the [Luna Max handoff](docs/LUNA_MAX_HANDOFF.md) after the operational plan. It records the tested patch, rejected model claim, next audit prompts, and commit gates.
+For an exact continuation of the current RTX 3070 work, read the [Claude Code handoff](docs/CLAUDE_CODE_HANDOFF.md) after the operational plan. It records the current black-screen evidence, local changes, upstream audit snapshots, model routes, and next diagnostic steps.
 
 ## Build and run
 
@@ -61,4 +61,4 @@ The source is GPL-3.0. Keep upstream copyright notices and the local change ledg
 
 ## Verification limits
 
-The pinned Rust/MSVC toolchain and local D3D12 tests are verified. The latest clean Release and diagnostic artifacts and manifest are under `%LOCALAPPDATA%\AstraForge\builds\artifacts\20261127-033517-Both-thinlto-native-5aaf5812`; their hashes and the predicate-test result are in the progress journal. No gameplay FPS capture exists yet, so runtime compatibility, visual quality, and the 30 FPS target remain unverified.
+The pinned Rust/MSVC toolchain and local D3D12 tests are verified. The last clean Release/diagnostic artifact pair predates the current dirty source group; a newer diagnostic artifact was built with `SourceDirty=true`. The latest runtime attempt rendered a black capture, and no valid gameplay-frame capture exists. Runtime compatibility, visual quality, and the 30 FPS target remain unverified; see the [progress journal](docs/progress-journal.md) and [Claude Code handoff](docs/CLAUDE_CODE_HANDOFF.md) for exact hashes and next steps.

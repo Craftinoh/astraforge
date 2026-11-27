@@ -1,5 +1,12 @@
 # Change log
 
+## 2026-11-27 - black output fixed: revert the portable-heap clamp move (`f8b6af5`)
+
+- Reverted `f8b6af5`. That change lowered the shader view-index clamp on the 1,000,000-view NVIDIA heap to slot 737,855. However, the 2^18 per-draw dynamic descriptors were placed **above** that slot, so the shader clamp redirected every dynamic-table index to the null descriptor. Draws then read null constants and resources, and the presented planes stayed black. The original layout is restored: the clamp is at the last heap slot, and the dynamic descriptors follow the fitted title slots.
+- Evidence came from frame captures with `VICTORY_CAPTURE` on the same Stability environment, using fresh cache and data directories. The import commit `a0748dc` renders. `f8b6af5` is black. Its only predecessor in between, `468b79b`, changes test fixtures only. The current tree with the revert renders the account screen and the full loading art. Descriptor tests (51 passed, 1 ignored) and shader-translator tests (283 passed, 4 ignored) pass.
+- The edge case `f8b6af5` targeted is open again: a title index above the fitted range may alias a live dynamic descriptor. Any new fix must keep dynamic slots at or below the clamp, and it needs a rendering regression check, not only a layout unit test.
+- Not established: gameplay stability (a separate access violation in title code at world entry was seen with a reference build), frame rate, and visual correctness beyond the start-up screens.
+
 ## 2026-11-27 - diagnostic exact-view mutex contention telemetry
 
 - The diagnostics build now records only acquisitions that first find the exact-view cache mutex busy, with average, maximum, and bounded wait-time buckets. The Release build keeps the original blocking lock path and adds no timestamps or timing counters.

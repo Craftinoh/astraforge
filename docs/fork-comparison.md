@@ -68,3 +68,135 @@ The [`#868` recipe issue](https://github.com/fxceless/victory-fork/issues/1268) 
 ## Decision
 
 Keep COOL_FOX Pareto-residency as the source baseline. The narrow DirectStorage worker-count change from #1044 matches this host's 8c/16t CPU and has a measured copy-back benefit on another 8c/16t Windows/NVIDIA machine. The descriptor ports address stale heap releases and in-flight descriptor/resource lifetime. Do not port `SKIP_WC_COMPARE`, broad Wave32 rewrites, renderer-specific AMD patches, or the complete 4080 launcher stack. The 30 FPS target remains unverified and is not supported by the closest published in-world measurements.
+
+## Refresh: black-output runtime and recent NVIDIA pull requests — 2026-11-27
+
+### Trustno NVIDIA branch
+
+The latest audited `VIctory-NVIDIA` main was `d12eb1b23d`. Its README reports a separate
+RTX 5070 12 GB / Ryzen 7 9800X3D / 64 GB configuration at 26–30 internal frames in
+opening rooms with a Series X / 1440p DLSS Quality setup. That is the maintainer's own
+report and is not transferable to the RTX 3070 profile.
+
+- [PR #6](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/6) reports an RTX 3060
+  12 GB / i5-12400F / 16 GB Series S run at 540p: 10–12 FPS typical and 8.6–9.2 median
+  with a 3 GiB Windows BAR cap. Without the cap, that report says the run paged heavily
+  and fell to 1.6–3 FPS or crashed. This supports measuring shared-memory and paging
+  pressure; it does not establish the cause of a different machine's result.
+- [PR #8](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/8) makes that BAR cap
+  opt-in. AstraForge's selected source does not implement
+  `VICTORY_WINDOWS_BAR_MB`; do not add an environment variable by copying a donor name.
+  A target-specific cap would need a source patch, a clear admission meaning, and matched
+  telemetry before use.
+- [PR #22](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/22) reports 8.6 to
+  9.6 FPS after raising helper priority in a short sample. It is not isolated on the
+  current main and the corresponding setting is absent locally.
+- [PR #18](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/18) is a broad graphics
+  stack with reports of loose-pipeline creation failures associated with method slots
+  `0x1c8` and `0x218`. AstraForge's latest runtime log also warns about refused pipeline
+  creation at these slots. The O16 trace below downgrades it as a black-screen cause;
+  it is a deferred performance and coverage candidate, not a port target.
+- [PR #25](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/25) changes texture
+  alias lifetime. Its RTX 3070 evidence combines four patches in long runs, so the
+  isolated impact remains unknown.
+- [PR #30](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/30) proposes a Wave32
+  2D-group correction with RTX 5070 Ti correctness tests. It is a shader correctness
+  candidate; no local call-path match or target image validation has been established.
+
+#### PR #18: direct match for the observed pipeline refusals
+
+The [PR #18 description](https://github.com/trustno1-coder/VIctory-NVIDIA/pull/18)
+explicitly says device methods `0x1c8` and `0x218` carry loose pipeline pieces (code,
+metadata, and register packets). Its branch assembles these into a pipeline container
+and translates the stages. It reports that refusing these calls omits the resulting
+draws, including a scene-composite pipeline associated with a black/grey world and
+uncleared interface. AstraForge's current log emits the same two method-slot refusal
+warnings, so this is a strong source-matched hypothesis for the black output. It remains
+unconfirmed on this source/build until the path is traced and a focused fix renders
+correctly.
+
+The PR head at review was `e0703c136d472a67c5f00a1a9296d2e6790fcea6`. GitHub lists 58
+commits and 64 files changed. A local three-dot diff against the later audited `main`
+snapshot reports 77 paths because the branches have diverged since merge base
+`9341f4316f0265786a95a6791a428f14d5695cb1`. Either comparison shows a broad change. It
+includes unrelated ray tracing, display, Reflex, memory, streaming, and
+parallel-submission work, so do not merge it wholesale.
+Its pipeline-pieces series includes `cb33680`, `8823e15`, `0fae809`, `9449ec9`,
+`89bfaf0`, `c6a4b60`, and `c12a77f`. The branch provides a graphics-only mode and says
+some compute-piece root layouts still translate incorrectly; that supports investigating
+the graphics path first, not copying its runtime switch blindly. The local source has a
+separate opt-in `VICTORY_RAW_COMPUTE` path for method `0x218`; it is not the donor's
+pipeline-piece assembler and is disabled by default.
+
+#### O16 trace result (2026-11-27): hypothesis downgraded, no port
+
+- **Local path.** `victory-gpu/src/device.rs` maps table entries 57 (`0x1c8`) and 67
+  (`0x218`) to `unknown_pipeline::<SLOT>`, which nulls `out` and returns `E_NOTIMPL`.
+  It logs only calls 1–4 and powers of two, so 29 warnings are milestones, not the call
+  count. Neither the local Vice-Tay shader corrections nor the static-sampler bypass
+  touch this path.
+- **Refusal is the upstream baseline.** COOL_FOX `f4b48ad`, trustno main `d12eb1b`,
+  `victory-nvidia-8gb`, `VIctory-7900XTX`, `victory-fork`, `klbf-lab`, and
+  `victory-unified` reference snapshots all carry the same refusal stub. The base
+  `VIctory` snapshot does not register either slot, so both calls reach its generic
+  missing-method handler. PR #18 itself reports an open-world baseline (11.8 fps median,
+  RTX 5090) measured *before* its pieces switch, that is, with both slots refused.
+- **What PR #18 links to the black/grey world.** Read in full, the PR attributes that
+  symptom to an intermediate state of its own feature: a pieces pipeline was handed to
+  the title and failed later on a worker, so the title kept a pipeline that could never
+  draw. Its fix, `VICTORY_PIPELINE_PIECES_REFUSE_UNTRANSLATED`, refuses at creation so
+  "the title falls back to the pipeline it would otherwise make". This is the local
+  behavior today. Its compute pieces still turn the world grey; graphics pieces
+  are offered as a frame-rate feature.
+- **Port cost.** The seven commits touch about 4,000 lines across a new
+  `pipeline/pieces.rs`, a new `native/pieces.rs`, `emit/lower.rs`, `native.rs`,
+  `draw.rs`, `known.rs`, and `make.rs`. Against donor base `67d9598`, local
+  `emit/lower.rs`, `emit/mod.rs`, `draw.rs`, `make.rs`, `device.rs`, and `pipeline.rs`
+  differ by 112–1,455 diff lines each. A graphics-only subset still needs the translator
+  changes. Without evidence that the pieces path fixes the observed output, the
+  regression risk is higher than the potential benefit.
+- **Decision.** Do not port the PR #18 graphics-pieces path for O16. Keep it listed as a
+  later candidate for performance and coverage once a scene renders and real captures can
+  measure its effect.
+
+#### Runtime confirmation (2026-11-27, frame captures)
+
+- The PR #18 head was built outside the repo and run with its pieces switch **on**
+  (graphics only). It rendered the account screen, loading art, and first-boot menus.
+  A control run with the switch **off** rendered the same screens. The refused slots are
+  therefore not the cause of the black output, and the decision above stands.
+- The real cause was local. Commit `f8b6af5` placed the dynamic descriptors above the
+  lowered shader clamp. Bisection showed the import renders and `f8b6af5` is black, and
+  the revert renders again. See `docs/changelog.md`. An earlier note in this audit said
+  the run used single-plane presentation; that was wrong. The log does report
+  two-plane composition, and the line had been cut off by a truncated `grep`.
+
+### Vice-Tay diagnostic proposals and merged fixes
+
+The latest audited default-branch head was `25324741b1`; the local clone remains an older
+snapshot. [PR #452](https://github.com/avatarmanz/VIctory-7900XTX/pull/452) adds a
+diagnostic breakdown for long frames, while [PR #453](https://github.com/avatarmanz/VIctory-7900XTX/pull/453)
+adds timestamps by command-list type. These are measurement proposals, not FPS fixes;
+their local target-run behavior is not yet established.
+
+Vice-Tay [PR #206](https://github.com/TaynanGT/Vice-Tay/pull/206) is merged and repairs
+an ambient resolve when the selected descriptor is a stencil plane. The local run
+reported no depth-twin/depth-plane draws, so current counters do not support this as the
+black-screen cause. [PR #274](https://github.com/TaynanGT/Vice-Tay/pull/274) adds DRED
+breadcrumbs; its RTX 2080 Ti report found a significant frame cost for some breadcrumb
+settings. Keep those diagnostics out of normal gameplay captures unless fault diagnosis
+requires them.
+
+### AstraForge black-screen evidence
+
+The pre-run dialog passed and the runtime launched, but the captured render surface was
+fully black. The runtime caption's 30 Hz / 33.3 ms figure is not classified application
+FPS. Logs did not show device removal or VRAM exhaustion in the captured interval.
+Resolved: the black output came from local commit `f8b6af5` (dynamic descriptors above
+the shader clamp), not from the `0x1c8`/`0x218` refusals. Reverting it restores the
+start-up screens. PresentMon still has not produced a frame CSV.
+The current run therefore establishes a rendering failure, not an FPS result or a
+memory-exhaustion diagnosis.
+
+The seven comparison repositories plus the COOL_FOX mirror are cloned outside the
+checkout. Exact shallow snapshot hashes are in [`REFERENCE-REPOSITORIES.md`](REFERENCE-REPOSITORIES.md).
