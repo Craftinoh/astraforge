@@ -26,6 +26,31 @@
         "warnBelowAvailableCommitGiB": 20
       },
       "notes": "First supported hardware profile. Requires the RTX 3070 to be the first DXGI adapter because this source creates its D3D12 device from the default adapter. AMD profiles are intentionally not defined yet."
+    },
+    "nvidia-rtx3060": {
+      "displayName": "NVIDIA GeForce RTX 3060 12 GB",
+      "status": "candidate-unbenchmarked-on-astraforge",
+      "provider": "nvidia",
+      "adapter": {
+        "vendorId": "0x10DE",
+        "deviceIds": ["0x2504"],
+        "nameRegex": "GeForce RTX 3060",
+        "architecture": "Ampere GA106",
+        "computeCapability": "8.6",
+        "dedicatedMemoryMiB": 12288,
+        "shaderModelMinimum": "6.6",
+        "waveOpsRequired": true,
+        "waveLaneCountMinimum": 32,
+        "waveLaneCountMaximum": 32
+      },
+      "runtime": {
+        "tuningConfig": "rtx3060-profiles.json",
+        "consoleDefault": "series-s",
+        "adapterSelection": "first-dxgi-adapter",
+        "telemetryProvider": "nvidia-smi",
+        "warnBelowAvailableCommitGiB": 20
+      },
+      "notes": "Candidate identity from a local DXGI/D3D12/nvidia-smi query on host-02 (device 0x2504, 12288 MiB, SM 6.8, wave lanes 32-32, first DXGI adapter). Not selectable as the active profile: no AstraForge gameplay run exists on this GPU. Its tuning file starts from the RTX 3070 Ampere baseline unchanged; see docs/RTX3060-hardware-report.md."
     }
   }
 }
