@@ -4,7 +4,7 @@ These notes come from seven gameplay runs on `host-02` (see [`RTX3060-hardware-r
 
 ## How the runs were made and their limits
 
-- Source: [`TaynanGT/Vice-Tay`](https://github.com/TaynanGT/Vice-Tay) at `877a40e8`, plus local uncommitted changes (the water change below, a larger on-screen frame panel, and a resource-usage tracker script). Diagnostic build (`cargo build --profile diag --features diagnostics -p victory`).
+- Source: [`TaynanGT/Vice-Tay`](https://github.com/TaynanGT/Vice-Tay) at `877a40e8`, plus local uncommitted changes. How each change is implemented is in [`RTX3060-port-implementation.md`](RTX3060-port-implementation.md). Diagnostic build (`cargo build --profile diag --features diagnostics -p victory`).
 - Settings: Vice-Tay `scripts/play.ps1`, Series S target, its `4070` machine preset, windowed, DLSS (Quality in run 1, Performance afterwards), ray tracing off, `VICTORY_D3D12_DRED=0`.
 - Frame rates are the runtime's own five-second log reports (frames/s, draws, CPU submission time), filtered to reports with at least 500 draws and no shader compiling. **No PresentMon data.**
 - Each setting was run **once**, by a person playing through the story, so the route and scene mix differ between runs. These are not the matched three-run cohorts that [`benchmark-procedure.md`](benchmark-procedure.md) requires. Read the differences as leads, not measured gains.
