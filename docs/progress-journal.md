@@ -268,3 +268,8 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 - The user confirmed that the single executable candidate found in the external installation directory is the intended target. The launcher supports passing the directory and executable explicitly, so no private path needs to be saved in the repository or global environment.
 - Refreshed hardware at 11:54 CET: 10.31 GiB available commit and 11.61 GiB available physical RAM. This is still below the mandatory 12 GiB launch floor. No runtime or shader prewarm was started; repeat the memory preflight immediately before the first launch.
+
+## 2026-11-27 - installation preservation constraint
+
+- The user explicitly requires all installed game files to remain untouched. The current metadata scans were read-only. Source inspection confirms the launcher rejects output, cache, or data paths inside the installation, and the benchmark harness rejects its output root there as well.
+- Treat the installation as read-only for all future work. Do not patch, rename, move, overwrite, or delete its files, and do not change file attributes or permissions. Logs, captures, caches, and emulator data stay outside the installation and repository.
