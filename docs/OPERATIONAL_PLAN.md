@@ -20,7 +20,7 @@ application, publisher, executable, save data, or personal paths.
 | Area | State | Evidence boundary |
 |---|---|---|
 | Source | COOL_FOX Pareto-residency descendant plus focused credited ports | Exact origins are in `source-credits.md` and the nested `LOCAL-CHANGES.md` |
-| Publication | Always verify live local/remote refs before continuing or publishing | The branch was clean at the prior O8 checkpoint; later commits must be checked with Git |
+| Publication | Source and build evidence are published on `origin/main` at `c7c244f` | `main` matches `origin/main`; the focused branch remains available locally; verify live refs before the next publication |
 | Build | `20261127-050134-Both-thinlto-native-a19ebb64`, source commit `452e655`, `SourceDirty=false` | Rust/Cargo 1.98.1, MSVC 14.44.35207, DXC 10.0.26100.0, Thin LTO, one release codegen unit, native CPU; Release and diagnostic `--help` both exit 0; compilation only |
 | Automated tests | Per-heap coverage passes serial diagnostic (407/35 ignored) and optimized Release (349/34 ignored); Clippy exits 0 with existing warnings | Unit evidence only; parallel suite had an intermittent texture-ahead failure and one diagnostic process access violation; no gameplay or FPS result |
 | Hardware | RTX 3070 is first DXGI adapter; driver 610.88, SM 6.8, Wave32, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM; Windows 11 Pro 26H2 | Latest raw inventory remains local and ignored; BAR1 only suggests Resizable BAR |
