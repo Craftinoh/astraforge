@@ -386,3 +386,25 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
   - fxceless `cd935520` and `f299fba1` (32-lane water);
   - Vice-Tay `aa917f3f` (#343, shared heap-sync rounds) and `b9ef9252` (plan card steps once);
   - trustno `30b979ee` (arena storm, relevant only with the BVH builder).
+
+## 2026-11-27 (night) — texture budget A/B, VRAM gate port, RTX 3060 PR merged
+
+- `VICTORY_EARLY_TEXTURES_MS` A/B (diagnostic `v0.1.1` build, 720p Stability, one run each):
+
+  | Setting | World reached | Internal fps | Uploaded at end | Waiting at end |
+  |---|---|---|---|---|
+  | 12 (default), run 1 | 79 s | 11.9 | 11,923 | 22,737 |
+  | 12 (default), run 2 | 58 s | 11.9 | 14,110 | 18,610 |
+  | 40 | 91 s | 10.0 | 13,949 | 24,538 |
+  | 100 | 61 s | 10.9 | 12,801 | 17,891 |
+
+  No clear effect. The queue plateaus at about 18–24k waiting textures in every run, so on 8 GB it is limited by room, not by pass time. The default was not changed.
+- Ported fxceless `2eade68c` (texture-block gate, `39a187d`; adaptations are in `LOCAL-CHANGES.md`). GPU tests pass (356 passed, 34 ignored). One 4-minute session: VRAM held at 6.21–6.26 of 7.0 GB, with 9.9 fps internal and no crash. Earlier runs grew about 150 MB per minute.
+- fxceless #814 `VICTORY_TEXTURE_DROP_MIPS` (focused port: CCS03 `847c925d`): started, then reverted. The local base already uploads from the first level a view shows (`VICTORY_HELD_LEVELS`, `level0`). The donor's level offset (`drop`) was written for a base without it, and combining the two needs a careful separate port.
+- Merged PR #1 (candidate RTX 3060 profile, docs only) as `a441643`. The journal conflict was resolved by keeping both entries. The harness test passes.
+- Race tracker: a second add request (#57) was closed without a stated reason, like #51. No further requests.
+- BCPack: decoding runs on the CPU in the DirectStorage worker pool (`victory-hle/src/modules/dstorage.rs` via `victory-formats/src/bcpack.rs`), and detiling runs on the CPU in `victory-gpu/src/texture.rs`. Its share of CPU time is not yet measured: the per-thread CSV has no thread names. A GPU compute decoder is a multi-day option, to consider only after profiling shows it matters.
+- Next:
+  - A long session (≥ 15 min) to confirm the VRAM gate's long-session effect.
+  - Profile the CPU per thread with names (ETW or `VICTORY_STACKS`) to size the BCPack/detile cost against list translation and readback.
+  - A world "curtain" (keep presenting the loading picture until the queue settles), opt-in.
