@@ -502,6 +502,15 @@ finally { `$jobs | Stop-Job -ErrorAction SilentlyContinue; `$jobs | Remove-Job -
             if (-not $presentMonProcess.HasExited) { Stop-Process -Id $presentMonProcess.Id -Force -ErrorAction SilentlyContinue }
         } catch { }
     }
+    if ($process) {
+        # A force-stopped PresentMon leaves its real-time ETW session running. Orphaned sessions keep
+        # collecting graphics events system-wide, which costs CPU in later runs and makes new captures
+        # lose events (five were found on 2026-11-27). Stop this run's session explicitly.
+        $etwSession = "AstraForge-$($process.Id)"
+        if (logman query -ets 2>$null | Select-String -SimpleMatch -Pattern $etwSession -Quiet) {
+            logman stop $etwSession -ets 2>$null | Out-Null
+        }
+    }
     if ($runStartedAt) {
         try {
             $graphicsEvents = @(Get-WinEvent -FilterHashtable @{ LogName = 'System'; StartTime = $runStartedAt } -ErrorAction Stop |
