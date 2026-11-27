@@ -1,64 +1,133 @@
 # AstraForge
 
-An open-source Windows compatibility layer built around architecture-aware GPU profiles. NVIDIA Ampere is the first target. AMD support is a later, separately tested phase.
+**An open, evidence-first Windows compatibility layer for Xbox Series titles, organized
+around architecture-aware GPU profiles.** NVIDIA Ampere (RTX 3070) is the first and only
+validated target. AMD support is a later, separately tested phase.
 
-The goal is to move beyond a typical vibe-coded emulator fork: make the implementation, build, GPU profiles, measurements, attribution, limitations, and rollback process clear enough that other compatibility projects can use them as a model.
+[![Release](https://img.shields.io/github/v/release/Craftinoh/astraforge?include_prereleases&label=release)](https://github.com/Craftinoh/astraforge/releases)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-Among the upstream forks reviewed for this work, AstraForge is the only project organized around integration itself: hardware support, runtime tuning, source provenance, validation, and public evidence follow one documented contract. The aim is to let contributors add a GPU profile or a focused engine patch quickly, without copying an entire vendor fork or losing authorship and test evidence. AstraForge is being built to become a reusable standard for open compatibility projects.
+AstraForge integrates focused fixes from the open VIctory fork family under one documented
+contract: every change records its source, its tests and its limits, and no performance
+claim is made without a real capture. The goal is that a contributor can add a GPU profile
+or a focused engine patch without copying a whole fork or losing authorship and evidence.
 
-## Project status
+> **No game files are included or accepted.** You need your own legally owned copy,
+> installed outside this repository. Public reports never name the game; they use
+> anonymous scene labels such as `scene-01`.
 
-- Source baseline: COOL_FOX Pareto-residency, through the NVIDIA 8 GB derivative.
-- Current hardware profile: desktop NVIDIA GeForce RTX 3070, Ampere GA104, 8 GB.
-- Runtime presets: Stability, Balanced, Performance, Quality. They are candidates, not benchmarked rankings.
-- Acceptance target: at least 30 real application FPS with a 1% low of at least 30 in repeated gameplay captures. No result is claimed until measured.
-- AMD: not implemented or enabled yet. Its profile and adapter path will be developed and validated separately.
+## Status — `v0.1.0-preview` (pre-release)
 
-## GPU profile layout
+Tested on one PC: RTX 3070 8 GB, Ryzen 7 7700X, 32 GiB RAM, Windows 11, Series S profile.
 
-`profiles/gpu-profiles.json` identifies supported hardware independently from its runtime tuning presets. `profiles/rtx3070-profiles.json` holds the current NVIDIA settings. This separation lets the project add GPU-specific profiles without mixing vendor assumptions or reusing unverified tuning values.
+| Area | State |
+|---|---|
+| Start-up screens, menus, story loading | ✅ Visible (black output fixed in this release) |
+| Entering the world without a crash | ✅ After one warm-up launch (pipeline library) |
+| Textures and colours | ⚠️ Stream in slowly; colours/materials largely missing; some characters black; flickering |
+| Performance | ⚠️ Low. Users reported about 7–9 average frames/s in story and at sea (not a PresentMon measurement) |
+| CPU load | ⚠️ High even in menus; about 95 ms/frame spent translating command lists (first optimization target) |
+| PresentMon frame capture | ❌ Not working yet, so **no validated FPS figure exists** |
+| Other GPUs | ❌ Not supported yet. RTX 3060 testing is in progress as a separate profile |
 
-## Bring your own hardware and coding model
+The acceptance target is at least 30 real application FPS with a 1% low of at least 30,
+measured over repeated gameplay captures. It has **not** been reached. Details are in
+the [release notes](docs/releases/v0.1.0-preview.md) and the [progress journal](docs/progress-journal.md).
 
-Contributors can bring a different PC specification without claiming that its GPU is already supported. Start at [CONTRIBUTING.md](CONTRIBUTING.md), collect a reviewed, sanitized inventory with the [hardware intake template](docs/templates/hardware-report.template.md), and follow the [GPU profile submission gate](docs/GPU_PROFILE_SUBMISSION.md). Hardware identity, adapter support, and runtime presets have separate acceptance requirements.
+## Quick start
 
-For a hands-on split where one contributor validates a GPU profile while the maintainer handles shared shader/engine changes, use the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
-
-Coding agents must follow [AGENTS.md](AGENTS.md). The [AI contributor guide](docs/AI_CONTRIBUTOR_GUIDE.md) explains the source tree, validation levels, provenance, privacy rules, and includes a task prompt. Copy [the task brief](docs/templates/AI_TASK_PROMPT.md) for each model-assisted change. Pull requests use the repository checklist in `.github/PULL_REQUEST_TEMPLATE.md`.
-
-For an exact continuation of the current RTX 3070 work, read the [Claude Code handoff](docs/CLAUDE_CODE_HANDOFF.md) after the operational plan. It records the current black-screen evidence, local changes, upstream audit snapshots, model routes, and next diagnostic steps.
-
-## Build and run
-
-Requirements include the repository-pinned Rust toolchain, Windows MSVC build tools, Windows SDK, DirectX Shader Compiler, the imported engine source, PresentMon for gameplay measurements, and personally owned game data installed outside this repository.
+1. **Download** `astraforge-v0.1.0-preview-win64.zip` from
+   [Releases](https://github.com/Craftinoh/astraforge/releases) and check it against `SHA256SUMS.txt`.
+2. **Clone this repository**. The launcher, profiles and preflight checks live here.
+3. **Launch** with your own game directory, using the Stability profile and 720p:
 
 ```powershell
-.\tools\Build-AstraForge.ps1 -Mode Both -ThinLto -NativeCpu
-.\tools\Start-AstraForge.ps1 -GpuProfile nvidia-rtx3070 -Profile Balanced `
-  -RuntimeExe "$env:LOCALAPPDATA\AstraForge\builds\artifacts\<build-id>\cargo-target\release\victory.exe" `
-  -GameDir 'D:\GameFiles' -GameExecutableName 'game.exe'
+.\tools\Start-AstraForge3070.ps1 -Profile Stability -Console series-s `
+  -RuntimeExe 'C:\path\to\victory.exe' `
+  -GameDir 'D:\GameFiles' -GameExecutableName 'game.exe' `
+  -RuntimeOverride @{ VICTORY_DISPLAY_MODE = '1280x720' }
 ```
 
-The source targets the first DXGI adapter. The NVIDIA profile launcher checks that the RTX 3070 is first before starting the renderer. Thin LTO and native CPU code generation are build candidates for the Ryzen 7 7700X CPU submission path; their performance effect is not yet measured.
+The launcher refuses to start unless the RTX 3070 is the first DXGI adapter and at least
+12 GiB of commit memory is free. Logs, caches and data stay outside both the repository
+and the game folder.
 
-See [the project vision](docs/project-vision.md), [the operational plan](docs/OPERATIONAL_PLAN.md), [the integration architecture](docs/integration-architecture.md), [the progress journal](docs/progress-journal.md), [the launcher profiles](docs/launcher-profiles.md), [the benchmark procedure](docs/benchmark-procedure.md), and [the source credits](docs/source-credits.md).
+**First launch after a new build or cache:** the first story load may still stall while
+pipelines are compiled, and the game's own watchdog can close it. Launch again: the
+pipeline library is saved during the run, and the next launch loads it.
 
-## Anonymous benchmark policy
+## Build from source
 
-Public benchmark summaries use aliases such as `scene-01` and `scene-02`. They omit the game title, executable name, personal file paths, save identifiers, and raw logs that could reveal them. Internal captures remain local; create a reviewed, sanitized report with `tools/Export-AstraForgePublicReport.ps1` before sharing.
+Requirements: the pinned Rust toolchain (`third_party/nvidia-3070-VI/rust-toolchain.toml`), MSVC build tools and the
+Windows SDK. For gameplay measurement you also need PresentMon.
 
-No game binaries, dumps, keys, personal saves, caches, private credentials, or raw hardware inventory belong in this repository. `.gitignore` excludes local captures and common game-data paths.
+```powershell
+.\tools\Build-AstraForge.ps1 -Mode Both -ThinLto            # portable Release + diagnostic
+.\tools\Build-AstraForge.ps1 -Mode Both -ThinLto -NativeCpu # local-only, tuned to this CPU
+```
 
-## Contributor review workflow
+The helper builds outside the repository, writes a manifest with the source commit, a
+dirty flag and SHA-256 hashes, and remaps source paths so a shared binary carries no
+personal directories. Pre-warm the shader cache for a new build with
+`tools/Prewarm-AstraForge.ps1` (see the [benchmark procedure](docs/benchmark-procedure.md)).
 
-AI-assisted review is optional. `tools/Invoke-AstraForgeModelReview.ps1` can send an explicitly selected set of public source files to a text-only, OpenAI-compatible Chat Completions endpoint. It keeps credentials and responses outside Git and gives the model read-only review scope. Keep reviews focused, never include credentials or personal game data, and verify every proposal against the full call path, build, and tests. Model output is review input, not correctness or performance evidence. No provider key is stored in this repository.
+## How the project is organized
 
-See the [model orchestration guide](docs/MODEL_ORCHESTRATION.md) for local configuration, bounded input rules, dry runs, and the independent verification workflow.
+| Path | Purpose |
+|---|---|
+| `third_party/nvidia-3070-VI/` | Imported engine source (Git subtree) and its [local change ledger](third_party/nvidia-3070-VI/LOCAL-CHANGES.md) |
+| `profiles/gpu-profiles.json` | Hardware identity and launcher preflight, kept separate from tuning |
+| `profiles/rtx3070-profiles.json` | RTX 3070 runtime presets: Stability, Balanced, Performance and Quality. All are unbenchmarked candidates |
+| `tools/` | Build, launch, prewarm, hardware collection, capture, comparison, public-report export |
+| `docs/` | Plan, journal, procedures, provenance, contributor guides |
 
-## Attribution and license
+Keeping hardware identity separate from tuning means a new GPU gets its own profile and
+its own evidence. Values are never inherited from another card as if they had been measured.
 
-The source is GPL-3.0. Keep upstream copyright notices and the local change ledger with every source change. See [source credits and provenance](docs/source-credits.md) and `third_party/nvidia-3070-VI/LOCAL-CHANGES.md`. This is an independent community project and is not affiliated with NVIDIA, AMD, Microsoft, or the upstream VIctory maintainers.
+## Contributing
 
-## Verification limits
+All contributions are welcome, including a plain hardware report with no code.
 
-The pinned Rust/MSVC toolchain and local D3D12 tests are verified. The last clean Release/diagnostic artifact pair predates the current dirty source group; a newer diagnostic artifact was built with `SourceDirty=true`. The latest runtime attempt rendered a black capture, and no valid gameplay-frame capture exists. Runtime compatibility, visual quality, and the 30 FPS target remain unverified; see the [progress journal](docs/progress-journal.md) and [Claude Code handoff](docs/CLAUDE_CODE_HANDOFF.md) for exact hashes and next steps.
+- **New GPU or PC:** follow the [GPU profile submission gate](docs/GPU_PROFILE_SUBMISSION.md)
+  and the [hardware report template](docs/templates/hardware-report.template.md). A new card
+  gets its own profile (for example `nvidia-rtx3060`); `nvidia-rtx3070` is not reused.
+- **Engine or shader fix:** keep it focused, record its upstream source in
+  [source credits](docs/source-credits.md) and the subtree ledger, and include tests.
+- **Performance numbers:** follow the [benchmark procedure](docs/benchmark-procedure.md).
+  A window caption or an overlay is a useful hint, but it is not a measurement.
+- **Coding agents** must follow [AGENTS.md](AGENTS.md); see the
+  [AI contributor guide](docs/AI_CONTRIBUTOR_GUIDE.md) and the [task brief](docs/templates/AI_TASK_PROMPT.md).
+
+Start at [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests use
+`.github/PULL_REQUEST_TEMPLATE.md`. For splitting work between a GPU validator and the
+maintainer, see the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
+
+## Current priorities
+
+1. Reduce the per-frame CPU cost of command-list translation (`VICTORY_THIN` A/B).
+2. Fix texture streaming, black characters and missing colours (decoration-bake texture uploads).
+3. Get PresentMon capture working and record the first validated gameplay baseline.
+4. Port the sampler-table fix (trustno PR #18) to replace `VICTORY_LIBRARY_STATIC_SAMPLERS=1`.
+
+The [operational plan](docs/OPERATIONAL_PLAN.md) has the full queue. The
+[Claude Code handoff](docs/CLAUDE_CODE_HANDOFF.md) is written for continuing agents.
+
+## Privacy and benchmark policy
+
+Public summaries use aliases such as `scene-01`, and leave out the game title, executable
+name, personal paths, save identifiers and raw logs. Create a reviewed report with
+`tools/Export-AstraForgePublicReport.ps1` before sharing. No game binaries, dumps, keys,
+saves, caches, credentials or raw hardware inventories belong in this repository.
+
+Optional AI-assisted review (`tools/Invoke-AstraForgeModelReview.ps1`) sends only
+explicitly selected public source files and keeps keys and responses outside Git; see the
+[model orchestration guide](docs/MODEL_ORCHESTRATION.md). Model output is a hypothesis to
+verify, never evidence by itself.
+
+## Credits and license
+
+GPL-3.0. AstraForge builds on the VIctory fork family, including the COOL_FOX
+Pareto-residency line, the NVIDIA 8 GB derivative, Vice-Tay, trustno's NVIDIA fork and
+others. Exact commits and authors are listed in [source credits](docs/source-credits.md).
+This is an independent community project and is not affiliated with NVIDIA, AMD,
+Microsoft, any game publisher, or the upstream VIctory maintainers.
