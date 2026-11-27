@@ -22,28 +22,12 @@ unredacted hardware reports.
 
 ### Local Qwen coding model
 
-The user identifies a local Qwen coding model as the preferred
-long-context coding assistant and reports that its calls are free and unlimited. That
-pricing/quota claim has not been independently verified and may depend on the account,
-model alias, or current platform policy. Check the account's current model list and
-limits before relying on it. Earlier platform views used different aliases/context
-figures, so do not hard-code a model name or context length from an old screenshot.
-
-The provider documentation supplied for this setup describes an OpenAI-compatible API
-at `http://127.0.0.1:8080/v1`. The local review wrapper can use it without storing a
-credential in the repository. Configure the current alias shown by the provider, then
-use the dedicated key variable:
-
-```powershell
-[Environment]::SetEnvironmentVariable('ASTRAFORGE_MODEL_BASE_URL', 'http://127.0.0.1:8080/v1', 'User')
-[Environment]::SetEnvironmentVariable('ASTRAFORGE_MODEL_ID', '<current Qwen coding alias>', 'User')
-```
-
-Store the secret only in the user's environment variable `ASTRAFORGE_MODEL_API_KEY`. The
-wrapper defaults to `ASTRAFORGE_MODEL_API_KEY`, so pass
-`-ApiKeyEnvironmentVariable ASTRAFORGE_MODEL_API_KEY` for this provider. Never put a real key in
-this file, a prompt, shell history, logs, or Git. Use only bounded, text-only source
-excerpts that comply with the provider's current request limits.
+The user runs a Qwen coding model locally as the preferred long-context coding
+assistant. It is reached through a local OpenAI-compatible endpoint, so the review
+wrapper can use it with the settings in "Local configuration" below, pointing
+`ASTRAFORGE_MODEL_BASE_URL` at the local server and `ASTRAFORGE_MODEL_ID` at the alias
+the local server reports. Do not hard-code a model name or context length; check what
+the local server serves. Use only bounded, text-only source excerpts.
 
 OpenCode and the Qwen endpoint are separate routes. Do not assume OpenCode is using
 DeepSeek, or that the AstraForge review wrapper is connected to either route, until its

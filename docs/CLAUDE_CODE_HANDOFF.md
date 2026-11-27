@@ -124,12 +124,9 @@ below are kept as history; the new first task is the early-state diagnosis in
   `opencode` command was not found on PATH in this checkpoint, and the route has not
   been tested end-to-end. Verify the client/model before assigning work. Keep its
   changes on a focused branch and review the diff locally.
-- **Local Qwen coding model:** optional long-context coding assistant through the
-  OpenAI-compatible endpoint described in `docs/MODEL_ORCHESTRATION.md`. The user says
-  calls are free and unlimited; this was not verified against current account limits.
-  Check the live model alias and quota before relying on that. Keep the API key only in
-  `ASTRAFORGE_MODEL_API_KEY`; the review wrapper needs
-  `-ApiKeyEnvironmentVariable ASTRAFORGE_MODEL_API_KEY`. Never write or print the key.
+- **Local Qwen coding model:** optional long-context coding assistant that the user runs
+  locally behind an OpenAI-compatible endpoint, as described in
+  `docs/MODEL_ORCHESTRATION.md`. Check the local model alias before relying on it.
 - Send only explicit, bounded public-source excerpts. Responses are hypotheses to check,
   not proof. Keep private runtime logs, screenshots, installed-file paths, credentials,
   and raw hardware reports local.

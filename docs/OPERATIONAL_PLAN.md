@@ -77,10 +77,9 @@ outside the repository and installation.
   `%LOCALAPPDATA%\AstraForge\references\upstreams`; they are local references, not
   public GitHub forks or instructions to merge entire branches. See
   `docs/REFERENCE-REPOSITORIES.md` and `docs/fork-comparison.md`.
-- **Model routes:** user requests OpenCode + DeepSeek Free Flash and the Qwen coding
-  local model as optional, separate assistants. The `opencode` command was not
-  on PATH and neither route was verified end-to-end in this checkpoint. Unlimited free
-  calls for Qwen is user-reported and account limits were not checked. See
+- **Model routes:** user requests OpenCode + DeepSeek Free Flash and a local Qwen coding
+  model as optional, separate assistants. The `opencode` command was not on PATH and
+  neither route was verified end-to-end in this checkpoint. See
   `docs/MODEL_ORCHESTRATION.md`; never store keys or private runtime data.
 
 ## Work queue
