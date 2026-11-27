@@ -2,6 +2,12 @@
 
 This file is the durable task record. Update it when source, build, benchmark, hardware, publication, or user plans change.
 
+## Publication sync - 2026-11-27
+
+- Pushed the reviewed source and documentation commits to `origin/main`.
+- Local `main` and `origin/main` both resolve to `86130f718b66ce7a4ad5b576a9e1e26aab6f897a`; the worktree is clean.
+- Next: O8 runtime readiness. Check installation and refresh commit-headroom telemetry before any runtime launch.
+
 ## Current objective
 
 Prepare AstraForge as a profile-driven Xbox compatibility layer. Start with NVIDIA RTX 3070 Ampere, target at least 30 real gameplay FPS with a 1% low of at least 30, and add AMD only in a later separately validated phase. Keep public benchmark reporting anonymous and do not identify the game title.
