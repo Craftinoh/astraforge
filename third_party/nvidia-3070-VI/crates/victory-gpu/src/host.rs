@@ -149,20 +149,32 @@ pub(crate) fn available_physical_ram() -> Option<u64> {
 /// (By those times everything idle for 2.5 s went from 75 % of the budget
 /// on: 61,000 of them in the first 300 s of session play-1125-0203, at 78 to
 /// 80 %, of which 13,000 were made and uploaded again.)
+#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn vram_keep(budget: u64, used: u64) -> (u64, u64) {
+    vram_keep_below(budget, used, budget / 100 * 90)
+}
+
+/// [`vram_keep`] around the texture queue's line `line`
+/// (`crate::resource::room_line`) instead of 90 % of the budget: none go
+/// while `used` is 2 % of the budget under it or more, those idle 5 s go
+/// down to 5 % under it while it is under 5 % over it, those idle 1.5 s
+/// above that. (At a line of 90 %: 88, 85 and 95 %, as [`vram_keep`] was.)
+/// Ported from fxceless/victory-fork `2eade68c`.
+pub(crate) fn vram_keep_below(budget: u64, used: u64, line: u64) -> (u64, u64) {
     const KEPT_MS: u64 = 600_000;
     const IDLE_MS: u64 = 5_000;
     const SHORT_MS: u64 = 1_500;
     if budget == 0 {
         return (IDLE_MS, u64::MAX);
     }
-    let share = |percent: u64| budget / 100 * percent;
-    if used < share(88) {
+    let step = budget / 100;
+    let aim = line.saturating_sub(5 * step);
+    if used < line.saturating_sub(2 * step) {
         (KEPT_MS, u64::MAX)
-    } else if used < share(95) {
-        (IDLE_MS, used - share(85))
+    } else if used < line + 5 * step {
+        (IDLE_MS, used.saturating_sub(aim))
     } else {
-        (SHORT_MS, used - share(85))
+        (SHORT_MS, used.saturating_sub(aim))
     }
 }
 

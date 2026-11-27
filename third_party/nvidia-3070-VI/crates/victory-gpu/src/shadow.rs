@@ -5256,13 +5256,19 @@ pub(crate) fn by_address(start: u64, len: u64) -> Option<Arc<Shadow>> {
         let mb = std::env::var("VICTORY_MEMORY_CARD_MB").ok().and_then(|v| v.trim().parse::<u64>().ok());
         mb.unwrap_or(4096) << 20
     });
-    let room = host.video_memory().is_none_or(|[budget, used, ..]| used + len < budget / 100 * 97);
+    // (And with room left for the render targets still to come:
+    // `crate::resource::by_address_room`.)
+    let room = host.video_memory().is_none_or(|[budget, used, ..]| crate::resource::by_address_room(budget, used, len));
     let (staging, data) = host.shared_buffer(len)?;
     let on_card = if room && USED.fetch_add(len, Ordering::Relaxed) + len <= most {
         host.uav_buffer(len)
     } else {
         None
     };
+    // Counted by where it lies: `WINDOW_CARD_BYTES` below takes both.
+    let place = usize::from(on_card.is_none());
+    BY_ADDRESS[2 * place].fetch_add(1, Ordering::Relaxed);
+    BY_ADDRESS[2 * place + 1].fetch_add(len, Ordering::Relaxed);
     let buffer = match on_card {
         Some(buffer) => buffer,
         None => host.shared_buffer(len)?.0,
@@ -5288,6 +5294,11 @@ pub(crate) fn by_address(start: u64, len: u64) -> Option<Arc<Shadow>> {
     CARDED.lock().unwrap_or_else(|e| e.into_inner()).push(Arc::downgrade(&shadow));
     Some(shadow)
 }
+
+/// Title memory by address made since the start ([`by_address`]): with its
+/// shaders' side in the card's own memory, how many and their bytes; then
+/// in the PC's memory, where every access of a shader crosses the bus.
+static BY_ADDRESS: [AtomicU64; 4] = [const { AtomicU64::new(0) }; 4];
 
 /// Copies of title memory outside buffers, by (start, length).
 static LOOSE: std::sync::RwLock<BTreeMap<(u64, u64), Arc<Shadow>>> = std::sync::RwLock::new(BTreeMap::new());
