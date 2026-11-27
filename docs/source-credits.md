@@ -22,6 +22,7 @@ This project preserves the upstream GPL-3.0 license and original source notices.
 | Reserve a null descriptor before the portable heap's dynamic descriptor tail | Local fix after model-assisted review and independent source audit; no upstream patch copied | `f8b6af5` | Adds a regression test for disjoint shader-clamp and dynamic ranges; validated by the GPU library test suite |
 | Start commit-headroom admission at zero until the first valid Windows sample | Local fail-closed memory-safety change; no upstream patch copied | `42435bf` | Failed initial sampling can defer speculative uploads instead of treating commit headroom as unlimited |
 | Correct two indirect-budget regression-test fixtures | Local test-only corrections | `468b79b` | Test inputs and expected accepted work now match the shader's all-or-nothing budget semantics |
+| Canonicalize placed-resource padding and unused SRV/UAV union words before shape keying | [`TaynanGT/Vice-Tay#27`](https://github.com/TaynanGT/Vice-Tay/pull/27), focused commits `f07e54a2` and `ce914907`; resource-padding origin also credits `JMAN730/project-flamingo@b1e0cd1d` | `descriptor: canonicalize placed-view shape keys` change set | Two focused tests and all ten descriptor tests pass locally; gameplay memory and rendering remain unverified |
 
 ## Reviewed, not merged wholesale
 
