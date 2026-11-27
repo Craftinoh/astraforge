@@ -7,7 +7,13 @@ param(
     [ValidateSet('Stability', 'Balanced', 'Performance', 'Quality')][string]$Profile = 'Balanced',
     [ValidateSet('series-s', 'series-x')][string]$Console,
     [string]$OutputRoot = "$env:LOCALAPPDATA\AstraForge\gpu",
+    [string]$CacheDir,
+    [string]$DataDir,
+    [string]$PresentMonExe,
+    [hashtable]$RuntimeOverride = @{},
     [ValidateRange(12, 256)][int]$MinimumAvailableCommitGiB = 12,
+    [switch]$DebugConsole,
+    [switch]$PreRunWindow,
     [switch]$AllowSeriesX
 )
 
