@@ -26,6 +26,7 @@ application, publisher, executable, save data, or personal paths.
 | Hardware | RTX 3070 is first DXGI adapter; driver 610.88, SM 6.8, Wave32, mesh tier 1, ray tracing tier 1.2, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM; Windows 11 Pro 26H2 | Hardware probe refreshed at 11:49 CET; process-local DXGI probe budget is not the runtime's budget; BAR1 only suggests Resizable BAR |
 | Resolution | The source has no independent internal render-scale/upscaler setting | `VICTORY_DISPLAY_MODE` supplies the guest's advertised mode list; the host swapchain follows presented texture dimensions. A 1280x720-to-1920x1080 path is not selectable or verified by these presets |
 | Runtime data | The user confirmed the single executable candidate in the external install directory; `VICTORY_GAME_DIR` and `VICTORY_GAME_EXE` remain unset, and the launcher accepts explicit paths | No shader prewarm, visual review, or gameplay capture yet |
+| Game-file integrity | User requires the installation files to remain untouched | Inspections are read-only; launcher and benchmark validate that logs, cache, and data roots are outside both the repository and game directory; do not patch, rename, move, overwrite, or delete installed files |
 | Memory readiness | 11:54 CET sample: 10.31 GiB available commit and 11.61 GiB available physical RAM | Below the 12 GiB launch floor by 1.69 GiB; volatile; no process was stopped; sample again immediately before a future launch |
 | Commit preflight | Shared check enforces a 12 GiB hard minimum in launcher and benchmark entry points; warm cache seeds are copied only after it passes | All 15 PowerShell preflight cases and all six benchmark-harness checks pass; no gameplay evidence |
 | Model review | Configured remote coding endpoint and one minimal completion verified | Model output is untrusted review input |
@@ -87,6 +88,7 @@ available commit:
 - Do not merge forks wholesale or invent runtime variables.
 - Do not remove required draws, barriers, synchronization, or shader work to inflate FPS.
 - Do not bypass the adapter, feature, commit-headroom, or privacy preflights.
+- Treat the game installation as read-only: never patch, rename, move, overwrite, or delete its files. Keep all logs, caches, captures, and emulator data outside it and the repository; stop if any output path would enter the installation.
 - Do not call a model finding a bug until the source path confirms it.
 - Do not call compilation, WARP, menus, cinematics, duplicated frames, or generated
   frames a gameplay benchmark.
