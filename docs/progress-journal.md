@@ -258,3 +258,8 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 - Refreshed the external hardware report at 10:08 CET: 9.71 GiB available commit and 9.92 GiB available physical RAM. This remains below the mandatory 12 GiB launch floor. The runtime directory and executable are still not configured; no process or Windows setting was changed.
 - The installation is still pending per the user's update. Keep the full report outside Git; after installation, identify the correct executable without publishing its name or path, then re-run the adapter and commit preflight before any launch. No gameplay measurement has been made.
+
+## 2026-11-27 - partial installation inspection
+
+- The user supplied the external installation directory and asked for a read-only inspection while its download continues. The directory is present; a depth-limited metadata scan found one executable candidate. This is a partial-install observation only; the candidate is not confirmed as the runtime and was not launched. No file was changed.
+- Refreshed hardware at 11:49 CET: 9.65 GiB available commit and 11.50 GiB available physical RAM. The 12 GiB commit gate still blocks a runtime launch. The unredacted path and complete hardware report remain outside Git.
