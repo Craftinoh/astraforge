@@ -3,7 +3,7 @@
 Use this file when a new orchestration session resumes the current work. Follow it
 literally before proposing a new patch.
 
-## Latest checkpoint - 2026-11-27 03:19 UTC
+## Latest checkpoint - 2026-11-27 03:29 UTC
 
 - The local Vice-Tay reference clone is still at `cc9ed86`; Git fetch failed earlier
   because DNS was unavailable. A read-only GitHub API audit now sees default-branch
@@ -13,9 +13,15 @@ literally before proposing a new patch.
   #114, adapted from fxceless #1407 and credited to the original Kelvaroq finding. The
   added 48 MiB test failed against the old expression with a debug overflow, then passed
   1/1 in debug and 1/1 in optimized Release after the saturating-subtraction fix.
-- The entire `victory-gpu` library suite now passes: 346 passed, 0 failed, 34 ignored.
-  Existing compiler warnings are unchanged. The clean pinned Release/diagnostic build
-  for this source patch is still pending; it is the next action.
+- The entire `victory-gpu` library suite passes: 346 passed, 0 failed, 34 ignored. The
+  focused regression passes in debug and optimized Release. Existing compiler warnings
+  remain.
+- Commit `abcb2750a4c17349c44c1026394041682ed337f0` has a clean pinned Release/diagnostic
+  build: `20261127-042402-Both-thinlto-native-7e316a03`, `SourceDirty=false`, Rust/Cargo
+  1.98.1, MSVC target `x86_64-pc-windows-msvc`, DXC 10.0.26100.0, Thin LTO and native
+  CPU. Both executables return success for `--help`. SHA-256: Release
+  `E20A9E35AB7B4D1DCF031C50502FA6F1CE270B6E334F8418CA61118523471A33`; diagnostic
+  `730C5E366E45607DECFCBC4EE1D25F8CAA145B2DF841F13935DB381754D0186D`.
 - After that build and documentation checkpoint, resume O8. Refresh adapter and commit
   telemetry; do not launch until the installation path is confirmed and the 12 GiB
   preflight passes. No gameplay or FPS data exists.
@@ -54,9 +60,10 @@ literally before proposing a new patch.
   Resizable BAR but does not prove the firmware setting.
 - Vice-Tay reference checkout is outside Git under
   `%LOCALAPPDATA%\AstraForge\references\Vice-Tay`, audited at `cc9ed86`.
-- Current focused ports are placed-view descriptor canonicalization (Vice-Tay #27 commits
-  `f07e54a2` and `ce914907`) and opt-in `VICTORY_FILL_TITLE=2` (commit `32a13f7`). Neither
-  is enabled by a supplied profile.
+- Current focused ports include placed-view descriptor canonicalization (Vice-Tay #27
+  commits `f07e54a2` and `ce914907`), opt-in `VICTORY_FILL_TITLE=2` (commit `32a13f7`),
+  and the first-piece shadow compare fix (Vice-Tay #114, local commit `abcb275`).
+  `VICTORY_FILL_TITLE=2` remains disabled by all supplied profiles.
 - Focused test results already obtained:
   - `placed_views_ignore`: 2 passed, 0 failed.
   - `descriptor::tests`: 10 passed, 0 failed.
@@ -171,15 +178,15 @@ after source tracing. No gameplay correctness, stability, frametime, or FPS resu
 
 ## O7 result: clean Release and diagnostic build
 
-The focused source commit is `32a13f7`; this documentation records the completed O2 audit.
-The clean build is `20261127-033517-Both-thinlto-native-5aaf5812`, built at source commit
-`960828f7eb1c141be2176e17fe09abd9e7c0650b` with `SourceDirty=false`, Rust/Cargo 1.98.1,
-MSVC, DXC 10.0.26100.0, Thin LTO, and native CPU code generation. Both executables return
-success for `--help`. SHA-256: Release
-`F172EF1C49219FC8A093EB0392ACC96FD98AF77390823E6B9CA2AC4D1C2A392E`; Diagnostic
-`1931A334F428B646F107FC067DCA6DC78FA20C3DD0BE30959AD28B01FB0F6A42`. The focused
-`fill_title_mode_tests` suite passed 3/3. None of these checks verifies actual rendering,
-memory pressure during gameplay, stability, or FPS.
+The latest source commit is `abcb2750a4c17349c44c1026394041682ed337f0`. Its clean build
+is `20261127-042402-Both-thinlto-native-7e316a03`, with `SourceDirty=false`, Rust/Cargo
+1.98.1, MSVC, DXC 10.0.26100.0, Thin LTO, and native CPU code generation. Both
+executables return success for `--help`. SHA-256: Release
+`E20A9E35AB7B4D1DCF031C50502FA6F1CE270B6E334F8418CA61118523471A33`; diagnostic
+`730C5E366E45607DECFCBC4EE1D25F8CAA145B2DF841F13935DB381754D0186D`. The shadow
+regression passes in debug and Release; the GPU library suite passes 346 tests with 34
+ignored. None of these checks verifies actual rendering, memory pressure during gameplay,
+stability, or FPS.
 
 ## Next exact task: O8 runtime readiness
 
