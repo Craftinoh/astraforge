@@ -9032,9 +9032,11 @@ impl Meter {
             buffer.truncate(n.max(0) as usize);
             self.caption = Some(buffer);
         }
-        let Some(caption) = &self.caption else { return };
-        let text = format!(" | VIctory {fps:.0} fps {ms:.1} ms/frame {draws:.0} draws/frame");
-        let mut text: Vec<u16> = caption.iter().copied().chain(text.encode_utf16()).collect();
+        if self.caption.is_none() {
+            return;
+        }
+        let text = format!("AstraForge | {fps:.0} FPS | {ms:.1} ms/frame | {draws:.0} draws/frame");
+        let mut text: Vec<u16> = text.encode_utf16().collect();
         text.push(0);
         // Setting the text waits for the window's thread (a title thread,
         // which may not pump for a while), so a thread of ours does it and
@@ -9044,7 +9046,7 @@ impl Meter {
         *PENDING.lock().unwrap_or_else(|e| e.into_inner()) = Some((hwnd.0 as usize, text));
         SETTER.call_once(|| {
             let _ = std::thread::Builder::new()
-                .name("victory-caption".into())
+                .name("astraforge-caption".into())
                 .spawn(|| {
                     loop {
                         let next = PENDING.lock().unwrap_or_else(|e| e.into_inner()).take();
