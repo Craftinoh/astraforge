@@ -29,6 +29,26 @@ $entryPoints = @(
     (Join-Path $PSScriptRoot 'Start-AstraForge3070.ps1'),
     (Join-Path $PSScriptRoot 'Measure-AstraForgeGameplay.ps1')
 )
+$launchers = $entryPoints | Where-Object { $_ -notmatch 'Measure-AstraForgeGameplay\.ps1$' }
+foreach ($launcher in $launchers) {
+    $launcherText = Get-Content -LiteralPath $launcher -Raw
+    $parameterBlockEnd = $launcherText.IndexOf("`n)`n")
+    if ($parameterBlockEnd -lt 0) { $parameterBlockEnd = $launcherText.IndexOf("`r`n)`r`n") }
+    if ($parameterBlockEnd -lt 0) { throw "Could not isolate launcher parameter block: $launcher" }
+    $parameterBlock = $launcherText.Substring(0, $parameterBlockEnd)
+    if ($parameterBlock -match '\$SourceRoot\s*=\s*\(Join-Path\s+\$PSScriptRoot') {
+        throw "Launcher evaluates PSScriptRoot while binding SourceRoot: $launcher"
+    }
+    if ($launcherText -notmatch '(?m)^\s*\$SourceRoot\s*=\s*Join-Path\s+\$PSScriptRoot') {
+        throw "Launcher does not resolve its default SourceRoot after parameter binding: $launcher"
+    }
+}
+$startLauncherText = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Start-AstraForge.ps1') -Raw
+$waitForExitIndex = $startLauncherText.IndexOf('$process.WaitForExit()')
+$readExitCodeIndex = $startLauncherText.IndexOf('$exitCode = $process.ExitCode')
+if ($waitForExitIndex -lt 0 -or $readExitCodeIndex -lt 0 -or $waitForExitIndex -ge $readExitCodeIndex) {
+    throw 'Launcher must wait for the runtime process before reading its exit code.'
+}
 $previousErrorActionPreference = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 foreach ($entryPoint in $entryPoints) {
@@ -47,4 +67,4 @@ foreach ($entryPoint in $entryPoints) {
 }
 $ErrorActionPreference = $previousErrorActionPreference
 
-Write-Host 'AstraForge commit preflight tests passed: 15 cases.'
+Write-Host 'AstraForge commit preflight tests passed: 18 cases.'
