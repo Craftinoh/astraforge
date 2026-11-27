@@ -456,3 +456,28 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
   - What shaders wrote, put into title memory: 142.2 MB per frame in 3,890 pieces (`VICTORY_EXACT_BACK`).
   - Write-tracker guard-lock waits: 17.55 ms per frame across threads.
   - The ping-pong buffer is the next concrete target: find which title resource it is and whether its CPU and GPU halves can be kept apart, or its round trip skipped when the title does not read it.
+
+## 2026-11-28 (night) — memory pressure, rejected experiments, and the title's hang watchdog
+
+Method change: one change at a time, judged by log counters (VRAM in use, textures waiting, card-copy refusals, free RAM, crashes) and a fixed visual check in the opening scene, not by impressions alone. Nothing below was committed except this record.
+
+- Vice-Tay #321 (write watch for large `XMemAllocDefault` allocations, both switches on): rejected. It does find the 20 MB buffer that is copied whole about twice a frame, but on this PC the shader results landing in it re-dirty its pages. Watched pages per frame rose from about 2,500 to 7,800, and copy-back took 45–115 ms. Internal fps before the profiler window was 3.8 with it, 11.4 without (same binary, two runs).
+- `VICTORY_PROFILE` sampling (28 threads every 25 ms): both runs crashed about 40 s into the sampling window, with the same stack in the C runtime. It is not used for timed or played runs. `VICTORY_STACKS` snapshots did not crash in earlier sessions.
+- Texture-block gate off with the sweep back at 88 %: rejected. In the user's play VRAM reached 6.86 of 7.07 GB (97 %), title buffers were refused card copies 40 times, and over 1,000 textures waited. Characters and an animal in the opening scene were black.
+- Dropped work per frame in the world: about 430 indirect dispatches that shade ray-tracing hits and about 85 stages of the BVH builder. Both are dropped because the builder is off (`VICTORY_BVH_BUILDER`, upstream status: not working end to end). This is not a separate indirect-translation bug.
+- System-memory texture tier (textures the card has no room for placed in an L0 custom heap, up to 1 GB): rejected and kept as a local patch only.
+  - The texture queue stops at the card's line before the pool, so the tier first never engaged.
+  - Opening the queue also let card blocks and tiled levels grow: VRAM reached 8.4 GB of a 7.1 GB budget, internal fps fell to 0.6, and the system pagefile grew to 34 GB.
+  - Restricting new textures to free card pieces or system memory still left VRAM at its budget and free RAM at 1.1 GB, and the run ended in a crash.
+  - Conclusion: on this PC both VRAM and RAM are under pressure. Moving data between them does not help; reducing duplicate copies does.
+- Disk: the build helper keeps a full `cargo-target` per build. About 30 GB had accumulated under `%LOCALAPPDATA%\AstraForge\builds\artifacts` and filled drive C: together with the pagefile. Old artifacts were deleted; prune them after builds.
+- Crash analysis (six crashes on 2026-11-27):
+  - Four stopped at the same title address. Disassembly of the local title image shows a deliberate write to address 0 with an error code, reached from the title's hang watchdog.
+  - The watchdog runs once a second and keeps a 64-entry, per-thread table of open "watched scope" timestamps. It stops the title when a scope has been open for more than 300 s. In every case the crash came about 300 s after process start, so a title thread entered a watched scope early and never left it.
+  - None of the six crashes followed a refused Windows commit. Three happened with 6–9 GB of RAM free. They are not host out-of-memory crashes.
+  - The other two (C runtime, read of address 0) happened only in the `VICTORY_PROFILE` runs.
+- Window copies outside buffers: 2,676 MB alive in a diagnostic run, of which only 1,448 MB lies between the lowest and highest address ever asked for in each window. `VICTORY_WINDOW_KB` (finer grid) and `VICTORY_WINDOW_TAILS=1` exist upstream but have never been measured here.
+- Repository: history rewritten to remove a third-party service reference from documentation; `main` and both tags were force-pushed. Clones must reset to `origin/main`.
+- Next:
+  1. Hardening: identify the title thread stuck in a watched scope with `VICTORY_STACKS` snapshots near 280–290 s, then find the wait our layer never completes.
+  2. Memory: measure the window grid and tails switches by window bytes, free RAM, VRAM and internal fps.
