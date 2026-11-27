@@ -364,3 +364,16 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - Next:
   - Dump G-buffer targets on a black-skin run to locate the stage (albedo versus skin lighting).
   - Consider fxceless #814 (`VICTORY_TEXTURE_DROP_MIPS`, lowers texture detail) only as an opt-in for 8 GB cards.
+
+## 2026-11-27 (night) — v0.1.1-preview
+
+- The release was built from `cbe2b36` in the neutral tree: build `20261127-212133-Both-thinlto-1b3c5bf9`, `SourceDirty=false`, paths remapped.
+- Release SHA-256 `B3312F24…`; diagnostic SHA-256 `1593C2EB…`. A binary scan found no user path (only the neutral `\af\src`).
+- Release-binary smoke test, one automated 720p Stability run: world reached at 82 s, 80 s in the world, no crash, 9.8 fps internal mean (5.5 minimum). PresentMon lost 0.54 M events and wrote no CSV.
+- The README status table now describes v0.1.1-preview.
+- Build note: `vcvars64.bat` could not find `vswhere` on PATH in this shell. Adding the MSVC `Hostx64\x64` folder to PATH was enough for `Build-AstraForge.ps1`.
+- New upstream work to evaluate:
+  - fxceless `2eade68c` (texture-block budget, which keeps the card under its VRAM line);
+  - fxceless `cd935520` and `f299fba1` (32-lane water);
+  - Vice-Tay `aa917f3f` (#343, shared heap-sync rounds) and `b9ef9252` (plan card steps once);
+  - trustno `30b979ee` (arena storm, relevant only with the BVH builder).

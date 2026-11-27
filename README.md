@@ -16,27 +16,28 @@ or a focused engine patch without copying a whole fork or losing authorship and 
 > installed outside this repository. Public reports never name the game; they use
 > anonymous scene labels such as `scene-01`.
 
-## Status — `v0.1.0-preview` (pre-release)
+## Status — `v0.1.1-preview` (pre-release, 2026-11-27)
 
-Tested on one PC: RTX 3070 8 GB, Ryzen 7 7700X, 32 GiB RAM, Windows 11, Series S profile.
+Tested on one PC: RTX 3070 8 GB, Ryzen 7 7700X, 32 GiB RAM, Windows 11, Series S profile, 1280x720, Stability preset.
 
 | Area | State |
 |---|---|
-| Start-up screens, menus, story loading | ✅ Visible (black output fixed in this release) |
-| Entering the world without a crash | ✅ After one warm-up launch (pipeline library) |
-| Textures and colours | ⚠️ Stream in slowly; colours/materials largely missing; some characters black; flickering |
-| Performance | ⚠️ Low. Users reported about 7–9 average frames/s in story and at sea (not a PresentMon measurement) |
-| CPU load | ⚠️ High even in menus; about 95 ms/frame spent translating command lists (first optimization target) |
-| PresentMon frame capture | ❌ Not working yet, so **no validated FPS figure exists** |
-| Other GPUs | ❌ Not supported yet. RTX 3060 testing is in progress as a separate profile |
+| Start-up screens, menus, story loading | ✅ Visible |
+| Entering the world and playing the first story scene | ✅ No crash in 10 automated runs, each 2–3 minutes in the world and 6 of them on this release's source. A warmed shader cache and pipeline library were used |
+| Character skin | ⚠️ Intermittent: correct in some runs, black in others with the same settings. Skin-bake sources are now refreshed before each bake (fxceless port), which fixes one cause but not all |
+| Textures and colours | ⚠️ Flickering; some materials and colours missing |
+| Performance | ⚠️ Low and CPU-bound. The runtime's internal reports show 10–12 fps on average. One PresentMon capture measured 9.8 fps average, 11.6 median and 2.4 for the 1% low. Each frame spends about 55–70 ms of CPU preparation, 30–36 ms copying results back and 7–13 ms on the GPU |
+| VRAM on 8 GB cards | ⚠️ Keep the Stability preset (80 % texture room). 90 % measured 5.2 fps and 94 % measured 2.1 fps |
+| PresentMon frame capture | ⚠️ Works with the official PresentMon 2.x, but often loses ETW events in this workload and then writes no CSV |
+| Other GPUs | ❌ Not supported yet. A candidate RTX 3060 profile is in review as a separate identity |
 
 The acceptance target is at least 30 real application FPS with a 1% low of at least 30,
 measured over repeated gameplay captures. It has **not** been reached. Details are in
-the [release notes](docs/releases/v0.1.0-preview.md) and the [progress journal](docs/progress-journal.md).
+the [release notes](docs/releases/v0.1.1-preview.md) and the [progress journal](docs/progress-journal.md).
 
 ## Quick start
 
-1. **Download** `astraforge-v0.1.0-preview-win64.zip` from
+1. **Download** `astraforge-v0.1.1-preview-win64.zip` from
    [Releases](https://github.com/Craftinoh/astraforge/releases) and check it against `SHA256SUMS.txt`.
 2. **Clone this repository**. The launcher, profiles and preflight checks live here.
 3. **Launch** with your own game directory, using the Stability profile and 720p:
@@ -104,10 +105,11 @@ maintainer, see the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
 
 ## Current priorities
 
-1. Reduce the per-frame CPU cost of command-list translation (`VICTORY_THIN` A/B).
-2. Fix texture streaming, black characters and missing colours (decoration-bake texture uploads).
-3. Get PresentMon capture working and record the first validated gameplay baseline.
-4. Port the sampler-table fix (trustno PR #18) to replace `VICTORY_LIBRARY_STATIC_SAMPLERS=1`.
+1. Find the remaining cause of intermittent black skin, by dumping the G-buffer of a black-skin frame.
+2. Reduce the per-frame CPU cost: command-list translation and copying results back.
+3. Make PresentMon capture reliable under ETW event loss, and record repeated validated baselines.
+4. Evaluate the newest upstream work on texture-block budget and 32-lane water (fxceless `2eade68c`, `cd935520`).
+5. Port the sampler-table fix (trustno PR #18) to replace `VICTORY_LIBRARY_STATIC_SAMPLERS=1`.
 
 The [operational plan](docs/OPERATIONAL_PLAN.md) has the full queue. The
 [Claude Code handoff](docs/CLAUDE_CODE_HANDOFF.md) is written for continuing agents.
