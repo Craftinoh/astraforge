@@ -30,11 +30,13 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 ```
 
 Use `-DryRun` first to inspect the selected filenames and request size without making a
-network request. Inputs must be explicit text files, are capped at 512 KiB each, and the
-complete JSON request is capped below the provider's 1 MiB limit. Generated, cache,
-credential-like, and private-data paths are rejected. The default complete-request
-ceiling is 450 KiB to leave room for model output inside a large coding context; use
-separate reviews instead of raising it for unrelated subsystems.
+network request. Inputs must be explicit text files. Whole-file inputs are capped at
+512 KiB; a file up to 4 MiB is allowed only when an inclusive line range is selected.
+Only the selected excerpt is sent, and the complete JSON request is capped below the
+endpoint's 1 MiB limit. Generated, cache, credential-like, and private-data paths are
+rejected. The default complete-request ceiling is 450 KiB to leave room for model output
+inside a large coding context; use separate reviews instead of raising it for unrelated
+subsystems.
 
 For a large source file, pass inclusive line windows with `-InputLineRanges` while keeping
 the full file on the explicit-input allowlist, so only the selected excerpt is sent:

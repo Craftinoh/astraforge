@@ -35,8 +35,8 @@ application, publisher, executable, save data, or personal paths.
 | O2 | Vice-Tay donor audit | In progress at `cc9ed86` | PR #27 placed-view and PR #37 lock/copy portions reviewed; shader portions remain selective candidates |
 | O3 | Placed-view lifetime and leak review | Unit-tested | Canonicalizers ported; two focused tests and all ten descriptor tests pass; gameplay memory and rendering pending |
 | O4 | Shadow/resource lock contention review | Complete; patch deferred | Two bounded reviews and local ownership audit complete; measure local call volume and mutex contention before selecting a lock-scope change |
-| O5 | NVIDIA shader correctness review | Next | Trace Wave32 translation, NaN handling, incompatible ray paths, and known black/flat rendering symptoms; correctness tests precede optimization |
-| O6 | 8 GB residency and texture pressure review | Queued | Validate DXGI budget feedback, staging growth, texture priority, descriptor retention, and commit-pressure behavior |
+| O5 | NVIDIA shader correctness review | Complete; visual check pending runtime | Wave32/Wave64 and NaN/BVH paths audited; 281 shader tests pass and a synthetic intersection test ran on the hardware adapter and WARP; no global NaN scrub or ray-disable switch exists |
+| O6 | 8 GB residency and texture pressure review | Next | Validate DXGI budget feedback, staging growth, texture priority, descriptor retention, and commit-pressure behavior |
 | O7 | Incremental source groups | Queued | One reversible change group at a time, exact provenance, focused tests, full pinned build after Rust/D3D12 edits |
 | O8 | Runtime readiness | Waiting for installation | Resolve authorized external game directory, pass adapter/feature/commit preflight, keep all game data and caches outside Git |
 | O9 | Shader and pipeline prewarm | Waiting for O8 | Separate first-run compilation settings from gameplay settings and fingerprint the generated cache |
