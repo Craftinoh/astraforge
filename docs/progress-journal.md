@@ -343,3 +343,24 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - Visual: captures show the world rendering (vegetation, aircraft, fog) while character **skin** is black and eyes, lips, hair and clothes are correct. The local translator emits no fast-math flags, so the victory-fork fast-math cause does not apply. The leading lead is the skin-bake sources (victory-fork `VICTORY_BAKE_SOURCES`). `VICTORY_BAKE_TEXTURES_MS` is already on by default (1,500 ms); an earlier note that it was off was wrong.
 - Regression found and fixed: force-stopped PresentMon left `AstraForge-<pid>` ETW sessions running. Five were found, plus a FrameView PresentMon process running since 12:50. All were stopped, and the launcher now stops its session (`7563028`). The next launch left no orphan session.
 - Next: make PresentMon capture reliable (event loss); port the card-copy send-path optimizations (Vice-Tay #286, then #192); investigate skin-bake sources.
+
+## 2026-11-27 (evening) — black skin is intermittent; fxceless bake-sources port
+
+- Automated 720p runs (Stability, internal counters; PresentMon still loses 0.3–0.9 M ETW events and writes no CSV):
+  - A, `0d66689` (#286): 9.4 fps, skin black.
+  - B, `06f8dff` (#315 only): 10.6 fps, skin correct.
+  - C, `0d66689` with Balanced (90 %): 5.2 fps, skin correct.
+  - D, 94 % room plus `VICTORY_BAKE_TEXTURES_MS=5000`: 2.1 fps, 215 ms GPU per frame (VRAM overcommit).
+- Findings from these runs:
+  - Black skin is intermittent per run with identical settings, so it is not caused by #286.
+  - More texture room is a large regression on 8 GB, so Stability (80 %) stays.
+- Ported fxceless `b3d49db`, `082ebaf` and `2983a71` (`VICTORY_BAKE_SOURCES`, default on). GPU library tests pass (352 passed, 34 ignored). Six runs, three release and three diagnostic:
+  - Each run brought about 180 stale skin-bake sources up to date, with 0 failures and no crash.
+  - Internal fps was 10.1–11.9.
+  - Skin was still black in one diagnostic run out of three. The port fixes a real stale-source case but is not the whole cause.
+- Ruled out by log comparison between good and black runs: pipeline drops (identical, ray-tracing only) and all-zero texture reads (none).
+- A render-target dump run (`VICTORY_DUMP_TARGETS=1` at two frames) was stopped by the host for low system memory before any dump was written. Retry with a single frame and more free RAM.
+- Frame budget (all runs): about 55–70 ms preparing on the CPU, 30–36 ms copying back, and 7–13 ms on the GPU. 30 fps needs ≤33 ms in total, so the limit is CPU-side translation and readback, not the GPU.
+- Next:
+  - Dump G-buffer targets on a black-skin run to locate the stage (albedo versus skin lighting).
+  - Consider fxceless #814 (`VICTORY_TEXTURE_DROP_MIPS`, lowers texture detail) only as an opt-in for 8 GB cards.
