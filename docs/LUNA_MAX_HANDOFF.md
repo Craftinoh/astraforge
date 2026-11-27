@@ -73,13 +73,41 @@ No source patch is selected without target-side contention and call-volume evide
 lock-scope change must prevent duplicate allocations and preserve map/descriptor/list
 lifetime guarantees.
 
-## Next exact task: O5 NVIDIA shader correctness
+## O5 result: NVIDIA shader correctness
 
-Audit the existing Wave32 translation, NaN scrubbing, incompatible ray-path handling,
-and known black/flat rendering symptoms in independent bounded groups. Trace each setting
-and code path in the local source; do not port shader changes from another architecture
-without correctness evidence. Add a patch only when a concrete local defect and focused
-validation route are established.
+Two bounded reviews were completed (`chatcmpl-8dbf8276f41e3d0f` for Wave32/Wave64 and
+`chatcmpl-961795fe29590bee` for NaN/BVH). Both responses contained unsupported claims;
+manual tracing is authoritative. The host obtains `WaveLaneCountMax` from D3D12 options
+and includes the host wave setting and wave-form switches in the shader cache identity.
+Wave64 compute shaders on a 32-lane host take exact retries first, with approximate local
+wave fallbacks available by default for some forms; `VICTORY_WAVE_LOCAL=idiom` forbids
+those approximate forms. `VICTORY_WAVE_WIDE=1` can enable branch widening with barriers;
+source comments document a prior device-loss case, so keep it unset unless a specific
+shader needs and validates that path. `VICTORY_WAVE_DEEP_SKIPS=0` disables an exact retry.
+
+The local tree has no runtime `VICTORY_NAN_SCRUB` setting. NaN behavior is encoded per
+operation in the bitcode optimizer and software BVH tests. The translated ray-node
+instruction is software-emulated in shader code; no global ray-disable switch is
+implemented. Do not scrub all NaNs or remove ray tests. The model misread the retry and
+box/triangle paths; reject both responses' unsupported findings.
+
+Validation: `cargo test --locked -p victory-shader --lib -- --test-threads=1` passed
+281 tests with 4 ignored. The targeted
+`emit::intersect_tests::the_64_bit_node_test_in_a_host_buffer_matches_the_reference_on_the_card`
+passed with `--nocapture`; neither hardware nor WARP reported a missing SM 6.6 device.
+These synthetic checks validate shader/reference behavior on the available adapters, not
+the complete title's image quality, stability, or FPS.
+The full suite initially emitted build artifacts into the imported source's `target`
+directory because `CARGO_TARGET_DIR` was unset; those generated files were cleaned.
+Point `CARGO_TARGET_DIR` outside the repository for subsequent Cargo work.
+
+## Next exact task: O6 8 GB residency and texture pressure
+
+Trace the current DXGI budget, shared/local memory, staging, texture prefetch, descriptor
+retention, and commit-pressure paths before changing policy. Separate dedicated VRAM
+budget from system commit and do not assume a larger shared-memory allowance improves
+RTX 3070 frame time. Use the existing profile and instrumentation first; wait for runtime
+installation before gameplay claims.
 
 ## Commit and publication gates
 

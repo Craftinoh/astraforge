@@ -69,7 +69,14 @@ foreach ($item in $InputPath) {
     if ($allowedExtensions -notcontains $resolved.Extension.ToLowerInvariant()) {
         throw "Unsupported model-review input type: $($resolved.FullName)"
     }
-    if ($resolved.Length -gt 512KB) {
+    $hasSelectedRange = $InputLineRanges.ContainsKey($item) -or
+        $InputLineRanges.ContainsKey($resolved.FullName) -or
+        $InputLineRanges.ContainsKey($resolved.Name)
+    $fileByteLimit = if ($hasSelectedRange) { 4MB } else { 512KB }
+    if ($resolved.Length -gt $fileByteLimit) {
+        if ($hasSelectedRange) {
+            throw "Selected-range input exceeds the 4 MiB local file limit: $($resolved.FullName)"
+        }
         throw "Input exceeds the 512 KiB per-file limit: $($resolved.FullName)"
     }
     $resolvedInputs.Add($resolved)
