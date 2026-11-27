@@ -3,6 +3,15 @@
 Use this file when a new orchestration session resumes the current work. Follow it
 literally before proposing a new patch.
 
+## Latest checkpoint - 2026-11-27, per-heap bake coverage
+
+- Current work is on `fix/per-heap-bake-coverage`; inspect `git status` and history before continuing. Do not discard this focused source/documentation change.
+- Adapted merged Vice-Tay PR #85 (`7eef143`) to the local `TextureQueue`: bake completion now belongs to a heap/revision, overlapping scans cannot certify, and capped due/lookahead snapshots must be complete. Synchronous GPU coverage is recorded after execution and descriptor publication.
+- Added queue-locality, stale-revision, overlap, and truncated-snapshot regressions. Serial diagnostic tests pass 407/0/35 ignored; optimized Release tests pass 349/0/34 ignored. Clippy exits 0 with existing warnings outside these edits.
+- Parallel runs were flaky: one diagnostics process exited `0xc0000005`; another run's texture-ahead test panicked. Keep that caveat in the journal. The whole-file rustfmt check reports extensive pre-existing formatting differences in these imported files, so do not format them wholesale.
+- A clean pinned application Release/diagnostic build for this patch is still pending. After the source and provenance commits, run `tools/Build-AstraForge.ps1 -Mode Both -ThinLto -NativeCpu`, verify both executables with `--help`, and record manifest/build ID/hashes in the plan and journal. Do not claim gameplay/FPS/visual results.
+- Then continue with O8: verify the authorized external installation path and refresh hardware/commit telemetry; never launch unless the 12 GiB available-commit preflight passes.
+
 ## Latest checkpoint - 2026-11-27 03:29 UTC
 
 - The local Vice-Tay reference clone is still at `cc9ed86`; Git fetch failed earlier
