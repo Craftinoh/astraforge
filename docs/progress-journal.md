@@ -17,7 +17,8 @@ This file is the durable task record. Update it when source, build, benchmark, h
 ## O8 commit-gate hardening - 2026-11-27
 
 - Source commit `7d7bbb8` added `tools/AstraForge-Preflight.psm1` and routed both the launcher and gameplay measurement harness through its fail-closed commit check. The floor is 12 GiB and callers can only raise it; the `-AllowLowCommit` switch and below-12 threshold values are rejected.
-- `tools/Test-AstraForgePreflight.ps1` passed 14 cases, including parameter-binding checks against all three entry points. PowerShell parsing passed for the five changed script/module files, and the benchmark harness synthetic suite passed all six cases.
+- Follow-up source commit `dfe5be8` moved warm cache-seed cloning after the hardware and commit gate, preventing a low-headroom run from copying a potentially large seed before it is rejected.
+- `tools/Test-AstraForgePreflight.ps1` passed 15 cases, including parameter-binding checks against all three entry points and a regression check for gate-before-copy ordering. PowerShell parsing passed for the changed script/module files, and the benchmark harness synthetic suite passed all six cases.
 - `git diff --check` passed. The launcher has still not been run with a runtime executable; current telemetry remains below the floor and no frame, visual, stability, or FPS result exists.
 - Next: resolve the authorized installation directory and obtain a fresh hardware report with at least 12 GiB available commit before any prewarm or runtime start.
 

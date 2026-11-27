@@ -3,7 +3,8 @@
 ## 2026-11-27 — hard commit-headroom preflight
 
 - Added a shared PowerShell check for the launcher and gameplay measurement entry point. The default floor is 12 GiB; callers may raise it but cannot lower it. Removed `-AllowLowCommit`, and invalid, negative, NaN, and infinite samples fail closed.
-- Added `tools/Test-AstraForgePreflight.ps1`. Its 14 passing cases cover accepted/rejected thresholds and prove each public entry point rejects a below-floor value and the removed bypass parameter.
+- Moved warm cache seed copying until after hardware and commit preflight, so a rejected low-memory run does not first make a large cache copy.
+- Added `tools/Test-AstraForgePreflight.ps1`. Its 15 passing cases cover accepted/rejected thresholds, each entry point's rejection of a below-floor value and the removed bypass parameter, and the gate-before-cache-copy order.
 - This guard reduces the chance of starting while Windows reports low commit headroom; it does not predict the application's future allocations or establish runtime stability. The current host sample remains below the floor.
 
 ## 2026-11-27 — Ampere descriptor safety and local builds

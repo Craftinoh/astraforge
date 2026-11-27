@@ -26,7 +26,7 @@ application, publisher, executable, save data, or personal paths.
 | Hardware | RTX 3070 is first DXGI adapter; driver 610.88, SM 6.8, Wave32, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM; Windows 11 Pro 26H2 | Latest raw inventory remains local and ignored; BAR1 only suggests Resizable BAR |
 | Runtime data | `VICTORY_GAME_DIR` is unset; two executables were found under the standard library root but neither was confirmed as the authorized runtime | No shader prewarm, visual review, or gameplay capture yet |
 | Memory readiness | Latest sample at 03:47 CET reported 10.32 GiB available commit against the 12 GiB launch floor and 11.92 GiB available physical RAM | Volatile; collect again immediately before launch; runtime launch remains blocked by the guard |
-| Commit preflight | Shared check enforces a 12 GiB hard minimum in launcher and benchmark entry points; higher floors remain configurable | 14 PowerShell cases pass, including attempts to lower the floor or use the removed bypass; no gameplay evidence |
+| Commit preflight | Shared check enforces a 12 GiB hard minimum in launcher and benchmark entry points; warm cache seeds are copied only after it passes | 15 PowerShell cases pass, including attempts to lower the floor, use the removed bypass, and move cache cloning ahead of the gate; no gameplay evidence |
 | Model review | Configured remote coding endpoint and one minimal completion verified | Model output is untrusted review input |
 
 ## Work queue
