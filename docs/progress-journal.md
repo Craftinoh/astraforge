@@ -5,8 +5,14 @@ This file is the durable task record. Update it when source, build, benchmark, h
 ## Publication sync - 2026-11-27
 
 - Pushed the reviewed source and documentation commits to `origin/main`.
-- Local `main` and `origin/main` both resolve to `86130f718b66ce7a4ad5b576a9e1e26aab6f897a`; the worktree is clean.
-- Next: O8 runtime readiness. Check installation and refresh commit-headroom telemetry before any runtime launch.
+- Local `main` and `origin/main` both resolve to `4b2f9bd50d6ed33fa5b061f5bca545d4694d7518`; the worktree is clean.
+
+## O8 readiness refresh - 2026-11-27 03:47 CET
+
+- The hardware collector ran read-only and saved its raw report outside Git. It reported a Ryzen 7 7700X (8 physical / 16 logical), 32 GiB installed RAM, Windows 11 Pro 26H2 build 26300.10075, RTX 3070 as first DXGI adapter, driver 610.88, PCIe Gen4 x16, SM 6.8, WaveOps 32, mesh tier 1, and ray-tracing tier 1.2. BAR1 aperture suggests but does not prove Resizable BAR firmware state.
+- Available physical RAM was 11.92 GiB and available commit 10.32 GiB, below the launcher's 12 GiB floor. Do not start the runtime until a fresh sample passes the guard.
+- `VICTORY_GAME_DIR` is unset. A read-only scan of the standard library root found two executables, but neither was resolved to the authorized runtime. No installation path or executable was stored in Git, and no runtime was launched.
+- Next: resolve the user's selected install directory, rerun hardware preflight, then proceed to shader prewarm and gameplay only when the 12 GiB commit gate passes.
 
 ## Current objective
 
