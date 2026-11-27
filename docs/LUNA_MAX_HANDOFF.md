@@ -1,5 +1,9 @@
 # Luna Max continuation handoff
 
+> Superseded on 2026-11-27 by [`CLAUDE_CODE_HANDOFF.md`](CLAUDE_CODE_HANDOFF.md) and
+> [`OPERATIONAL_PLAN.md`](OPERATIONAL_PLAN.md). This file is retained as historical
+> context; use the current handoff for the black-output run and model routes.
+
 Use this file when a new orchestration session resumes the current work. Follow it
 literally before proposing a new patch.
 
