@@ -14,6 +14,13 @@ This file is the durable task record. Update it when source, build, benchmark, h
 - `VICTORY_GAME_DIR` is unset. A read-only scan of the standard library root found two executables, but neither was resolved to the authorized runtime. No installation path or executable was stored in Git, and no runtime was launched.
 - Next: resolve the user's selected install directory, rerun hardware preflight, then proceed to shader prewarm and gameplay only when the 12 GiB commit gate passes.
 
+## O8 commit-gate hardening - 2026-11-27
+
+- Source commit `7d7bbb8` added `tools/AstraForge-Preflight.psm1` and routed both the launcher and gameplay measurement harness through its fail-closed commit check. The floor is 12 GiB and callers can only raise it; the `-AllowLowCommit` switch and below-12 threshold values are rejected.
+- `tools/Test-AstraForgePreflight.ps1` passed 14 cases, including parameter-binding checks against all three entry points. PowerShell parsing passed for the five changed script/module files, and the benchmark harness synthetic suite passed all six cases.
+- `git diff --check` passed. The launcher has still not been run with a runtime executable; current telemetry remains below the floor and no frame, visual, stability, or FPS result exists.
+- Next: resolve the authorized installation directory and obtain a fresh hardware report with at least 12 GiB available commit before any prewarm or runtime start.
+
 ## Current objective
 
 Prepare AstraForge as a profile-driven Xbox compatibility layer. Start with NVIDIA RTX 3070 Ampere, target at least 30 real gameplay FPS with a 1% low of at least 30, and add AMD only in a later separately validated phase. Keep public benchmark reporting anonymous and do not identify the game title.

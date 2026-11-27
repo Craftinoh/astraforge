@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-27 — hard commit-headroom preflight
+
+- Added a shared PowerShell check for the launcher and gameplay measurement entry point. The default floor is 12 GiB; callers may raise it but cannot lower it. Removed `-AllowLowCommit`, and invalid, negative, NaN, and infinite samples fail closed.
+- Added `tools/Test-AstraForgePreflight.ps1`. Its 14 passing cases cover accepted/rejected thresholds and prove each public entry point rejects a below-floor value and the removed bypass parameter.
+- This guard reduces the chance of starting while Windows reports low commit headroom; it does not predict the application's future allocations or establish runtime stability. The current host sample remains below the floor.
+
 ## 2026-11-27 — Ampere descriptor safety and local builds
 
 - Added opt-in `VICTORY_FILL_TITLE=2`, a stricter condition for bypassing small in-flight memory waits. Mode `1` behavior and the unset default are unchanged; no supplied profile enables mode `2`. The change is ported from Vice-Tay commit `b6be7e3`, with three predicate tests. Clean Release and diagnostic builds completed at `20261127-033517-Both-thinlto-native-5aaf5812`; gameplay correctness and performance remain unverified.
