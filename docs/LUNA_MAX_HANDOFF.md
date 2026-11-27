@@ -28,8 +28,10 @@ literally before proposing a new patch.
   12 GiB launch floor, and 11.92 GiB available physical RAM. These values are volatile;
   refresh immediately before any launch and never bypass the guard.
 - Commit `7d7bbb8` hardens the launcher and benchmark preflight: the minimum is 12 GiB,
-  can only be raised, and has no low-commit bypass. Its shared PowerShell test suite passed
-  14 cases, including all three entry points; this does not replace a fresh prelaunch sample.
+  can only be raised, and has no low-commit bypass. Follow-up `dfe5be8` delays warm-cache
+  seed copying until after the commit gate. The shared PowerShell suite passes 15 cases,
+  including all three entry points and the gate-before-copy ordering; this does not replace
+  a fresh prelaunch sample.
 - The RTX 3070 remains the first DXGI adapter; driver 610.88, PCIe Gen4 x16, SM 6.8,
   WaveOps 32, mesh shader tier 1, and ray-tracing tier 1.2 were reported. BAR1 suggests
   Resizable BAR but does not prove the firmware setting.
