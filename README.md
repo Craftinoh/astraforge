@@ -56,4 +56,4 @@ The source is GPL-3.0. Keep upstream copyright notices and the local change ledg
 
 ## Verification limits
 
-The pinned Rust/MSVC toolchain and local D3D12 unit tests are now available; the exact Release/diagnostic artifact IDs and test results are recorded in the progress journal. No gameplay FPS capture exists yet, so runtime compatibility, visual quality, and the 30 FPS target remain unverified.
+The pinned Rust/MSVC toolchain and local D3D12 tests are verified. The clean Release and diagnostic artifacts and their manifest are under `%LOCALAPPDATA%\AstraForge\builds\artifacts\20261127-005831-Both-thinlto-native-c8d108a7`; test totals are in the progress journal. No gameplay FPS capture exists yet, so runtime compatibility, visual quality, and the 30 FPS target remain unverified.

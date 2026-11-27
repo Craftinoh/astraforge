@@ -16,7 +16,7 @@ This project preserves the upstream GPL-3.0 license and original source notices.
 | NVIDIA 8 GB documentation sync | `grimygunnz/nvidia-3070-VI` | `2374bca` | Documentation only |
 | DirectStorage worker count bounded by physical-core count | fxceless PR #1044 | `f0ab013` | Ported; local build and performance effect unverified |
 | Descriptor dynamic-range allocation retains heap identity | fxceless PR #1324 | `878dbd7` | Ported with regression test; local test pending |
-| Defer descriptor nulling/resource release while submissions are in flight | `Itsbatt/victory-unified` commit `768735a` | `6e91b7b` | Ported with regression test; local D3D12 validation pending |
+| Defer descriptor nulling/resource release while submissions are in flight | `Itsbatt/victory-unified` commit `768735a` | `6e91b7b` | Ported with regression test; workspace tests pass, gameplay stress remains pending |
 | Use a neutral default data directory and generic executable name in the copied launcher | Local privacy/documentation change | `afbb784`, `337310f`, `c6f1fc4` | `VICTORY_GAME_DIR` and `VICTORY_GAME_EXE` remain configurable; defaults stay outside the workspace |
 | Anonymize title-specific comments and command examples | Local documentation/privacy change | `e31aafd` | Comment-only; runtime behavior unchanged |
 | Reserve a null descriptor before the portable heap's dynamic descriptor tail | Local fix after model-assisted review and independent source audit; no upstream patch copied | `f8b6af5` | Adds a regression test for disjoint shader-clamp and dynamic ranges; validated by the GPU library test suite |

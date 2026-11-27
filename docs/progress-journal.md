@@ -48,7 +48,7 @@ At the time of the initial import, the pinned Rust/MSVC/DXC toolchain was unavai
 - Shader prewarm: `tools\Prewarm-AstraForge.ps1`; it accepts an isolated cache seed and writes a fingerprint manifest.
 - Gameplay capture: `tools\Measure-AstraForgeGameplay.ps1`; comparison: `tools\Compare-AstraForgeRuns.ps1`; cache functions: `tools\AstraForge-BenchmarkCommon.psm1`.
 - Synthetic test command: `tools\Test-AstraForgeBenchmarkHarness.ps1`. The latest run passed cache seed cloning/mutation detection, three-run cold/warm comparisons, target evaluation, anonymous report export without local paths, and rejection of mismatched warm seeds and unclassified frames. All ten PowerShell scripts/modules parsed successfully after the GPU-profile refactor.
-- The optimized Release and diagnostic builds compile with the pinned toolchain. A first artifact was produced while the source edits were uncommitted; a clean-source build is pending the documentation commit. Shader prewarm and gameplay captures have not been run. No local FPS result exists.
+- The clean-source optimized Release and diagnostic builds completed from commit `fd423c7`. Shader prewarm and gameplay captures have not been run. No local FPS result exists.
 
 ## Performance evidence and target risk
 
@@ -70,7 +70,7 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 ## Next actions
 
-1. Complete the clean-source Release/diagnostic build, then run the profile and shader-prewarm preflights.
+1. Run the guarded profile and shader-prewarm preflights against the final clean-source artifact once the game directory is available.
 2. The user reports OP Coding is healthy behind a local-only API key. No inference has been sent from this workspace; keep the endpoint and key private and validate that integration only when explicitly requested.
 3. Once the local game directory is ready, capture repeatable cold/warm gameplay cohorts, inspect rendering, and report measured memory and frame-time behavior.
 4. Add later GPU profiles only with hardware checks, source attribution, rollback notes, and repeated correctness/performance evidence.
@@ -103,5 +103,6 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - Made host commit-headroom admission fail closed until the first valid `GlobalMemoryStatusEx` sample. A failed initial sample can no longer be interpreted as unlimited available commit.
 - Corrected two indirect-budget test fixtures: the host test now leaves too little budget for its follow-up dispatch, and the WARP assertion counts only accepted jobs. Runtime shader logic was unchanged by these test corrections.
 - `cargo test --locked -p victory-gpu --lib -- --test-threads=1`: 340 passed, 0 failed, 34 ignored. The full `cargo test --locked --workspace -- --test-threads=1` run also passed: 934 passed, 0 failed, 47 ignored, including 281 shader-translator tests. Both runs include D3D12/WARP coverage; they validate unit behavior, not gameplay.
-- A first Release plus diagnostic build succeeded with Rust/Cargo 1.98.1, MSVC 14.44, DXC, Thin LTO, one release codegen unit, and `-C target-cpu=native`. Its manifest correctly marked the source tree dirty because the tested patches had not yet been committed. A clean-manifest build is pending the documentation commit; the first artifact is not the final reproducible artifact.
+- Final clean-source build: ID `20261127-005831-Both-thinlto-native-c8d108a7`, source commit `fd423c7a851e743b17baa43fb8414cc2049f1b4d`, `SourceDirty=false`. It used Rust/Cargo 1.98.1, Windows MSVC 14.44.35207, DXC, Thin LTO, one release codegen unit, and `-C target-cpu=native`. Artifacts and SHA-256 hashes are recorded in the external build manifest under `%LOCALAPPDATA%\AstraForge\builds\artifacts\<build-id>\build-manifest.json`; Release is 9,912,320 bytes (`58748A7EF47229D41DAD8F3934407DDAE83F2B538A0624313B72134B0DACD5DA`), diagnostic is 19,179,520 bytes (`4CEB6525952B27FC012E1E20E8E3E0D21954A87E73B430E140EBB705AF5C3160`). Both binaries return success for `--help`. Compilation succeeded with existing warnings in the imported GPU crate; there were no build errors.
+- The earlier dirty-source artifact remains outside the repository and is superseded by the clean build above.
 - No game launch, shader prewarm, visual review, or gameplay benchmark has occurred. No FPS or performance gain is claimed.

@@ -5,8 +5,8 @@
 - On the 1,000,000-view portable D3D12 heap, moved the shader clamp's null slot ahead of the fixed 2^18 dynamic descriptor tail. Title-visible descriptors are limited to the range before that sentinel, preventing an out-of-range title index from reading a live per-draw descriptor. Added a regression test for the disjoint ranges.
 - Initialized cached system commit headroom to zero until Windows returns a valid `GlobalMemoryStatusEx` sample. A failed initial sample now pauses speculative texture/staging admission rather than treating the memory budget as unlimited.
 - Corrected two indirect-budget test fixtures after GPU execution showed their expected values contradicted the all-or-nothing budget semantics. The indirect shader behavior itself is unchanged.
-- Built Release and diagnostic executables using the pinned Rust 1.98.1 MSVC toolchain, Rust Thin LTO, one release codegen unit, and native CPU code generation. See the progress journal for the final clean-source build ID and manifest location.
-- The `victory-gpu` library suite passed 340 tests; 34 were ignored. The full workspace suite passed 934 tests; 47 were ignored and 0 failed. A clean-source build is being produced after committing these changes. No gameplay launch, visual review, shader prewarm, or FPS capture has occurred; no performance gain is claimed.
+- Built clean-source Release and diagnostic executables using the pinned Rust 1.98.1 MSVC toolchain, Rust Thin LTO, one release codegen unit, and native CPU code generation. Build ID, source commit, artifact sizes, and SHA-256 hashes are recorded in the progress journal.
+- The `victory-gpu` library suite passed 340 tests; 34 were ignored. The full workspace suite passed 934 tests; 47 were ignored and 0 failed. Both binaries returned success for `--help`. No gameplay launch, visual review, shader prewarm, or FPS capture has occurred; no performance gain is claimed.
 
 ## 2026-11-26 — RTX 3070 runtime scaffolding
 
@@ -15,7 +15,7 @@
 - Extended hardware detection with `nvidia-smi` BAR1 mapping data; the latest 8 GiB aperture matches the framebuffer and indicates Resizable BAR is likely enabled. The report labels this as an inference and keeps BAR1 counters separate from VRAM residency.
 - Refreshed the live hardware report at 21:44 CET: RTX 3070 is still the first DXGI adapter and available commit is 14.95 GiB (above the 12 GiB local preflight, below the separate ~20 GiB community footprint).
 - Imported the complete GPL-3.0 NVIDIA 3070 source snapshot at `6e9c1dd` with a blob-hash manifest. Kept the upstream source as a nested repository with separate local import and patch commits.
-- Fixed the Clippy precedence error in `victory-formats/src/texture.rs` reported by current upstream CI. The behavior is unchanged; local Clippy/build verification is pending because the Rust toolchain is unavailable.
+- Fixed the Clippy precedence error in `victory-formats/src/texture.rs` reported by current upstream CI. The behavior is unchanged; at the 2026-11-26 entry date, local Clippy/build verification was pending because the Rust toolchain had not yet been installed.
 - Synchronized upstream `docs/nvidia-8gb.md` at `25ff216`; documented the rejected refresh-ahead experiment and crash evidence. No runtime source was imported by this docs-only update.
 - Ported the open fxceless #1044 DirectStorage worker-count change as a separate source commit: use detected physical cores instead of all logical threads, with a bounded override for A/B runs. Its upstream copy-back measurement is recorded; the local build and FPS effect remain unverified.
 - Ported merged fxceless #1324 as a separate descriptor correctness change: dynamic slot ranges now carry host-heap identity, preventing stale list resets from freeing ranges on an address-reused heap. Added its wrong-identity regression test; local execution is pending.
