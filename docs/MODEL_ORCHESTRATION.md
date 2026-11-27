@@ -14,9 +14,9 @@ logs, issues, commits, and pull requests.
 [Environment]::SetEnvironmentVariable('ASTRAFORGE_MODEL_ID', 'coding-model', 'User')
 ```
 
-Store the provider key under `ASTRAFORGE_MODEL_API_KEY`, or pass a different variable name with
-`-ApiKeyEnvironmentVariable`. The script reads the process environment first and then
-the current user's environment. It never prints or writes the key.
+Store the provider key under `ASTRAFORGE_MODEL_API_KEY`, or pass a different variable
+name with `-ApiKeyEnvironmentVariable`. The script reads the process environment first
+and then the current user's environment. It never prints or writes the key.
 
 ## Review one bounded task
 
@@ -35,6 +35,21 @@ complete JSON request is capped below the provider's 1 MiB limit. Generated, cac
 credential-like, and private-data paths are rejected. The default complete-request
 ceiling is 450 KiB to leave room for model output inside a large coding context; use
 separate reviews instead of raising it for unrelated subsystems.
+
+For a large source file, pass inclusive line windows with `-InputLineRanges` while keeping
+the full file on the explicit-input allowlist, so only the selected excerpt is sent:
+
+```powershell
+-InputPath .\path\to\host.rs, .\path\to\donor-findings.md `
+  -InputLineRanges @{ 'host.rs' = @(1211, 1289) }
+```
+
+Use an inclusive comma-separated string when a review needs disjoint sections from one
+file, such as a type definition, constructor, and implementation:
+
+```powershell
+-InputLineRanges @{ 'shadow.rs' = '27-105,2892-3013,5358-5418' }
+```
 
 The default output directory is `%LOCALAPPDATA%\AstraForge\model-reviews`. Treat every
 finding as an untrusted hypothesis: trace the full call path, check upstream provenance,
