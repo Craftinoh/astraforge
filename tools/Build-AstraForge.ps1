@@ -104,6 +104,20 @@ try {
         $extra = '-C target-cpu=native'
         $env:RUSTFLAGS = if ([string]::IsNullOrWhiteSpace($previousRustFlags)) { $extra } else { "$previousRustFlags $extra" }
     }
+    # Privacy: panic locations embed absolute source paths (dependency sources
+    # under CARGO_HOME, the checkout, the user profile). Remap them so a shared
+    # binary does not carry the builder's user name or directory layout. With
+    # several matching prefixes, the last flag wins, so the most specific goes last.
+    $cargoHome = if ([string]::IsNullOrWhiteSpace($env:CARGO_HOME)) { Join-Path $env:USERPROFILE '.cargo' } else { $env:CARGO_HOME }
+    $remapFlags = @(
+        "--remap-path-prefix=$($env:USERPROFILE)=user",
+        "--remap-path-prefix=$cargoHome=cargo",
+        "--remap-path-prefix=$root=astraforge"
+    )
+    foreach ($prefix in @($env:USERPROFILE, $cargoHome, $root)) {
+        if ($prefix -match '\s') { throw "Percorso con spazi non supportato per --remap-path-prefix in RUSTFLAGS: $prefix" }
+    }
+    $env:RUSTFLAGS = (@($env:RUSTFLAGS) + $remapFlags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join ' '
 
     Push-Location $root
     try {
@@ -148,6 +162,7 @@ try {
         CARGO_PROFILE_RELEASE_LTO = if ($ThinLto) { 'thin' } else { $null }
         CARGO_PROFILE_RELEASE_CODEGEN_UNITS = if ($ThinLto) { '1' } else { $null }
         RUSTFLAGS = if ($NativeCpu) { "$previousRustFlags -C target-cpu=native".Trim() } else { $previousRustFlags }
+        SourcePathsRemapped = $true
         Artifacts = $artifacts
     }
     $manifestPath = Join-Path $buildDirectory 'build-manifest.json'
