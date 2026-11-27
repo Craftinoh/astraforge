@@ -2,6 +2,7 @@
 
 ## 2026-11-27 — Ampere descriptor safety and local builds
 
+- Canonicalized padding and dimension-unused words in placed SRV/UAV descriptions before shape keying. This focused Vice-Tay #27 port prevents logically identical placed views from consuming millions of false shapes because of unwritten bytes. Added resource-padding and unused-union regression tests; all ten descriptor tests pass. Gameplay memory and rendering remain unverified.
 - On the 1,000,000-view portable D3D12 heap, moved the shader clamp's null slot ahead of the fixed 2^18 dynamic descriptor tail. Title-visible descriptors are limited to the range before that sentinel, preventing an out-of-range title index from reading a live per-draw descriptor. Added a regression test for the disjoint ranges.
 - Initialized cached system commit headroom to zero until Windows returns a valid `GlobalMemoryStatusEx` sample. A failed initial sample now pauses speculative texture/staging admission rather than treating the memory budget as unlimited.
 - Corrected two indirect-budget test fixtures after GPU execution showed their expected values contradicted the all-or-nothing budget semantics. The indirect shader behavior itself is unchanged.
