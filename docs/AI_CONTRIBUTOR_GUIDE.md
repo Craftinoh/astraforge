@@ -16,6 +16,7 @@ This guide gives a coding model the same repository context and evidence rules u
 | `third_party/nvidia-3070-VI/LOCAL-CHANGES.md` | Imported-source patch ledger |
 | `docs/benchmark-procedure.md` | Repeatable real-gameplay measurement and reporting rules |
 | `docs/progress-journal.md` | Durable current state, evidence, blockers, next steps |
+| `tools/Invoke-AstraForgeModelReview.ps1` | Bounded read-only review through a local OpenAI-compatible provider configuration |
 
 The repository root is documentation and tooling; run Cargo commands inside `third_party/nvidia-3070-VI/`.
 
@@ -74,3 +75,5 @@ Do not commit or push unless explicitly asked.
 ## Local model / API privacy
 
 Model endpoints, API keys, inference logs, and private machine data are not part of this repository. Keep provider configuration local, use environment or protected local configuration, and never paste a secret into a prompt, issue, log, commit, or benchmark report. A response from any model is a proposal that must be independently checked against source, tests, and evidence.
+
+The optional review wrapper is documented in [`MODEL_ORCHESTRATION.md`](MODEL_ORCHESTRATION.md). It accepts only explicit text files, rejects common private/generated paths, caps request size, and saves the response outside Git. These controls reduce accidental disclosure; the operator must still inspect every selected file before sending it.
