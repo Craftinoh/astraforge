@@ -248,3 +248,8 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - Re-ran the hardware collector at 05:57 CET and stored the full report outside Git. Available commit remains 9.74 GiB, below the 12 GiB launch floor; no runtime launch, shader prewarm, or gameplay run was attempted. The adapter and memory-budget values in the collector remain process-scoped and are not treated as the runtime's own DXGI budget.
 - Re-ran `Test-AstraForgePreflight.ps1`: all 15 commit-gate cases passed. Re-ran `Test-AstraForgeBenchmarkHarness.ps1`: all six cache, cohort, frame-classification, comparison, and anonymous-export checks passed.
 - No source or profile change was justified by this sample. O8 remains pending external install-path confirmation and a fresh passing commit preflight. Gameplay FPS, visual quality, and runtime stability remain unmeasured.
+
+## 2026-11-27 - O8 memory follow-up
+
+- Refreshed the external hardware report at 06:03 CET: 9.65 GiB available commit and 11.17 GiB available physical RAM. A read-only process scan found no single process above 1 GiB private memory. No process was stopped and no Windows memory setting was changed.
+- The Xbox library root still has two executable candidates, while the runtime environment variables remain unset; neither candidate was selected or launched. O8 stays gated on confirming the authorized executable and passing the 12 GiB available-commit floor. No gameplay or performance result is available.
