@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-27 - diagnostic exact-view mutex contention telemetry
+
+- The diagnostics build now records only acquisitions that first find the exact-view cache mutex busy, with average, maximum, and bounded wait-time buckets. The Release build keeps the original blocking lock path and adds no timestamps or timing counters.
+- Added a boundary test for all six wait buckets. The diagnostic GPU-library suite passes serially (408 passed, 35 ignored), and Clippy exits 0 with existing warnings elsewhere.
+- This is observability for the O4 runtime audit, not a performance optimization. No gameplay contention sample or FPS effect has been measured.
+
 ## 2026-11-27 - per-heap texture bake coverage
 
 - Replaced the global completion counter for decoration texture bakes with per-heap queue revisions. Overlapping passes, queue writes during a scan, incomplete capped snapshots, or budget-limited scans cannot certify coverage. The synchronous path records coverage after GPU execution and descriptor publication.

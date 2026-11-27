@@ -5388,10 +5388,66 @@ fn loose(address: u64, end: u64, unsized_ask: bool, any: bool) -> Option<Arc<Sha
 /// Copies of single buffer views' own bytes ([`exact`]), by (start,
 /// bytes), each with the asking that last took it; and the askings so far.
 #[allow(clippy::type_complexity)]
-static EXACT: Mutex<(u64, BTreeMap<(u64, u64), (Arc<Shadow>, u64)>)> = Mutex::new((0, BTreeMap::new()));
+type ExactCache = (u64, BTreeMap<(u64, u64), (Arc<Shadow>, u64)>);
+static EXACT: Mutex<ExactCache> = Mutex::new((0, BTreeMap::new()));
 
 /// Since the last frame line: askings for such copies, and copies made.
 static EXACT_STATS: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
+
+/// Lock-wait measurements are diagnostic-only: they identify whether the exact-view cache
+/// mutex merits a design change without adding timing overhead to the Release path.
+#[cfg(feature = "diagnostics")]
+static EXACT_LOCK_WAIT_NS: AtomicU64 = AtomicU64::new(0);
+#[cfg(feature = "diagnostics")]
+static EXACT_LOCK_WAIT_MAX_NS: AtomicU64 = AtomicU64::new(0);
+#[cfg(feature = "diagnostics")]
+static EXACT_LOCK_WAIT_BUCKETS: [AtomicU64; 6] = [const { AtomicU64::new(0) }; 6];
+
+#[cfg(feature = "diagnostics")]
+fn exact_lock_wait_bucket(wait_ns: u64) -> usize {
+    if wait_ns < 1_000 {
+        0
+    } else if wait_ns < 5_000 {
+        1
+    } else if wait_ns < 20_000 {
+        2
+    } else if wait_ns < 100_000 {
+        3
+    } else if wait_ns < 1_000_000 {
+        4
+    } else {
+        5
+    }
+}
+
+#[cfg(feature = "diagnostics")]
+fn record_exact_lock_wait(wait_ns: u64) {
+    EXACT_LOCK_WAIT_NS.fetch_add(wait_ns, Ordering::Relaxed);
+    EXACT_LOCK_WAIT_MAX_NS.fetch_max(wait_ns, Ordering::Relaxed);
+    EXACT_LOCK_WAIT_BUCKETS[exact_lock_wait_bucket(wait_ns)].fetch_add(1, Ordering::Relaxed);
+}
+
+fn exact_lock() -> std::sync::MutexGuard<'static, ExactCache> {
+    #[cfg(feature = "diagnostics")]
+    {
+        match EXACT.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::WouldBlock) => {
+                let wait_started = std::time::Instant::now();
+                let guard = EXACT.lock().unwrap_or_else(|e| e.into_inner());
+                record_exact_lock_wait(
+                    u64::try_from(wait_started.elapsed().as_nanos()).unwrap_or(u64::MAX),
+                );
+                guard
+            }
+            Err(std::sync::TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
+        }
+    }
+    #[cfg(not(feature = "diagnostics"))]
+    {
+        EXACT.lock().unwrap_or_else(|e| e.into_inner())
+    }
+}
 
 /// A copy of the title memory `[address, address + len)` that starts at
 /// `address` itself: for a buffer view whose bytes do not start on an
@@ -5420,7 +5476,7 @@ pub(crate) fn exact(address: u64, len: u64) -> Option<Arc<Shadow>> {
         return None;
     }
     EXACT_STATS[0].fetch_add(1, Ordering::Relaxed);
-    let mut guard = EXACT.lock().unwrap_or_else(|e| e.into_inner());
+    let mut guard = exact_lock();
     let (tick, map) = &mut *guard;
     *tick += 1;
     let now = *tick;
@@ -5454,17 +5510,77 @@ pub(crate) static OWN_MADE: AtomicU64 = AtomicU64::new(0);
 /// bytes ([`exact`]), per frame over `frames`, and the copies kept now.
 /// Nothing while there are none.
 pub(crate) fn exact_line(frames: f64) {
+    #[cfg(feature = "diagnostics")]
+    let frames = frames.max(1.0);
     let [asked, made] = [0, 1].map(|i| EXACT_STATS[i].swap(0, Ordering::Relaxed));
+    #[cfg(feature = "diagnostics")]
+    let wait_ns = EXACT_LOCK_WAIT_NS.swap(0, Ordering::Relaxed);
+    #[cfg(feature = "diagnostics")]
+    let max_wait_ns = EXACT_LOCK_WAIT_MAX_NS.swap(0, Ordering::Relaxed);
+    #[cfg(feature = "diagnostics")]
+    let wait_buckets: [u64; 6] = std::array::from_fn(|i| {
+        EXACT_LOCK_WAIT_BUCKETS[i].swap(0, Ordering::Relaxed)
+    });
+    #[cfg(feature = "diagnostics")]
+    let wait_calls: u64 = wait_buckets.iter().sum();
+    #[cfg(feature = "diagnostics")]
+    if asked == 0 && wait_calls == 0 {
+        return;
+    }
+    #[cfg(not(feature = "diagnostics"))]
     if asked == 0 {
         return;
     }
-    let kept = EXACT.lock().unwrap_or_else(|e| e.into_inner()).1.len();
+    let kept = exact_lock().1.len();
+    #[cfg(feature = "diagnostics")]
+    tracing::info!(
+        "buffer views off their copy's elements (they were refused and read zeros; VICTORY_VIEW_BYTES=0 refuses them again): \
+         {:.1} asked for per frame, {:.1} copies of their own bytes made per frame, {kept} kept; \
+         exact-cache mutex blocked acquires {}, avg wait {:.2} us / max {:.2} us (under 1 us / 1-5 us / 5-20 us / 20-100 us / 0.1-1 ms / 1 ms+: {}/{}/{}/{}/{}/{})",
+        asked as f64 / frames,
+        made as f64 / frames,
+        wait_calls,
+        wait_ns as f64 / wait_calls.max(1) as f64 / 1_000.0,
+        max_wait_ns as f64 / 1_000.0,
+        wait_buckets[0],
+        wait_buckets[1],
+        wait_buckets[2],
+        wait_buckets[3],
+        wait_buckets[4],
+        wait_buckets[5],
+    );
+    #[cfg(not(feature = "diagnostics"))]
     tracing::info!(
         "buffer views off their copy's elements (they were refused and read zeros; VICTORY_VIEW_BYTES=0 refuses them again): \
          {:.1} asked for per frame, {:.1} copies of their own bytes made per frame, {kept} kept",
         asked as f64 / frames,
         made as f64 / frames
     );
+}
+
+#[cfg(all(test, feature = "diagnostics"))]
+mod exact_lock_wait_tests {
+    use super::exact_lock_wait_bucket;
+
+    #[test]
+    fn exact_cache_mutex_wait_buckets_cover_boundaries() {
+        for (wait_ns, expected) in [
+            (0, 0),
+            (999, 0),
+            (1_000, 1),
+            (4_999, 1),
+            (5_000, 2),
+            (19_999, 2),
+            (20_000, 3),
+            (99_999, 3),
+            (100_000, 4),
+            (999_999, 4),
+            (1_000_000, 5),
+            (u64::MAX, 5),
+        ] {
+            assert_eq!(exact_lock_wait_bucket(wait_ns), expected, "{wait_ns} ns");
+        }
+    }
 }
 
 #[cfg(test)]

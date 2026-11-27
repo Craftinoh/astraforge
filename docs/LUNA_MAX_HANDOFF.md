@@ -5,12 +5,13 @@ literally before proposing a new patch.
 
 ## Latest checkpoint - 2026-11-27, per-heap bake coverage
 
-- The source patch and build-verification notes are published on `origin/main` at `c7c244f`; local `main` matches the remote. The focused work branch `fix/per-heap-bake-coverage` remains available. Check `git status` and history before continuing; do not discard this change.
+- The source patch and build-verification notes are published on `origin/main` at `f58c338`; local `main` matched the remote at the last fetch. The focused work branch `fix/per-heap-bake-coverage` remains available. The current O4 diagnostic telemetry change is still uncommitted; preserve it and inspect its diff before continuing.
 - Adapted merged Vice-Tay PR #85 (`7eef143`) to the local `TextureQueue`: bake completion now belongs to a heap/revision, overlapping scans cannot certify, and capped due/lookahead snapshots must be complete. Synchronous GPU coverage is recorded after execution and descriptor publication.
 - Added queue-locality, stale-revision, overlap, and truncated-snapshot regressions. Serial diagnostic tests pass 407/0/35 ignored; optimized Release tests pass 349/0/34 ignored. Clippy exits 0 with existing warnings outside these edits.
 - Parallel runs were flaky: one diagnostics process exited `0xc0000005`; another run's texture-ahead test panicked. Keep that caveat in the journal. The whole-file rustfmt check reports extensive pre-existing formatting differences in these imported files, so do not format them wholesale.
 - Commit `452e65527dca0fcc637e9e7f8f877a2a96b34a93` has a clean pinned application Release/diagnostic build: `20261127-050134-Both-thinlto-native-a19ebb64`, `SourceDirty=false`; Rust/Cargo 1.98.1, MSVC 14.44.35207, DXC 10.0.26100.0, Thin LTO, one release codegen unit, native CPU. Both executables return exit code 0 for `--help`. SHA-256: Release `3EB0056B17F2BEDD35EDE5A7D5B0700C3B3BFABFDD34234C46D5A02CA22CE57A`; diagnostic `11A7076EACB9CF0BA1A7D05CF31FAD52702C56DB5442DED01DB7C2C4C39701BB`. Artifacts remain outside Git. Do not claim gameplay/FPS/visual results.
-- Then continue with O8: verify the authorized external installation path and refresh hardware/commit telemetry; never launch unless the 12 GiB available-commit preflight passes.
+- O4 now has diagnostic-only telemetry for blocked exact-view cache mutex acquisitions: count, mean, maximum, and six wait buckets. The Release lock path is unchanged. One boundary test and the full serial diagnostic GPU suite pass (408 passed, 35 ignored); Clippy exits 0 with existing warnings. Rebuild Release/diagnostic cleanly after this patch; use the diagnostic metrics only to decide whether a lock-scope change is justified, not as Release performance evidence.
+- The latest local hardware probe (05:19 CET) reports 9.76 GiB available commit, below the 12 GiB launch floor. `VICTORY_GAME_DIR` and `VICTORY_GAME_EXE` remain unset; do not launch. Resume O8 by confirming the authorized external install path and refreshing telemetry before the launcher gate.
 
 ## Latest checkpoint - 2026-11-27 03:29 UTC
 
