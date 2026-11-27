@@ -49,6 +49,24 @@ The prewarm helper first asks the selected binary whether it exposes `shaders` a
 
 Provide the shader-archive paths documented by that checkout; the helper does not guess them. It rejects paths that overlap the source repository, archives, or log directory, pins `VICTORY_CACHE_DIR` to the requested seed path for compilation, and writes a manifest with the executable hash and cache fingerprint. Existing seed files are retained; the helper never clears the seed.
 
+## PresentMon installation
+
+Use the official [GameTechDev/PresentMon](https://github.com/GameTechDev/PresentMon) release (MIT),
+kept outside the repository:
+
+```powershell
+$d = "$env:LOCALAPPDATA\AstraForge\tools\presentmon\2.6.0"
+gh release download v2.6.0 -R GameTechDev/PresentMon -p 'PresentMon-2.6.0-x64.exe' -D $d
+Get-AuthenticodeSignature "$d\PresentMon-2.6.0-x64.exe"   # expect Valid, CN=Intel Corporation
+```
+
+The launcher picks up the newest `PresentMon-*-x64.exe` under that folder automatically. Pass
+`-PresentMonExe` to the measurement harness. Do not rely on the copy bundled with the NVIDIA
+FrameView SDK. On the RTX 3070 host it exits with code 1 and prints nothing when run on its own;
+this is why no `presentmon-frames.csv` existed before 2026-11-27. Smoke-test before every
+gameplay session: a 4 s capture of `dwm.exe` with PresentMon 2.6.0 exited 0, wrote 231 rows,
+and classified every row as `FrameType=Application`.
+
 ## Capture
 
 Run from this workspace:

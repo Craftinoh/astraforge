@@ -166,8 +166,22 @@ if (-not [string]::IsNullOrWhiteSpace($PresentMonExe)) {
     $presentMonCommand = Get-Command PresentMon_x64.exe, PresentMon.exe, presentmon.exe -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($presentMonCommand) { $presentMonPath = $presentMonCommand.Source }
     if (-not $presentMonPath) {
+        # Official GameTechDev release kept outside the repository, newest version first:
+        # %LOCALAPPDATA%\AstraForge\tools\presentmon\<version>\PresentMon-<version>-x64.exe
+        $officialRoot = Join-Path $env:LOCALAPPDATA 'AstraForge\tools\presentmon'
+        $official = Get-ChildItem -LiteralPath $officialRoot -Filter 'PresentMon-*-x64.exe' -Recurse -File -ErrorAction SilentlyContinue |
+            Sort-Object { try { [version]($_.BaseName -replace '^PresentMon-|-x64$', '') } catch { [version]'0.0' } } -Descending |
+            Select-Object -First 1
+        if ($official) { $presentMonPath = $official.FullName }
+    }
+    if (-not $presentMonPath) {
+        # Last resort. On the RTX 3070 host this FrameView SDK copy exits with code 1 and no output when run on its
+        # own (2026-11-27), so the launcher warns that no per-frame CSV may be produced.
         $nvidiaFrameViewPresentMon = Join-Path $env:ProgramFiles 'NVIDIA Corporation\FrameViewSDK\bin\PresentMon_x64.exe'
-        if (Test-Path -LiteralPath $nvidiaFrameViewPresentMon -PathType Leaf) { $presentMonPath = $nvidiaFrameViewPresentMon }
+        if (Test-Path -LiteralPath $nvidiaFrameViewPresentMon -PathType Leaf) {
+            $presentMonPath = $nvidiaFrameViewPresentMon
+            Write-Warning 'Using the NVIDIA FrameView SDK PresentMon copy, which may not run on its own. Install the official release under %LOCALAPPDATA%\AstraForge\tools\presentmon\<version>\ or pass -PresentMonExe.'
+        }
     }
 }
 if ($PreRunWindow) {
