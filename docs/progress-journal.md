@@ -107,3 +107,11 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - The earlier dirty-source artifact remains outside the repository and is superseded by the clean build above.
 - The documentation, source-credit, and validation update was pushed to public `main`; `origin/main` matched commit `5176512` and the worktree was clean at verification. Binaries, build manifests, and raw logs remain outside the repository.
 - No game launch, shader prewarm, visual review, or gameplay benchmark has occurred. No FPS or performance gain is claimed.
+
+## 2026-11-27 — contributor and AI-agent onboarding
+
+- Added root `AGENTS.md` with the project scope, source and privacy constraints, validation workflow, provenance requirements, and completion-report format for coding agents.
+- Added `CONTRIBUTING.md`, `docs/AI_CONTRIBUTOR_GUIDE.md`, and `docs/GPU_PROFILE_SUBMISSION.md` to explain the repository map, safe model-assisted workflow, evidence levels, hardware-profile gate, and the current first-DXGI-adapter limitation.
+- Added sanitized hardware-report and reusable model-task templates under `docs/templates/`, plus a GitHub pull-request checklist for source origin, validation, rollback, and privacy review.
+- Updated the README with contributor entry points. The documented gates explicitly distinguish a hardware inventory from enabled GPU support and distinguish build/unit evidence from gameplay performance evidence.
+- Documentation-only changes; no runtime code or tuning values changed. Both GPU profile JSON files parse, all relative links in the onboarding docs resolve, `git diff --check` passes, and a focused scan found no API key/service endpoint, local account path, or prohibited title/publisher identifier in the new public material. `Test-AstraForgeBenchmarkHarness.ps1` passed all six synthetic checks when run in a PowerShell process with execution-policy bypass; the machine's default policy blocks direct script invocation. These synthetic checks do not establish gameplay performance or GPU compatibility.
