@@ -25,17 +25,17 @@ application, publisher, executable, save data, or personal paths.
 | Hardware | RTX 3070 is first DXGI adapter; SM 6.8, Wave32, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM | Latest raw inventory remains local and ignored |
 | Runtime data | Installation is still incomplete or unavailable at the inspected game-library path | No shader prewarm, visual review, or gameplay capture yet |
 | Memory readiness | Latest sample reported 9.32 GiB available commit against the 12 GiB launch floor | Volatile; collect again immediately before launch |
-| Model review | Remote `op-coding` catalog and one minimal completion verified | Model output is untrusted review input |
+| Model review | Configured remote coding endpoint and one minimal completion verified | Model output is untrusted review input |
 
 ## Work queue
 
 | ID | Work item | State | Completion gate |
 |---|---|---|---|
-| O1 | Provider-neutral model-review wrapper | Complete | Parser and dry run pass; live `op-coding` review saved outside Git; secret scan still runs before every commit |
-| O2 | Vice-Tay donor audit | In progress at `cc9ed86` | PR #27 placed-view portion reviewed; PR #37 lock/copy/shader portions remain selective candidates |
+| O1 | Provider-neutral model-review wrapper | Complete | Parser and dry run pass; a live bounded review is saved outside Git; secret scan still runs before every commit |
+| O2 | Vice-Tay donor audit | In progress at `cc9ed86` | PR #27 placed-view and PR #37 lock/copy portions reviewed; shader portions remain selective candidates |
 | O3 | Placed-view lifetime and leak review | Unit-tested | Canonicalizers ported; two focused tests and all ten descriptor tests pass; gameplay memory and rendering pending |
-| O4 | Shadow/resource lock contention review | Next | Split `structured_shadow` caller and `shadow::exact` implementation into bounded model reviews, then trace ownership locally |
-| O5 | NVIDIA shader correctness review | Queued | Trace Wave32 translation, NaN handling, incompatible ray paths, and known black/flat rendering symptoms; correctness tests precede optimization |
+| O4 | Shadow/resource lock contention review | Complete; patch deferred | Two bounded reviews and local ownership audit complete; measure local call volume and mutex contention before selecting a lock-scope change |
+| O5 | NVIDIA shader correctness review | Next | Trace Wave32 translation, NaN handling, incompatible ray paths, and known black/flat rendering symptoms; correctness tests precede optimization |
 | O6 | 8 GB residency and texture pressure review | Queued | Validate DXGI budget feedback, staging growth, texture priority, descriptor retention, and commit-pressure behavior |
 | O7 | Incremental source groups | Queued | One reversible change group at a time, exact provenance, focused tests, full pinned build after Rust/D3D12 edits |
 | O8 | Runtime readiness | Waiting for installation | Resolve authorized external game directory, pass adapter/feature/commit preflight, keep all game data and caches outside Git |

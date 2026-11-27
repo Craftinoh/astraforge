@@ -35,41 +35,51 @@ literally before proposing a new patch.
 - Do not repeat or broaden those tests unless the patch changes further. A full pinned
   Release/diagnostic build is still required before calling this source group built.
 
-## Ingenium orchestration contract
+## Remote model-review contract
 
-The user wants this session to orchestrate the remote `op-coding` model. Do not use
-OpenCode. Local user environment variables provide the endpoint, model ID, and API key.
-Never print their values or include them in a command, prompt, log, diff, commit, or
-response.
+The user wants this session to orchestrate a configured remote coding model through the
+repository's bounded review tool. Local user environment variables provide the endpoint,
+model ID, and API key. Never print their values or include them in a prompt, log, diff,
+commit, or response.
 
 Use `tools/Invoke-AstraForgeModelReview.ps1`. It sends explicit public text files only,
 stores responses under `%LOCALAPPDATA%\AstraForge\model-reviews`, and cannot edit the
 checkout. Keep `-MaxTokens 4096`; larger values produced API HTTP 422. Keep each request
-below the default 450 KiB ceiling and split subsystems into separate reviews.
+below the default 450 KiB ceiling and split subsystems into separate reviews. The key
+environment variable defaults to `ASTRAFORGE_MODEL_API_KEY`.
 
 One completed review has request ID `chatcmpl-b1dadf6286419569`. It correctly found the
 uncanonicalized placed-view key but falsely said the `SHAPES` limit was missing. Source
 shows `const SHAPES` and `Views::shape` already enforce the 2^22 limit. This is the model
 governance rule: accept no finding until exact local symbols and call paths confirm it.
 
-## Next exact task: O4 lock contention
+## O4 result: shadow/resource lock audit
 
-Do not merge Vice-Tay #37. Review only the structured-view `shadow::exact` path:
+Two separate bounded read-only reviews were completed (`chatcmpl-9685cbb031a1f6d9` for
+the descriptor caller and `chatcmpl-920314fe942fcf73` for the shadow implementation).
+Both outputs are untrusted and remain outside Git. Independent source tracing confirmed
+that `view_home` can call `shadow::exact` for misaligned raw, structured, and typed buffer
+views when `VICTORY_VIEW_BYTES` is enabled; the local tree has no
+`VICTORY_STRUCTURED_RAW` setting. The donor's switch therefore cannot be copied as-is,
+and the existing `VICTORY_VIEW_BYTES=0` path leaves affected views null rather than
+preserving the exact copy's correctness behavior.
 
-1. First model request: provide local `descriptor/host.rs` plus the donor
-   `docs/findings-rtx4090.md`. Ask it to trace the caller of `shadow::exact`, conditions
-   that reach it, frequency implications, and correctness purpose. No patch proposal.
-2. Second model request: provide local `shadow.rs` plus the same donor finding. Ask it to
-   identify the exact global lock, lock scope, allocation/copy work performed under it,
-   and ownership/lifetime invariants. No caller assumptions.
-3. Independently inspect `structured_shadow`, `shadow::exact`, shadow registration,
-   overlap handling, and every consumer of the returned `Arc<Shadow>`.
-4. Compare the local code with Vice-Tay's gate behind `VICTORY_STRUCTURED_RAW`. Do not
-   invent or copy the variable until the local source semantics are proven.
-5. Classify the donor change as applicable, already present, unsafe, or requiring runtime
-   evidence. Prefer a correctness-preserving reduction of lock scope over disabling work.
-6. If a patch is justified, add a focused concurrency/lifetime regression test, run the
-   relevant GPU tests, update provenance/rollback/docs, then run the pinned build.
+`EXACT` is a process-wide mutex around an address/length cache. On misses its critical
+section includes stale-entry checks, shared D3D12 resource creation/residency/mapping,
+`Shadow` and page-bitmap construction, and map insertion. `exact` itself does not copy
+view bytes: list refreshes later retain an `Arc<Shadow>` until list reset and bring the
+requested range up to date. Cache eviction also consults `Arc` and COM reference counts.
+No source patch is selected without target-side contention and call-volume evidence; a
+lock-scope change must prevent duplicate allocations and preserve map/descriptor/list
+lifetime guarantees.
+
+## Next exact task: O5 NVIDIA shader correctness
+
+Audit the existing Wave32 translation, NaN scrubbing, incompatible ray-path handling,
+and known black/flat rendering symptoms in independent bounded groups. Trace each setting
+and code path in the local source; do not port shader changes from another architecture
+without correctness evidence. Add a patch only when a concrete local defect and focused
+validation route are established.
 
 ## Commit and publication gates
 

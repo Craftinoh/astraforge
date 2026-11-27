@@ -8,9 +8,11 @@ param(
     [ValidateNotNullOrEmpty()]
     [string[]]$InputPath,
 
+    [hashtable]$InputLineRanges = @{},
+
     [string]$BaseUrl = $env:ASTRAFORGE_MODEL_BASE_URL,
     [string]$Model = $env:ASTRAFORGE_MODEL_ID,
-    [string]$ApiKeyEnvironmentVariable = 'INGENIUM_API_KEY',
+    [string]$ApiKeyEnvironmentVariable = 'ASTRAFORGE_MODEL_API_KEY',
 
     [ValidateRange(128, 32768)]
     [int]$MaxTokens = 4096,
@@ -29,7 +31,13 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
+    $BaseUrl = [Environment]::GetEnvironmentVariable('ASTRAFORGE_MODEL_BASE_URL', 'User')
+}
+if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
     throw 'Set ASTRAFORGE_MODEL_BASE_URL or pass -BaseUrl.'
+}
+if ([string]::IsNullOrWhiteSpace($Model)) {
+    $Model = [Environment]::GetEnvironmentVariable('ASTRAFORGE_MODEL_ID', 'User')
 }
 if ([string]::IsNullOrWhiteSpace($Model)) {
     throw 'Set ASTRAFORGE_MODEL_ID or pass -Model.'
@@ -69,8 +77,61 @@ foreach ($item in $InputPath) {
 
 $sections = [System.Collections.Generic.List[string]]::new()
 foreach ($inputFile in $resolvedInputs) {
-    $content = Get-Content -LiteralPath $inputFile.FullName -Raw
-    $sections.Add("FILE: $($inputFile.Name)`nBEGIN_FILE`n$content`nEND_FILE")
+    $range = $null
+    if ($InputLineRanges.ContainsKey($inputFile.FullName)) {
+        $range = $InputLineRanges[$inputFile.FullName]
+    }
+    elseif ($InputLineRanges.ContainsKey($inputFile.Name)) {
+        $range = $InputLineRanges[$inputFile.Name]
+    }
+
+    if ($null -ne $range) {
+        $rangeSpecs = [System.Collections.Generic.List[object]]::new()
+        if ($range -is [string]) {
+            foreach ($part in ($range -split ',')) {
+                if ($part -notmatch '^\s*(?<start>[1-9]\d*)-(?<end>[1-9]\d*)\s*$') {
+                    throw "Line ranges for $($inputFile.Name) must use inclusive start-end pairs separated by commas."
+                }
+                $rangeSpecs.Add([pscustomobject]@{
+                    Start = [int]$Matches.start
+                    End = [int]$Matches.end
+                })
+            }
+        }
+        else {
+            $bounds = @($range)
+            if ($bounds.Count -ne 2 -or $bounds[0] -isnot [int] -or $bounds[1] -isnot [int]) {
+                throw "Line range for $($inputFile.Name) must be a two-integer array or a comma-separated string."
+            }
+            $rangeSpecs.Add([pscustomobject]@{
+                Start = [int]$bounds[0]
+                End = [int]$bounds[1]
+            })
+        }
+
+        $lines = [IO.File]::ReadAllLines($inputFile.FullName)
+        $excerptBlocks = [System.Collections.Generic.List[string]]::new()
+        foreach ($rangeSpec in $rangeSpecs) {
+            $startLine = $rangeSpec.Start
+            $endLine = $rangeSpec.End
+            if ($startLine -lt 1 -or $endLine -lt $startLine -or $endLine -gt $lines.Length) {
+                throw "Line ranges for $($inputFile.Name) must be within 1..$($lines.Length) and ordered."
+            }
+            $numberedLines = @(
+                for ($lineNumber = $startLine; $lineNumber -le $endLine; $lineNumber++) {
+                    '{0,6}: {1}' -f $lineNumber, $lines[$lineNumber - 1]
+                }
+            )
+            $excerptBlocks.Add("LINES $startLine-$endLine`n$($numberedLines -join "`n")")
+        }
+        $content = $excerptBlocks -join "`n`n"
+        $fileLabel = "$($inputFile.Name):$(($rangeSpecs | ForEach-Object { "$($_.Start)-$($_.End)" }) -join ',')"
+    }
+    else {
+        $content = Get-Content -LiteralPath $inputFile.FullName -Raw
+        $fileLabel = $inputFile.Name
+    }
+    $sections.Add("FILE: $fileLabel`nBEGIN_FILE`n$content`nEND_FILE")
 }
 
 $systemMessage = @'
@@ -117,9 +178,7 @@ if ($bodyBytes -gt $RequestByteLimit) {
 
 if ($DryRun) {
     [pscustomobject]@{
-        Model = $Model
-        BaseUrl = $BaseUrl.TrimEnd('/')
-        InputFiles = @($resolvedInputs.FullName)
+        InputFiles = @($sections | ForEach-Object { ($_ -split "`n", 2)[0] -replace '^FILE: ', '' })
         RequestBytes = $bodyBytes
         MaxTokens = $MaxTokens
     }
@@ -180,8 +239,7 @@ if (-not $response -or -not $response.choices -or -not $response.choices[0].mess
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $reviewRoot = Join-Path $env:LOCALAPPDATA 'AstraForge\model-reviews'
     New-Item -ItemType Directory -Force -Path $reviewRoot | Out-Null
-    $safeModel = $Model -replace '[^A-Za-z0-9._-]', '_'
-    $OutputPath = Join-Path $reviewRoot "$(Get-Date -Format 'yyyyMMdd-HHmmss')-$safeModel.md"
+    $OutputPath = Join-Path $reviewRoot "$(Get-Date -Format 'yyyyMMdd-HHmmss')-review.md"
 }
 else {
     $parent = Split-Path -Parent $OutputPath
@@ -200,7 +258,6 @@ $OutputPath = $outputFullPath
 $review = @"
 # AstraForge model review
 
-- Model: $Model
 - Request ID: $($response.id)
 - Created locally: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss K')
 - Input files: $($resolvedInputs.Count)
@@ -214,7 +271,6 @@ $($response.choices[0].message.content)
 Set-Content -LiteralPath $OutputPath -Value $review -Encoding UTF8
 
 [pscustomobject]@{
-    Model = $Model
     RequestId = $response.id
     OutputPath = (Resolve-Path -LiteralPath $OutputPath).Path
     InputFiles = $resolvedInputs.Count
