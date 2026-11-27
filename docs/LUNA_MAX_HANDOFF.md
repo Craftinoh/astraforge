@@ -101,7 +101,7 @@ The full suite initially emitted build artifacts into the imported source's `tar
 directory because `CARGO_TARGET_DIR` was unset; those generated files were cleaned.
 Point `CARGO_TARGET_DIR` outside the repository for subsequent Cargo work.
 
-## Next exact task: O6 8 GB residency and texture pressure
+## O6 result: 8 GB residency and texture pressure
 
 Static source tracing is complete; target-runtime pressure and streaming validation remain
 pending installation. DXGI `QueryVideoMemoryInfo` reports process-local and non-local
@@ -123,11 +123,43 @@ or atomic state, not a data-publication protocol; the `room_lately` cache is a d
 100 ms amortization of DXGI queries. No code patch is justified without measured target
 pressure or a reproducible defect.
 
-Next: continue O2's selective donor audit, starting with the remaining texture and upload
-changes around Vice-Tay #37. Compare exact local call paths and lifetime guarantees; do not
-port a policy based only on another GPU's measurements. Keep O6 runtime validation queued
-until installation is complete, then capture local/non-local DXGI use, staging bytes,
-commit headroom, queue backlog, texture misses, and device-loss events during matched runs.
+## O2 result: selected Vice-Tay #37 texture, upload, wait, and shader paths
+
+The selected PR #37 audit is recorded in `docs/fork-comparison.md`. The upload copy queue
+is not ported: it retains peak bounce slots without trimming, and its error paths need
+device-loss validation before reuse. The texture store is not ported: it does not lower
+VRAM use, files are never trimmed, and pending jobs hold full texture copies on an
+unbounded channel. The Wave32 `lane_uniform` proof remains a separate shader task; the
+donor reports three extra structure-builder programs translated but says the opt-in
+builder still crashes in a world run.
+
+The one focused port is `VICTORY_FILL_TITLE=2` in source commit `32a13f7`. Mode `1` stays
+unchanged, unset/unknown/`0` still waits, and no supplied profile enables mode `2`. The
+predicate tests passed 3/3 with the pinned toolchain. The bounded upload-queue model review
+(`chatcmpl-af131c61fafec10b`) incorrectly claimed a shader descriptor transition was
+missing and that queue creation recursively locked the mutex; both claims were rejected
+after source tracing. No gameplay correctness, stability, frametime, or FPS result exists.
+
+## Next exact task: clean build and publish the reviewed source group
+
+The source commit is `32a13f7`; this handoff and the O2 comparison, progress, profile,
+credit, changelog, and rollback updates should be committed before rebuilding so the build
+manifest sees a clean repository. Recheck `git diff --check` and credential/path privacy
+before that docs commit. In a Visual Studio 2022 x64 developer environment with the pinned
+Cargo proxy on `PATH`, run:
+
+```powershell
+.\tools\Build-AstraForge.ps1 -Mode Both -ThinLto -NativeCpu
+```
+
+Require both Release and diagnostic builds to pass for committed source `32a13f7`, run
+both executables with `--help`, and record the new build ID and SHA-256 values from its
+manifest in `progress-journal.md` and `changelog.md`. Then commit those evidence updates,
+push the source and documentation commits, and verify local `main` equals `origin/main`.
+Only after the push, resume O8: inspect whether the authorized installation is complete,
+refresh commit-headroom telemetry, and pass launcher preflight before shader prewarm or a
+gameplay run. Keep O6 runtime validation queued. Do not enable mode 2 in a profile or make
+visual/FPS claims until matched gameplay A/B captures pass.
 
 ## Commit and publication gates
 
