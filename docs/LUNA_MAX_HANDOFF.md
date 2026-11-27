@@ -103,11 +103,31 @@ Point `CARGO_TARGET_DIR` outside the repository for subsequent Cargo work.
 
 ## Next exact task: O6 8 GB residency and texture pressure
 
-Trace the current DXGI budget, shared/local memory, staging, texture prefetch, descriptor
-retention, and commit-pressure paths before changing policy. Separate dedicated VRAM
-budget from system commit and do not assume a larger shared-memory allowance improves
-RTX 3070 frame time. Use the existing profile and instrumentation first; wait for runtime
-installation before gameplay claims.
+Static source tracing is complete; target-runtime pressure and streaming validation remain
+pending installation. DXGI `QueryVideoMemoryInfo` reports process-local and non-local
+budgets/usage. Texture-copy admission uses the moving local budget, a budget-scaled floor,
+headroom reserved for host render targets and shadows, and a 50-97% configurable ceiling
+(default 90%). The default per-frame texture staging budget at an 8 GiB budget is 192 MiB,
+with a 250 ms pass window; the 32 GiB host default caps it at 128 MiB before backlog
+catch-up. Commit admission keeps 512 MiB free for normal texture passes and 1 GiB before
+speculative staging-pool growth. Pressure is hysteretic, and reusable staging blocks are
+separate from dedicated VRAM accounting.
+
+Do not set `VICTORY_TEXTURE_STAGE_MB` casually: an explicit value bypasses the automatic
+shared prefetch clamp (64 MiB in ordinary pressure/limited-RAM conditions and 16 MiB under
+critical commit pressure), although the texture-room and commit-admission gates still run.
+The supplied profiles leave it unset. Both bounded review responses made unsupported
+claims about atomic ordering and staging ownership; source tracing found no use-after-free,
+ownership leak, or synchronization defect. `Relaxed` here protects independent telemetry
+or atomic state, not a data-publication protocol; the `room_lately` cache is a deliberate
+100 ms amortization of DXGI queries. No code patch is justified without measured target
+pressure or a reproducible defect.
+
+Next: continue O2's selective donor audit, starting with the remaining texture and upload
+changes around Vice-Tay #37. Compare exact local call paths and lifetime guarantees; do not
+port a policy based only on another GPU's measurements. Keep O6 runtime validation queued
+until installation is complete, then capture local/non-local DXGI use, staging bytes,
+commit headroom, queue backlog, texture misses, and device-loss events during matched runs.
 
 ## Commit and publication gates
 
