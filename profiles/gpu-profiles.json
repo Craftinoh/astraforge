@@ -50,7 +50,7 @@
         "telemetryProvider": "nvidia-smi",
         "warnBelowAvailableCommitGiB": 20
       },
-      "notes": "Candidate identity from a local DXGI/D3D12/nvidia-smi query on host-02 (device 0x2504, 12288 MiB, SM 6.8, wave lanes 32-32, first DXGI adapter). Not selectable as the active profile: no AstraForge gameplay run exists on this GPU. Its tuning file starts from the RTX 3070 Ampere baseline unchanged; see docs/RTX3060-hardware-report.md."
+      "notes": "Candidate identity from a local DXGI/D3D12/nvidia-smi query on host-02 (device 0x2504, 12288 MiB, SM 6.8, wave lanes 32-32, first DXGI adapter). Selectable with `-GpuProfile nvidia-rtx3060` for testing on host-02; candidate, unbenchmarked on AstraForge (it is not the manifest's activeProfile). Its tuning file starts from the RTX 3070 Ampere baseline unchanged; see docs/RTX3060-hardware-report.md."
     }
   }
 }
