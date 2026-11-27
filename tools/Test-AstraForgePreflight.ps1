@@ -1,6 +1,13 @@
 $ErrorActionPreference = 'Stop'
 Import-Module -Name (Join-Path $PSScriptRoot 'AstraForge-Preflight.psm1') -Force
 
+$measureLines = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Measure-AstraForgeGameplay.ps1')
+$commitGateLine = [Array]::FindIndex([string[]]$measureLines, [Predicate[string]]{ param($line) $line -match '^Assert-AstraForgeCommitHeadroom\b' })
+$cacheCloneLine = [Array]::FindIndex([string[]]$measureLines, [Predicate[string]]{ param($line) $line -match 'Copy-AstraForgeCacheSeed\s+-SourceDirectory' })
+if ($commitGateLine -lt 0 -or $cacheCloneLine -lt 0 -or $commitGateLine -ge $cacheCloneLine) {
+    throw 'Warm cache cloning must remain after the available-commit preflight.'
+}
+
 function Assert-Rejected([scriptblock]$Action, [string]$Label) {
     $rejected = $false
     try { & $Action } catch { $rejected = $true }
@@ -40,4 +47,4 @@ foreach ($entryPoint in $entryPoints) {
 }
 $ErrorActionPreference = $previousErrorActionPreference
 
-Write-Host 'AstraForge commit preflight tests passed: 14 cases.'
+Write-Host 'AstraForge commit preflight tests passed: 15 cases.'
