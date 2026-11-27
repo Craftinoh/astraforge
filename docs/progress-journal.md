@@ -408,3 +408,24 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
   - A long session (≥ 15 min) to confirm the VRAM gate's long-session effect.
   - Profile the CPU per thread with names (ETW or `VICTORY_STACKS`) to size the BCPack/detile cost against list translation and readback.
   - A world "curtain" (keep presenting the loading picture until the queue settles), opt-in.
+
+## 2026-11-27 (night) — CPU profile of world frames
+
+- Method:
+  - One automated 720p Stability run of the diagnostic build `39a187d` with `VICTORY_STACKS` every 2 s from 100 s to 176 s after launch, giving 39 samples in the world, about 100 threads each.
+  - Frames were symbolized with `dbghelp` against the build's PDB (scratch script, not committed).
+  - Stack sampling suspends threads, so that run measured 8.9 fps internal.
+- Finding: the CPU is mostly idle. About 4 threads run at any sampled moment out of 16 logical CPUs; every other thread is waiting.
+- Running samples per thread group (39 samples each):
+  - title and driver threads: about 1.9 threads running on average;
+  - list-translation threads: 14 running samples;
+  - DirectStorage/BCPack workers: 13 running samples (about a third of one core);
+  - late-wait helper: 12; submit thread: 10; relay: 9.
+- Conclusion: BCPack decoding is not on the critical path for in-world frame rate. A GPU BCPack decoder would shorten loading but would not raise the in-world fps.
+- Where the frame time goes:
+  - The submit thread is usually inside `Host::submit` (called from `send_late`), waiting for GPU work to finish so its results can be copied back to title memory. This round trip, plus waits, accounts for most of the roughly 100 ms frame.
+  - The late-wait helper spends its running samples resetting and recycling host lists, including driver allocation teardown (`NtGdiDdDDIDestroyAllocation2`, `FreeGpuVirtualAddress`).
+- Next: evaluate the upstream work that targets submit-path synchronization:
+  - Vice-Tay #343 (`aa917f3f`, share completed heap-sync rounds);
+  - Vice-Tay `b9ef9252` (plan card steps once);
+  - fxceless `VICTORY_DYNAMIC_WAIT` (lock stall fix).
