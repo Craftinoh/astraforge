@@ -20,14 +20,14 @@ application, publisher, executable, save data, or personal paths.
 | Area | State | Evidence boundary |
 |---|---|---|
 | Source | COOL_FOX Pareto-residency descendant plus focused credited ports | Exact origins are in `source-credits.md` and the nested `LOCAL-CHANGES.md` |
-| Publication | O4 source commit `f0c57bb` and its clean build evidence are published on `origin/main` | Last fetch showed local `main` and `origin/main` synchronized; fetch and inspect refs before later publication |
+| Publication | O4 source commit `f0c57bb`, clean build evidence, and the refreshed preflight record (`1abf0b5`) are published on `origin/main` | The latest push succeeded; verify refs again before the next publication |
 | Build | `20261127-053816-Both-thinlto-native-ee1e228c`, source commit `f0c57bb`, `SourceDirty=false` | Rust/Cargo 1.98.1, MSVC 14.44.35207, DXC 10.0.26100.0, Thin LTO, one release codegen unit, native CPU; Release and diagnostic `--help` both exit 0; gameplay not tested |
 | Automated tests | Diagnostic GPU library suite passes serially (408/35 ignored); per-heap patch also passes optimized Release (349/34 ignored); Clippy exits 0 | Unit evidence only; parallel suite had an intermittent texture-ahead failure and one diagnostic process access violation; no gameplay or FPS result |
-| Hardware | RTX 3070 is first DXGI adapter; driver 610.88, SM 6.8, Wave32, mesh tier 1, ray tracing tier 1.2, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM; Windows 11 Pro 26H2 | Hardware probe captured at 05:44 CET; process-local DXGI probe budget is not the game's budget; BAR1 only suggests Resizable BAR |
+| Hardware | RTX 3070 is first DXGI adapter; driver 610.88, SM 6.8, Wave32, mesh tier 1, ray tracing tier 1.2, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM; Windows 11 Pro 26H2 | Hardware probe refreshed at 05:57 CET; process-local DXGI probe budget is not the runtime's budget; BAR1 only suggests Resizable BAR |
 | Resolution | The source has no independent internal render-scale/upscaler setting | `VICTORY_DISPLAY_MODE` supplies the guest's advertised mode list; the host swapchain follows presented texture dimensions. A 1280x720-to-1920x1080 path is not selectable or verified by these presets |
 | Runtime data | `VICTORY_GAME_DIR` and `VICTORY_GAME_EXE` are unset; the Xbox library root has executable candidates, but the authorized runtime executable has not been confirmed | No shader prewarm, visual review, or gameplay capture yet |
-| Memory readiness | 05:44 CET sample: 9.80 GiB available commit and 11.04 GiB available physical RAM | Below the 12 GiB launch floor; volatile; no runtime launch; sample again immediately before a future launch |
-| Commit preflight | Shared check enforces a 12 GiB hard minimum in launcher and benchmark entry points; warm cache seeds are copied only after it passes | 15 PowerShell cases pass, including attempts to lower the floor, use the removed bypass, and move cache cloning ahead of the gate; no gameplay evidence |
+| Memory readiness | 05:57 CET sample: 9.74 GiB available commit and 10.89 GiB available physical RAM | Below the 12 GiB launch floor; volatile; no runtime launch; sample again immediately before a future launch |
+| Commit preflight | Shared check enforces a 12 GiB hard minimum in launcher and benchmark entry points; warm cache seeds are copied only after it passes | All 15 PowerShell preflight cases and all six benchmark-harness checks pass; no gameplay evidence |
 | Model review | Configured remote coding endpoint and one minimal completion verified | Model output is untrusted review input |
 
 ## Work queue
