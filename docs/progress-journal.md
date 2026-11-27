@@ -253,3 +253,8 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 - Refreshed the external hardware report at 06:03 CET: 9.65 GiB available commit and 11.17 GiB available physical RAM. A read-only process scan found no single process above 1 GiB private memory. No process was stopped and no Windows memory setting was changed.
 - The Xbox library root still has two executable candidates, while the runtime environment variables remain unset; neither candidate was selected or launched. O8 stays gated on confirming the authorized executable and passing the 12 GiB available-commit floor. No gameplay or performance result is available.
+
+## 2026-11-27 - O8 pre-install checkpoint
+
+- Refreshed the external hardware report at 10:08 CET: 9.71 GiB available commit and 9.92 GiB available physical RAM. This remains below the mandatory 12 GiB launch floor. The runtime directory and executable are still not configured; no process or Windows setting was changed.
+- The installation is still pending per the user's update. Keep the full report outside Git; after installation, identify the correct executable without publishing its name or path, then re-run the adapter and commit preflight before any launch. No gameplay measurement has been made.
