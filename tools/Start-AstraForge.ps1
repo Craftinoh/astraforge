@@ -3,7 +3,7 @@ param(
     [string]$GameDir = $env:VICTORY_GAME_DIR,
     [string]$GameExecutableName = 'game.exe',
     [string]$RuntimeExe,
-    [string]$SourceRoot = (Join-Path $PSScriptRoot '..\third_party\nvidia-3070-VI'),
+    [string]$SourceRoot,
     [string]$GpuProfile = 'nvidia-rtx3070',
     [ValidateSet('Stability', 'Balanced', 'Performance', 'Quality')][string]$Profile = 'Balanced',
     [ValidateSet('series-s', 'series-x')][string]$Console,
@@ -14,6 +14,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Import-Module -Name (Join-Path $PSScriptRoot 'AstraForge-Preflight.psm1') -Force
+
+if ([string]::IsNullOrWhiteSpace($SourceRoot)) {
+    $SourceRoot = Join-Path $PSScriptRoot '..\third_party\nvidia-3070-VI'
+}
 
 function Get-CanonicalPath([string]$Path) {
     return [System.IO.Path]::GetFullPath($Path).TrimEnd('\')
@@ -243,12 +247,15 @@ try {
         } catch { }
         Start-Sleep -Seconds 5
     }
+    $process.WaitForExit()
     $process.Refresh()
-    Write-Host "Runtime AstraForge terminato con exit code $($process.ExitCode)."
+    $exitCode = $process.ExitCode
+    if ($null -eq $exitCode) { throw 'Runtime AstraForge terminato senza rendere disponibile un exit code.' }
+    Write-Host "Runtime AstraForge terminato con exit code $exitCode."
     Write-Host "Output: $stdoutPath"
     Write-Host "Errori: $stderrPath"
     Write-Host "Telemetria: $memoryCsv, $counterCsv"
-    if ($process.ExitCode -ne 0) { throw "Runtime AstraForge terminato con exit code $($process.ExitCode)." }
+    if ($exitCode -ne 0) { throw "Runtime AstraForge terminato con exit code $exitCode." }
 } finally {
     foreach ($entry in $previousEnvironment.GetEnumerator()) { Set-Item "Env:$($entry.Key)" $entry.Value }
     Get-ChildItem Env: | Where-Object { $_.Name -like 'VICTORY_*' -and -not $previousEnvironment.ContainsKey($_.Name) } |
