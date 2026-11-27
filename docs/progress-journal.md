@@ -4,8 +4,8 @@ This file is the durable task record. Update it when source, build, benchmark, h
 
 ## Publication sync - 2026-11-27
 
-- Pushed the reviewed source and documentation commits to `origin/main`.
-- Local `main` and `origin/main` both resolve to `4b2f9bd50d6ed33fa5b061f5bca545d4694d7518`; the worktree is clean.
+- Pushed source commit `abcb275` and verification/documentation commit `fe8df83` to `origin/main` with a fast-forward after confirming the remote head.
+- After the push, local `main` and `origin/main` both resolved to `fe8df83499d81209b00db32e2043698d714b26a2`, and the worktree was clean. This publication-sync entry is a follow-up journal update.
 
 ## O8 readiness refresh - 2026-11-27 03:47 CET
 
