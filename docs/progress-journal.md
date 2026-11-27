@@ -451,3 +451,8 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
   - `Geolm/bc_packed` is a different format (its own BC re-compressor), not Xbox BCPack.
 - Tests: `victory-gpu` lib 357 passed / 34 ignored, and with diagnostics 416 / 35.
 - Next: the frame is serialized on the single submit thread (82–147 ms worked per frame, title threads waiting 50–87 ms at presents). It needs a submit-path trace with timestamps per phase (heap sync, card steps, copy-back) rather than more stack samples.
+- Bus traffic leads (run M-new-3, one 5-second world line, 7.8 fps):
+  - Host copies move 38.4 MB up and 39.3 MB fetched per frame. One 20 MB title buffer alone moves 21.05 MB up and 21.04 MB back every frame, in 321 pieces that go both ways: both the title and shaders write it. That buffer is half of all bus traffic.
+  - What shaders wrote, put into title memory: 142.2 MB per frame in 3,890 pieces (`VICTORY_EXACT_BACK`).
+  - Write-tracker guard-lock waits: 17.55 ms per frame across threads.
+  - The ping-pong buffer is the next concrete target: find which title resource it is and whether its CPU and GPU halves can be kept apart, or its round trip skipped when the title does not read it.
