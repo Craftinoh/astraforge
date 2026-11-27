@@ -27,6 +27,9 @@ literally before proposing a new patch.
 - Hardware sample at 2026-11-27 03:47 CET reported 10.32 GiB available commit, below the
   12 GiB launch floor, and 11.92 GiB available physical RAM. These values are volatile;
   refresh immediately before any launch and never bypass the guard.
+- Commit `7d7bbb8` hardens the launcher and benchmark preflight: the minimum is 12 GiB,
+  can only be raised, and has no low-commit bypass. Its shared PowerShell test suite passed
+  14 cases, including all three entry points; this does not replace a fresh prelaunch sample.
 - The RTX 3070 remains the first DXGI adapter; driver 610.88, PCIe Gen4 x16, SM 6.8,
   WaveOps 32, mesh shader tier 1, and ray-tracing tier 1.2 were reported. BAR1 suggests
   Resizable BAR but does not prove the firmware setting.
@@ -161,8 +164,6 @@ memory pressure during gameplay, stability, or FPS.
 
 ## Next exact task: O8 runtime readiness
 
-The reviewed source and documentation commits are pushed. Local `main` and `origin/main`
-both resolve to `4b2f9bd50d6ed33fa5b061f5bca545d4694d7518`, and the worktree is clean.
 Resolve the authorized installation directory and refresh hardware and commit-headroom
 telemetry. The latest sample had 10.32 GiB available commit, below the 12 GiB
 launcher floor; do not start the runtime unless a fresh sample passes preflight. If ready,

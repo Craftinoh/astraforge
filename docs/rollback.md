@@ -14,7 +14,9 @@ To remove only the artifacts added by this investigation, delete these individua
 - `tools/Prewarm-AstraForge.ps1`
 - `tools/Start-AstraForge3070.ps1`
 - `tools/Start-AstraForge.ps1`
+- `tools/AstraForge-Preflight.psm1`
 - `tools/Test-AstraForgeBenchmarkHarness.ps1`
+- `tools/Test-AstraForgePreflight.ps1`
 - `tools/Invoke-AstraForgeModelReview.ps1`
 - `tools/AstraForge-BenchmarkCommon.psm1`
 - `profiles/rtx3070-profiles.json`
@@ -45,3 +47,5 @@ The scripts have not been run against a game binary. The public-report exporter 
 To roll back only the placed-view canonicalization, revert the focused change set named `descriptor: canonicalize placed-view shape keys`. That restores direct copying of the complete 14-word resource and 16-word view descriptions and removes the two matching regression tests. Do not partially remove only one canonicalizer: resource padding and dimension-unused view words are independent sources of false shape growth.
 
 To roll back the conservative title-fill wait experiment, revert the focused change set named `gpu: add conservative title fill mode`. The default remains disabled in every supplied preset; for an immediate runtime-only rollback before rebuilding, omit `VICTORY_FILL_TITLE` or set it to `0`.
+
+To roll back the hard commit-floor enforcement, revert commit `7d7bbb8` (`fix: enforce commit headroom preflight`). This restores the earlier explicit low-commit bypass in the launcher/measurement scripts and must be treated as a loss of the mandatory 12 GiB safety gate. Do not use the restored bypass for normal runtime or benchmark runs.

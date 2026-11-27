@@ -20,12 +20,13 @@ application, publisher, executable, save data, or personal paths.
 | Area | State | Evidence boundary |
 |---|---|---|
 | Source | COOL_FOX Pareto-residency descendant plus focused credited ports | Exact origins are in `source-credits.md` and the nested `LOCAL-CHANGES.md` |
-| Publication | Local `main` and `origin/main` are synced at `4b2f9bd`; worktree clean | Source and documentation commits pushed after pinned build and review |
+| Publication | Always verify live local/remote refs before continuing or publishing | The branch was clean at the prior O8 checkpoint; later commits must be checked with Git |
 | Build | Clean Release and diagnostic artifacts at `20261127-033517-Both-thinlto-native-5aaf5812`; source commit `960828f`, `SourceDirty=false` | Rust 1.98.1/MSVC/DXC, Thin LTO and native CPU; both `--help` checks pass; compilation only |
 | Automated tests | Workspace and GPU-library suites pass; new fill-mode predicates pass 3/3; benchmark harness synthetic checks pass | Unit and synthetic evidence only |
 | Hardware | RTX 3070 is first DXGI adapter; driver 610.88, SM 6.8, Wave32, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM; Windows 11 Pro 26H2 | Latest raw inventory remains local and ignored; BAR1 only suggests Resizable BAR |
 | Runtime data | `VICTORY_GAME_DIR` is unset; two executables were found under the standard library root but neither was confirmed as the authorized runtime | No shader prewarm, visual review, or gameplay capture yet |
 | Memory readiness | Latest sample at 03:47 CET reported 10.32 GiB available commit against the 12 GiB launch floor and 11.92 GiB available physical RAM | Volatile; collect again immediately before launch; runtime launch remains blocked by the guard |
+| Commit preflight | Shared check enforces a 12 GiB hard minimum in launcher and benchmark entry points; higher floors remain configurable | 14 PowerShell cases pass, including attempts to lower the floor or use the removed bypass; no gameplay evidence |
 | Model review | Configured remote coding endpoint and one minimal completion verified | Model output is untrusted review input |
 
 ## Work queue
@@ -39,7 +40,7 @@ application, publisher, executable, save data, or personal paths.
 | O5 | NVIDIA shader correctness review | Complete; visual check pending runtime | Wave32/Wave64 and NaN/BVH paths audited; 281 shader tests pass and a synthetic intersection test ran on the hardware adapter and WARP; no global NaN scrub or ray-disable switch exists |
 | O6 | 8 GB residency and texture pressure review | Static audit complete; runtime validation pending | DXGI budget, texture admission, staging/pool lifetime, host-RAM and commit-pressure paths traced; no source patch justified without runtime pressure evidence |
 | O7 | Incremental source groups | Current group complete at `32a13f7` | Three predicate tests and clean pinned Release/diagnostic builds pass; new runtime A/B remains queued for O8/O10 |
-| O8 | Runtime readiness | Waiting for installation | Resolve authorized external game directory, pass adapter/feature/commit preflight, keep all game data and caches outside Git |
+| O8 | Runtime readiness | Install path unresolved; latest commit sample is below the hard floor | Resolve authorized external game directory, refresh hardware, pass adapter/feature/commit preflight, keep data and caches outside Git |
 | O9 | Shader and pipeline prewarm | Waiting for O8 | Separate first-run compilation settings from gameplay settings and fingerprint the generated cache |
 | O10 | Gameplay baseline | Waiting for O8/O9 | Repeatable anonymous indoor/outdoor/high-density routes; cold and warm cohorts; visual inspection and real application-frame classification |
 | O11 | Profile tuning | Waiting for O10 | Compare Stability, Balanced, Performance, and Quality with matched runs; retain only measured improvements without visual or stability regression |
@@ -89,8 +90,8 @@ available commit:
 
 ## Resume checklist
 
-1. Read `AGENTS.md`, this file, and the latest section of `progress-journal.md`.
+1. Read `AGENTS.md`, this file, and the latest sections of `progress-journal.md` and `LUNA_MAX_HANDOFF.md`.
 2. Run `git status --short --branch`; preserve any existing work.
-3. Check O1 and O2 first. Their results determine the next source patch.
+3. Recheck the completed O1/O2 audit only if new donor evidence appears; otherwise continue from O8 and the latest source/build state.
 4. Refresh hardware/commit telemetry before any runtime launch.
 5. Update this plan and the progress journal before committing a completed work group.
