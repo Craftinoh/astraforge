@@ -8,12 +8,12 @@ param(
     [ValidateSet('Stability', 'Balanced', 'Performance', 'Quality')][string]$Profile = 'Balanced',
     [ValidateSet('series-s', 'series-x')][string]$Console,
     [string]$OutputRoot = "$env:LOCALAPPDATA\AstraForge\gpu",
-    [ValidateRange(0, 256)][int]$MinimumAvailableCommitGiB = 12,
-    [switch]$AllowLowCommit,
+    [ValidateRange(12, 256)][int]$MinimumAvailableCommitGiB = 12,
     [switch]$AllowSeriesX
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module -Name (Join-Path $PSScriptRoot 'AstraForge-Preflight.psm1') -Force
 
 function Get-CanonicalPath([string]$Path) {
     return [System.IO.Path]::GetFullPath($Path).TrimEnd('\')
@@ -176,9 +176,7 @@ if ($dedicatedMemoryMiB -lt [int]$gpuProfileConfig.adapter.dedicatedMemoryMiB) {
     throw "GPU has $dedicatedMemoryMiB MiB dedicated memory; profile expects at least $($gpuProfileConfig.adapter.dedicatedMemoryMiB) MiB."
 }
 $availableCommit = [double]$hardware.RAM.AvailableCommitGiB
-if ($availableCommit -lt $MinimumAvailableCommitGiB -and -not $AllowLowCommit) {
-    throw ("Commit disponibile {0:N1} GiB, sotto la soglia {1} GiB. Libera memoria/commit o usa -AllowLowCommit dopo aver valutato il rischio." -f $availableCommit, $MinimumAvailableCommitGiB)
-}
+Assert-AstraForgeCommitHeadroom -AvailableGiB $availableCommit -MinimumGiB $MinimumAvailableCommitGiB
 if ($availableCommit -lt [int]$gpuProfileConfig.runtime.warnBelowAvailableCommitGiB) {
     Write-Warning ("Commit disponibile {0:N1} GiB, sotto il margine indicativo di {1} GiB del profilo {2}; un host diverso può richiedere più spazio per evitare paging." -f $availableCommit, $gpuProfileConfig.runtime.warnBelowAvailableCommitGiB, $GpuProfile)
 }
