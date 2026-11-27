@@ -5,6 +5,7 @@
 - Replaced the global completion counter for decoration texture bakes with per-heap queue revisions. Overlapping passes, queue writes during a scan, incomplete capped snapshots, or budget-limited scans cannot certify coverage. The synchronous path records coverage after GPU execution and descriptor publication.
 - Adapted the focused fix from Vice-Tay #85 and added regression coverage for heap isolation, stale revisions, overlapping passes, and truncated snapshots.
 - The diagnostic GPU-library suite passes serially (407 passed, 35 ignored); optimized Release passes serially (349 passed, 34 ignored). A parallel run showed an intermittent existing test/process failure, recorded in the progress journal. No gameplay, visual, stability, or FPS effect is measured.
+- Clean Release and diagnostic executables built at `20261127-050134-Both-thinlto-native-a19ebb64`; both `--help` checks pass. SHA-256 hashes are recorded in `docs/progress-journal.md`; binaries remain outside Git.
 
 ## 2026-11-27 - shadow comparison boundary correctness
 
