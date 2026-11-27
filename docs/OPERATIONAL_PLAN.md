@@ -20,7 +20,7 @@ application, publisher, executable, save data, or personal paths.
 | Area | State | Evidence boundary |
 |---|---|---|
 | Source | COOL_FOX Pareto-residency descendant plus focused credited ports | Exact origins are in `source-credits.md` and the nested `LOCAL-CHANGES.md` |
-| Publication | O4 source commit `f0c57bb` and its clean build evidence are committed locally | Push and verify remote refs after this documentation update; fetch before any later publication |
+| Publication | O4 source commit `f0c57bb` and its clean build evidence are published on `origin/main` | Last fetch showed local `main` and `origin/main` synchronized; fetch and inspect refs before later publication |
 | Build | `20261127-053816-Both-thinlto-native-ee1e228c`, source commit `f0c57bb`, `SourceDirty=false` | Rust/Cargo 1.98.1, MSVC 14.44.35207, DXC 10.0.26100.0, Thin LTO, one release codegen unit, native CPU; Release and diagnostic `--help` both exit 0; gameplay not tested |
 | Automated tests | Diagnostic GPU library suite passes serially (408/35 ignored); per-heap patch also passes optimized Release (349/34 ignored); Clippy exits 0 | Unit evidence only; parallel suite had an intermittent texture-ahead failure and one diagnostic process access violation; no gameplay or FPS result |
 | Hardware | RTX 3070 is first DXGI adapter; driver 610.88, SM 6.8, Wave32, mesh tier 1, ray tracing tier 1.2, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM; Windows 11 Pro 26H2 | Hardware probe captured at 05:44 CET; process-local DXGI probe budget is not the game's budget; BAR1 only suggests Resizable BAR |

@@ -5,7 +5,7 @@ literally before proposing a new patch.
 
 ## Latest checkpoint - 2026-11-27, O4 diagnostic contention telemetry
 
-- The O4 diagnostic telemetry source commit is `f0c57bb6f6c9a0083ba7781592bd3747b8ee1c0a`; its source/docs changes are committed locally and the final documentation update still needs to be pushed. The focused work branch `fix/per-heap-bake-coverage` remains available. Check `git status` and remote refs before continuing.
+- The O4 diagnostic telemetry source commit `f0c57bb` and its build-verification docs are published on `origin/main`; the last fetch showed a clean, synchronized `main`. The focused work branch `fix/per-heap-bake-coverage` remains available. Check `git status` and fetch remote refs before continuing.
 - Adapted merged Vice-Tay PR #85 (`7eef143`) to the local `TextureQueue`: bake completion now belongs to a heap/revision, overlapping scans cannot certify, and capped due/lookahead snapshots must be complete. Synchronous GPU coverage is recorded after execution and descriptor publication.
 - Added queue-locality, stale-revision, overlap, and truncated-snapshot regressions. Serial diagnostic tests pass 407/0/35 ignored; optimized Release tests pass 349/0/34 ignored. Clippy exits 0 with existing warnings outside these edits.
 - Parallel runs were flaky: one diagnostics process exited `0xc0000005`; another run's texture-ahead test panicked. Keep that caveat in the journal. The whole-file rustfmt check reports extensive pre-existing formatting differences in these imported files, so do not format them wholesale.
