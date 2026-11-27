@@ -122,13 +122,9 @@ pub(crate) struct HostHeap {
     pub(crate) heap: ID3D12DescriptorHeap,
     cpu: usize,
     step: u32,
-    /// Slots mirroring the title's.
+    /// Slots mirroring the title's; view heaps have `dynamic` more.
     count: u32,
-    /// First physical descriptor slot available to the dynamic allocator.
-    /// This is `count` on ordinary heaps and the reserved tail on a capped
-    /// portable heap.
-    dynamic_start: u32,
-    /// Dynamic slots: [`DYNAMIC`] in view heaps, none in
+    /// Dynamic slots past `count`: [`DYNAMIC`] in view heaps, none in
     /// sampler heaps. (Upstream falls back to 2^16 on a capped host heap;
     /// ours keeps 2^18 there: 2^16 and 2^17 both ran out in this title.)
     dynamic: u32,
@@ -1350,7 +1346,7 @@ pub(crate) fn describe_slots(words: &[u32]) -> Vec<(usize, u32, String)> {
 #[cfg(feature = "diagnostics")]
 pub(crate) fn shown_bytes(at: u32, n: u32) -> Option<(u32, Vec<u8>, u32)> {
     super::with_view_heap(|host| {
-        let own = host.dynamic_start + host.dynamic;
+        let own = host.count + host.dynamic;
         let end = if host.raw == 0 { own } else { host.raw + own };
         let at = if at >= own && at < host.raw { host.raw } else { at };
         let stop = if at < own { own } else { end };
@@ -1372,14 +1368,9 @@ pub(crate) fn slot_story(slot: u32) -> String {
         let (index, twin) = if host.raw != 0 && slot >= host.raw { (slot - host.raw, true) } else { (slot, false) };
         let mut text = if index < host.count {
             format!("title slot {index}, made from {}", host.describe_slot(index).unwrap_or_default())
-        } else if let Some(dynamic) = index
-            .checked_sub(host.dynamic_start)
-            .filter(|&dynamic| dynamic < host.dynamic)
-        {
-            let taken = host.next.lock().unwrap_or_else(|e| e.into_inner()).1.get(dynamic as usize).copied();
-            format!("dynamic slot {dynamic} (taken {taken:?})")
         } else {
-            format!("null or unused slot {index}")
+            let taken = host.next.lock().unwrap_or_else(|e| e.into_inner()).1.get((index - host.count) as usize).copied();
+            format!("dynamic slot {} (taken {taken:?})", index - host.count)
         };
         if twin {
             let made = host.twins.get(index as usize).map(|t| t.load(Relaxed));
@@ -1477,8 +1468,8 @@ fn raw_twins() -> bool {
     *ON.get_or_init(|| std::env::var_os("VICTORY_RAW_VIEWS").is_none_or(|v| v != "0"))
 }
 
-/// Picks, once, the null slot shader view indices clamp to and tells the
-/// translator now (`set_view_heap_limit`) instead of when the title's
+/// Picks, once, the null slot at the end of every host view heap and tells
+/// the translator now (`set_view_heap_limit`) instead of when the title's
 /// heap is made: a shader keeps the limit it was translated with, and the
 /// title makes 25 pipelines (their shaders translated at once) before it
 /// makes its view heap. Called before a shader is translated and before a
@@ -1519,43 +1510,27 @@ pub(crate) fn probe_view_limit() {
         } else {
             PORTABLE_VIEWS
         };
-        let null = view_null_slot(views);
         tracing::info!(
             views,
-            null,
             raw_twins = twins,
-            "host view heaps hold {views} views; shader view indices clamp to slot {null} from the first shader on"
+            "host view heaps hold {views} views; view indices are clamped to the null slot at the end from the first shader on"
         );
-        victory_shader::emit::set_view_heap_limit(null);
+        victory_shader::emit::set_view_heap_limit(views - 1);
     });
 }
 
-/// Slots for tables a draw needs made afresh (constant buffers copied per
-/// draw). On ordinary heaps these follow the title's slots; on a host capped
-/// at [`PORTABLE_VIEWS`], they occupy the reserved tail after the shader null
-/// slot so a capped title descriptor can never alias a dynamic descriptor.
-/// A list holds the slots it took until it is reset (its submissions have
-/// run) or released.
+/// Slots past the title's in a view heap, for tables a draw needs made
+/// afresh (constant buffers copied per draw). A list holds the slots it
+/// took until it is reset (its submissions have run) or released.
 /// 2^16 ran out in the world ("no free dynamic descriptor slots", run 11;
 /// upstream PR #336 takes 2^18). On a host heap capped at 1,000,000 views
-/// (NVIDIA), 2^18 dynamic slots now occupy a fixed tail after the null
-/// sentinel, leaving 737,855 title slots. The title's highest seen slot was
-/// about 720,000. 2^17 left 868,000 title slots but ran out in the opening
+/// (NVIDIA) these come out of the title's slots, whose highest seen is
+/// about 720,000: 2^17 left 868,000 of them, and ran out in the opening
 /// cutscene (a frame asks for up to 16,000 tables while the frame before
 /// still holds its own; a draw refused its table read slots never made
-/// for it, and the card stopped within frames).
+/// for it, and the card stopped within frames). 2^18 leaves 737,000; a
+/// table past them is made afresh in these slots like any other.
 pub(crate) const DYNAMIC: u32 = 1 << 18;
-
-fn view_null_slot(views: u32) -> u32 {
-    if views == PORTABLE_VIEWS { views - DYNAMIC - 1 } else { views - 1 }
-}
-
-/// Capped heaps keep the null descriptor and dynamic descriptors in distinct
-/// ranges. The shader's clamp slot is immediately before the fixed dynamic
-/// tail, independent of the title heap's original size.
-fn capped_view_layout(count: u32, null: u32) -> (u32, u32, u32) {
-    (count.min(null), null + 1, PORTABLE_VIEWS)
-}
 
 /// [`DYNAMIC`] for a heap of `count` title slots whose null slot is `null`
 /// (0: none): up to four times as many where the host heap has the room (a
@@ -1597,8 +1572,9 @@ impl HostHeap {
                     })
             }
         };
-        // On a portable capped view heap, the null slot and dynamic tail have
-        // fixed, disjoint positions. On larger heaps keep the existing layout.
+        // A view heap ends at the null slot shaders clamp view indices to
+        // (`probe_view_limit`), whatever the title's own count: the title's
+        // slots, then the dynamic ones, then null up to and with that slot.
         if !sampler {
             probe_view_limit();
         }
@@ -1609,24 +1585,11 @@ impl HostHeap {
         };
         let raw = if sampler { 0 } else { victory_shader::emit::raw_views() };
         let extra = if sampler { 0 } else { dynamic_slots(count, null) };
-        let portable = !sampler && null < PORTABLE_VIEWS;
-        let (heap, count, size, dynamic_start) = if null == 0 {
+        let (heap, count, size) = if null == 0 {
             match make(count + extra) {
-                Ok(heap) => (heap, count, count + extra, count),
+                Ok(heap) => (heap, count, count + extra),
                 Err(e) => {
                     tracing::warn!(error = %e, count, sampler, "no host descriptor heap");
-                    return None;
-                }
-            }
-        } else if portable {
-            let (fitted, dynamic_start, size) = capped_view_layout(count, null);
-            if fitted < count {
-                tracing::warn!(count, fitted, null, size, "host view heap capped; shader indices past the null slot read null descriptors");
-            }
-            match make(size) {
-                Ok(heap) => (heap, fitted, size, dynamic_start),
-                Err(e) => {
-                    tracing::warn!(error = %e, count, size, "no portable host view heap");
                     return None;
                 }
             }
@@ -1635,13 +1598,13 @@ impl HostHeap {
             let fitted = if count + extra <= null {
                 count
             } else {
-                // On a larger host, the retail title heap and its dynamic
-                // tail normally fit together before the null slot.
+                // shortcut: descriptors past the host's limit are left out; a title that reaches
+                // them needs remapping. They read the null slot instead.
                 tracing::warn!(count, "host view heap capped at {size}; views past it read a null slot");
                 null - extra
             };
             match make(size) {
-                Ok(heap) => (heap, fitted, size, fitted),
+                Ok(heap) => (heap, fitted, size),
                 Err(e) => {
                     tracing::warn!(error = %e, count, size, "no host view heap");
                     return None;
@@ -1685,7 +1648,6 @@ impl HostHeap {
             cpu,
             step,
             count,
-            dynamic_start,
             dynamic: extra,
             sampler,
             raw,
@@ -1861,7 +1823,7 @@ impl HostHeap {
         taken[first..first + n].fill(true);
         self.free.fetch_sub(n as u32, std::sync::atomic::Ordering::Relaxed);
         *next = ((first + n) % end) as u32;
-        Some(self.dynamic_start + first as u32)
+        Some(self.count + first as u32)
     }
 
     /// The title slots this heap has host slots for; fewer than the title's
@@ -2937,7 +2899,7 @@ impl HostHeap {
         if id != self.id {
             return;
         }
-        let Some(at) = first.checked_sub(self.dynamic_start) else {
+        let Some(at) = first.checked_sub(self.count) else {
             return;
         };
         let mut guard = self.next.lock().unwrap_or_else(|e| e.into_inner());
@@ -3069,7 +3031,7 @@ impl HostHeap {
 
     /// Slot `index` now views `resource` (or nothing of the host's).
     fn keep(&self, index: u32, resource: Option<ID3D12Resource>) {
-        let Some(slot) = self.kept_index(index).and_then(|index| self.kept.get(index)) else {
+        let Some(slot) = self.kept.get(index as usize) else {
             return;
         };
         let old = {
@@ -3090,22 +3052,7 @@ impl HostHeap {
 
     /// What slot `index` views.
     fn kept_in(&self, index: u32) -> Option<ID3D12Resource> {
-        self.kept
-            .get(self.kept_index(index)?)?
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .clone()
-    }
-
-    /// The resource-retention array stores title slots followed by dynamic
-    /// slots, even when a capped heap places its dynamic descriptors at a
-    /// fixed physical index after the null sentinel.
-    fn kept_index(&self, index: u32) -> Option<usize> {
-        if index < self.count {
-            return Some(index as usize);
-        }
-        let dynamic = index.checked_sub(self.dynamic_start)?;
-        (dynamic < self.dynamic).then_some(self.count as usize + dynamic as usize)
+        self.kept.get(index as usize)?.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
     /// Makes slot `index` (a dynamic one) a raw buffer view of `len` bytes
@@ -5887,12 +5834,12 @@ mod tests {
         };
         let a = heap.dynamic(heap.dynamic - 100).unwrap();
         let b = heap.dynamic(60).unwrap();
-        assert_eq!((a, b), (heap.dynamic_start, heap.dynamic_start + heap.dynamic - 100));
+        assert_eq!((a, b), (4, 4 + heap.dynamic - 100));
         // 40 left at the end: 50 do not fit until something is given back.
         assert_eq!(heap.dynamic(50), None);
         heap.release(heap.id(), a, 50);
-        assert_eq!(heap.dynamic(50), Some(heap.dynamic_start));
-        assert_eq!(heap.dynamic(40), Some(heap.dynamic_start + heap.dynamic - 40));
+        assert_eq!(heap.dynamic(50), Some(4));
+        assert_eq!(heap.dynamic(40), Some(4 + heap.dynamic - 40));
     }
 
     #[test]
@@ -5948,12 +5895,7 @@ mod tests {
         let left = heap.dynamic(2).unwrap();
         let right = heap.dynamic(2).unwrap();
         let rest = heap.dynamic(heap.dynamic - 5).unwrap();
-        assert_eq!((first, left, right, rest), (
-            heap.dynamic_start,
-            heap.dynamic_start + 1,
-            heap.dynamic_start + 3,
-            heap.dynamic_start + 5,
-        ));
+        assert_eq!((first, left, right, rest), (4, 5, 7, 9));
 
         // Reallocating the left half puts the cursor back in the middle.
         heap.release(heap.id(), left, 2);
@@ -5968,23 +5910,6 @@ mod tests {
         let last = first + heap.dynamic - 1;
         heap.release(heap.id(), last, 1);
         assert_eq!(heap.dynamic(2), None);
-    }
-
-    #[test]
-    fn portable_heap_keeps_clamped_null_and_dynamic_ranges_disjoint() {
-        let null = view_null_slot(PORTABLE_VIEWS);
-        let (fitted, dynamic_start, size) = capped_view_layout(PORTABLE_VIEWS, null);
-        assert_eq!(fitted, null);
-        assert_eq!(null, PORTABLE_VIEWS - DYNAMIC - 1);
-        assert_eq!(dynamic_start, null + 1);
-        assert_eq!(dynamic_start + DYNAMIC, size);
-        assert_eq!(size, PORTABLE_VIEWS);
-        assert_eq!(800_000.min(null), null, "a truncated title index clamps to the null descriptor");
-
-        let (small_count, small_dynamic, small_size) = capped_view_layout(600_000, null);
-        assert_eq!(small_count, 600_000);
-        assert_eq!(small_dynamic, dynamic_start);
-        assert_eq!(small_size, size);
     }
 
     #[test]
