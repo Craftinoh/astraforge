@@ -20,8 +20,8 @@ application, publisher, executable, save data, or personal paths.
 | Area | State | Evidence boundary |
 |---|---|---|
 | Source | COOL_FOX Pareto-residency descendant plus focused credited ports | Exact origins are in `source-credits.md` and the nested `LOCAL-CHANGES.md` |
-| Build | Previous clean Release and diagnostic artifacts exist; committed wait-mode change needs a fresh clean build | Pinned Rust/MSVC/DXC, Thin LTO and native CPU; compilation only, no gameplay claim |
-| Automated tests | Workspace and GPU-library suites pass; benchmark harness synthetic checks pass | Unit and synthetic evidence only |
+| Build | Clean Release and diagnostic artifacts at `20261127-033517-Both-thinlto-native-5aaf5812`; source commit `960828f`, `SourceDirty=false` | Rust 1.98.1/MSVC/DXC, Thin LTO and native CPU; both `--help` checks pass; compilation only |
+| Automated tests | Workspace and GPU-library suites pass; new fill-mode predicates pass 3/3; benchmark harness synthetic checks pass | Unit and synthetic evidence only |
 | Hardware | RTX 3070 is first DXGI adapter; SM 6.8, Wave32, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM | Latest raw inventory remains local and ignored |
 | Runtime data | Installation is still incomplete or unavailable at the inspected game-library path | No shader prewarm, visual review, or gameplay capture yet |
 | Memory readiness | Latest sample reported 9.32 GiB available commit against the 12 GiB launch floor | Volatile; collect again immediately before launch |
@@ -37,7 +37,7 @@ application, publisher, executable, save data, or personal paths.
 | O4 | Shadow/resource lock contention review | Complete; patch deferred | Two bounded reviews and local ownership audit complete; measure local call volume and mutex contention before selecting a lock-scope change |
 | O5 | NVIDIA shader correctness review | Complete; visual check pending runtime | Wave32/Wave64 and NaN/BVH paths audited; 281 shader tests pass and a synthetic intersection test ran on the hardware adapter and WARP; no global NaN scrub or ray-disable switch exists |
 | O6 | 8 GB residency and texture pressure review | Static audit complete; runtime validation pending | DXGI budget, texture admission, staging/pool lifetime, host-RAM and commit-pressure paths traced; no source patch justified without runtime pressure evidence |
-| O7 | Incremental source groups | In progress at `32a13f7` | Three `VICTORY_FILL_TITLE` predicate tests pass; run the pinned clean Release/diagnostic build for this committed source, record hashes, then retain or revert based on build correctness |
+| O7 | Incremental source groups | Current group complete at `32a13f7` | Three predicate tests and clean pinned Release/diagnostic builds pass; new runtime A/B remains queued for O8/O10 |
 | O8 | Runtime readiness | Waiting for installation | Resolve authorized external game directory, pass adapter/feature/commit preflight, keep all game data and caches outside Git |
 | O9 | Shader and pipeline prewarm | Waiting for O8 | Separate first-run compilation settings from gameplay settings and fingerprint the generated cache |
 | O10 | Gameplay baseline | Waiting for O8/O9 | Repeatable anonymous indoor/outdoor/high-density routes; cold and warm cohorts; visual inspection and real application-frame classification |

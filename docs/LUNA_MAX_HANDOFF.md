@@ -140,26 +140,28 @@ predicate tests passed 3/3 with the pinned toolchain. The bounded upload-queue m
 missing and that queue creation recursively locked the mutex; both claims were rejected
 after source tracing. No gameplay correctness, stability, frametime, or FPS result exists.
 
-## Next exact task: clean build and publish the reviewed source group
+## O7 result: clean Release and diagnostic build
 
-The source commit is `32a13f7`; this handoff and the O2 comparison, progress, profile,
-credit, changelog, and rollback updates should be committed before rebuilding so the build
-manifest sees a clean repository. Recheck `git diff --check` and credential/path privacy
-before that docs commit. In a Visual Studio 2022 x64 developer environment with the pinned
-Cargo proxy on `PATH`, run:
+The focused source commit is `32a13f7`; this documentation records the completed O2 audit.
+The clean build is `20261127-033517-Both-thinlto-native-5aaf5812`, built at source commit
+`960828f7eb1c141be2176e17fe09abd9e7c0650b` with `SourceDirty=false`, Rust/Cargo 1.98.1,
+MSVC, DXC 10.0.26100.0, Thin LTO, and native CPU code generation. Both executables return
+success for `--help`. SHA-256: Release
+`F172EF1C49219FC8A093EB0392ACC96FD98AF77390823E6B9CA2AC4D1C2A392E`; Diagnostic
+`1931A334F428B646F107FC067DCA6DC78FA20C3DD0BE30959AD28B01FB0F6A42`. The focused
+`fill_title_mode_tests` suite passed 3/3. None of these checks verifies actual rendering,
+memory pressure during gameplay, stability, or FPS.
 
-```powershell
-.\tools\Build-AstraForge.ps1 -Mode Both -ThinLto -NativeCpu
-```
+## Next exact task: O8 runtime readiness
 
-Require both Release and diagnostic builds to pass for committed source `32a13f7`, run
-both executables with `--help`, and record the new build ID and SHA-256 values from its
-manifest in `progress-journal.md` and `changelog.md`. Then commit those evidence updates,
-push the source and documentation commits, and verify local `main` equals `origin/main`.
-Only after the push, resume O8: inspect whether the authorized installation is complete,
-refresh commit-headroom telemetry, and pass launcher preflight before shader prewarm or a
-gameplay run. Keep O6 runtime validation queued. Do not enable mode 2 in a profile or make
-visual/FPS claims until matched gameplay A/B captures pass.
+Push the reviewed source and documentation commits and verify local `main` equals
+`origin/main`. Then inspect read-only whether the authorized installation is complete and
+refresh hardware and commit-headroom telemetry. The last sample had 9.32 GiB available
+commit, below the 12 GiB launcher floor; do not start the runtime unless a fresh sample
+passes preflight. If ready, keep shader prewarm separate from gameplay settings, capture
+Stability/Balanced baseline first, then A/B `VICTORY_FILL_TITLE=2` with matched routes,
+cache state, and visual review. Keep O6 streaming validation queued. Do not enable mode 2
+in supplied profiles or make visual/FPS claims until those runs pass.
 
 ## Commit and publication gates
 
