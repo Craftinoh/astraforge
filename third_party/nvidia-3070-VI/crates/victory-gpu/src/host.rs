@@ -2787,8 +2787,8 @@ fn late_blocked(runs: &[&HostList]) -> Option<usize> {
 }
 
 /// Whether a small fill of upload memory, or copy of a title buffer, goes on without waiting for
-/// flights when the title itself wrote the memory since they were given it
-/// (`VICTORY_FILL_TITLE=1`; off by default).
+/// flights. `VICTORY_FILL_TITLE=1` keeps the local broad predicate; `=2` uses the donor's
+/// narrower recent-shader-write predicate. Off by default; mode 2 remains experimental here.
 ///
 /// The title's 174 MB heap is declared written as a whole (a root view has
 /// no size), and the title keeps a ring of constants in it: one fill of 480
@@ -2806,10 +2806,95 @@ fn late_blocked(runs: &[&HostList]) -> Option<usize> {
 /// block that the title (or an earlier flight's copy-back) also wrote, or
 /// for the first time, is read as it was before that flight.
 fn fill_is_titles(src: usize, len: usize) -> bool {
+    static MODE: OnceLock<u32> = OnceLock::new();
+    let mode = *MODE.get_or_init(
+        || match std::env::var("VICTORY_FILL_TITLE").ok().as_deref() {
+            Some("1") => 1,
+            Some("2") => 2,
+            _ => 0,
+        },
+    );
+    #[cfg(feature = "diagnostics")]
+    let mode = crate::ab::pick("VICTORY_FILL_TITLE").map_or(mode, |on| if on { 2 } else { 0 });
+    fill_title_mode_skips_wait(
+        mode,
+        len,
+        || crate::watch::written_since_taken(src, len),
+        || crate::watch::landed_lately(src, len, 600),
+    )
+}
+
+fn fill_title_mode_skips_wait(
+    mode: u32,
+    len: usize,
+    written_since_taken: impl FnOnce() -> bool,
+    landed_lately: impl FnOnce() -> bool,
+) -> bool {
     const SMALL: usize = 64 << 10;
-    static ON: OnceLock<bool> = OnceLock::new();
-    let on = *ON.get_or_init(|| std::env::var_os("VICTORY_FILL_TITLE").is_some_and(|v| v == "1"));
-    on && len <= SMALL && (crate::watch::written_since_taken(src, len) || !crate::watch::landed_lately(src, len, 600))
+    match mode {
+        1 if len <= SMALL => written_since_taken() || !landed_lately(),
+        2 if len <= SMALL => !landed_lately(),
+        _ => false,
+    }
+}
+
+#[cfg(test)]
+mod fill_title_mode_tests {
+    use super::fill_title_mode_skips_wait;
+    use std::cell::Cell;
+
+    #[test]
+    fn mode_one_preserves_the_existing_predicate_and_short_circuit() {
+        let landed_called = Cell::new(false);
+        assert!(fill_title_mode_skips_wait(
+            1,
+            480,
+            || true,
+            || {
+                landed_called.set(true);
+                true
+            }
+        ));
+        assert!(!landed_called.get());
+        assert!(fill_title_mode_skips_wait(1, 480, || false, || false));
+        assert!(!fill_title_mode_skips_wait(1, 480, || false, || true));
+    }
+
+    #[test]
+    fn mode_two_only_skips_when_no_recent_shader_write_was_recorded() {
+        let written_called = Cell::new(false);
+        assert!(!fill_title_mode_skips_wait(
+            2,
+            480,
+            || {
+                written_called.set(true);
+                true
+            },
+            || true
+        ));
+        assert!(!written_called.get());
+        assert!(fill_title_mode_skips_wait(2, 480, || false, || false));
+    }
+
+    #[test]
+    fn disabled_unknown_and_oversized_modes_do_not_skip_waits() {
+        let not_called = || panic!("disabled mode evaluated a memory predicate");
+        assert!(!fill_title_mode_skips_wait(0, 480, not_called, not_called));
+        assert!(!fill_title_mode_skips_wait(3, 480, not_called, not_called));
+        assert!(!fill_title_mode_skips_wait(
+            1,
+            (64 << 10) + 1,
+            not_called,
+            not_called
+        ));
+        assert!(!fill_title_mode_skips_wait(
+            2,
+            (64 << 10) + 1,
+            not_called,
+            not_called
+        ));
+        assert!(fill_title_mode_skips_wait(2, 64 << 10, || false, || false));
+    }
 }
 
 /// Diagnostics: the waits for flights, by what waited, why it was not done
