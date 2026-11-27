@@ -7,8 +7,7 @@ param(
     [ValidateSet('Stability', 'Balanced', 'Performance', 'Quality')][string]$Profile = 'Balanced',
     [ValidateSet('series-s', 'series-x')][string]$Console,
     [string]$OutputRoot = "$env:LOCALAPPDATA\AstraForge\gpu",
-    [ValidateRange(0, 256)][int]$MinimumAvailableCommitGiB = 12,
-    [switch]$AllowLowCommit,
+    [ValidateRange(12, 256)][int]$MinimumAvailableCommitGiB = 12,
     [switch]$AllowSeriesX
 )
 

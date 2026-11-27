@@ -14,8 +14,7 @@ param(
     [ValidateNotNullOrEmpty()][string]$OutputResolutionLabel = 'unknown',
     [string]$SourceRoot = (Join-Path $PSScriptRoot '..\third_party\nvidia-3070-VI'),
     [hashtable]$RuntimeOverride = @{},
-    [ValidateRange(0, 256)][int]$MinimumAvailableCommitGiB = 12,
-    [switch]$AllowLowCommit,
+    [ValidateRange(12, 256)][int]$MinimumAvailableCommitGiB = 12,
     [switch]$AllowSeriesX,
     [string]$CacheDirectory,
     [string]$CacheSeedDirectory,
@@ -25,6 +24,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Import-Module -Name (Join-Path $PSScriptRoot 'AstraForge-BenchmarkCommon.psm1') -Force
+Import-Module -Name (Join-Path $PSScriptRoot 'AstraForge-Preflight.psm1') -Force
 
 function Get-AbsolutePath([string]$Path) {
     [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Path).Path)
@@ -416,9 +416,7 @@ if ([int]$nvidiaTelemetry.DedicatedMemoryMiB -lt [int]$gpuProfileConfig.adapter.
 }
 $adapterLuid = [string]$targetAdapter.AdapterLuid
 $availableCommitGiB = [double]$hardwareReport.RAM.AvailableCommitGiB
-if ($availableCommitGiB -lt $MinimumAvailableCommitGiB -and -not $AllowLowCommit) {
-    throw ("Commit disponibile {0:N1} GiB, sotto la soglia {1} GiB. Libera memoria oppure usa -AllowLowCommit dopo aver valutato il rischio." -f $availableCommitGiB, $MinimumAvailableCommitGiB)
-}
+Assert-AstraForgeCommitHeadroom -AvailableGiB $availableCommitGiB -MinimumGiB $MinimumAvailableCommitGiB
 if ($availableCommitGiB -lt [int]$gpuProfileConfig.runtime.warnBelowAvailableCommitGiB) {
     Write-Warning ("Commit disponibile {0:N1} GiB, sotto il margine indicativo di {1} GiB per il profilo {2}." -f $availableCommitGiB, $gpuProfileConfig.runtime.warnBelowAvailableCommitGiB, $GpuProfile)
 }
