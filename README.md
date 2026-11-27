@@ -26,6 +26,8 @@ For a hands-on split where one contributor validates a GPU profile while the mai
 
 Coding agents must follow [AGENTS.md](AGENTS.md). The [AI contributor guide](docs/AI_CONTRIBUTOR_GUIDE.md) explains the source tree, validation levels, provenance, privacy rules, and includes a task prompt. Copy [the task brief](docs/templates/AI_TASK_PROMPT.md) for each model-assisted change. Pull requests use the repository checklist in `.github/PULL_REQUEST_TEMPLATE.md`.
 
+For an exact continuation of the current RTX 3070 work, read the [Luna Max handoff](docs/LUNA_MAX_HANDOFF.md) after the operational plan. It records the tested patch, rejected model claim, next audit prompts, and commit gates.
+
 ## Build and run
 
 Requirements include the repository-pinned Rust toolchain, Windows MSVC build tools, Windows SDK, DirectX Shader Compiler, the imported engine source, PresentMon for gameplay measurements, and personally owned game data installed outside this repository.
@@ -39,7 +41,7 @@ Requirements include the repository-pinned Rust toolchain, Windows MSVC build to
 
 The source targets the first DXGI adapter. The NVIDIA profile launcher checks that the RTX 3070 is first before starting the renderer. Thin LTO and native CPU code generation are build candidates for the Ryzen 7 7700X CPU submission path; their performance effect is not yet measured.
 
-See [the project vision](docs/project-vision.md), [the integration architecture](docs/integration-architecture.md), [the progress journal](docs/progress-journal.md), [the launcher profiles](docs/launcher-profiles.md), [the benchmark procedure](docs/benchmark-procedure.md), and [the source credits](docs/source-credits.md).
+See [the project vision](docs/project-vision.md), [the operational plan](docs/OPERATIONAL_PLAN.md), [the integration architecture](docs/integration-architecture.md), [the progress journal](docs/progress-journal.md), [the launcher profiles](docs/launcher-profiles.md), [the benchmark procedure](docs/benchmark-procedure.md), and [the source credits](docs/source-credits.md).
 
 ## Anonymous benchmark policy
 
@@ -49,14 +51,9 @@ No game binaries, dumps, keys, personal saves, caches, private credentials, or r
 
 ## Contributor review workflow
 
-AI-assisted review is optional. A first-pass coding review can run through OpenCode with the currently listed `opencode/deepseek-v4.1-flash-free` model; free-model availability is controlled by its provider and can change. Keep reviews focused on source files and public documentation, never include credentials or personal game data, and verify every proposed change against the full call path, build, and tests. Model output is review input, not correctness or performance evidence. No provider key is stored in this repository.
+AI-assisted review is optional. `tools/Invoke-AstraForgeModelReview.ps1` can send an explicitly selected set of public source files to a text-only, OpenAI-compatible Chat Completions endpoint. It keeps credentials and responses outside Git and gives the model read-only review scope. Keep reviews focused, never include credentials or personal game data, and verify every proposal against the full call path, build, and tests. Model output is review input, not correctness or performance evidence. No provider key is stored in this repository.
 
-```powershell
-opencode run --model opencode/deepseek-v4.1-flash-free `
-  "Review the current diff for concrete D3D12 lifetime and RTX 3070 risks. Do not edit files; cite exact paths and lines."
-```
-
-See the [OpenCode model guide](https://opencode.ai/docs/console/models/) for the current model catalog and [DeepSeek's OpenCode setup guide](https://api-docs.deepseek.com/quick_start/agent_integrations/opencode/) for a separate, user-key-based DeepSeek API connection.
+See the [model orchestration guide](docs/MODEL_ORCHESTRATION.md) for local configuration, bounded input rules, dry runs, and the independent verification workflow.
 
 ## Attribution and license
 
