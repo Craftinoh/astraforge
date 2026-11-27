@@ -363,6 +363,7 @@ if ((Test-PathWithin $cacheDir $scriptRoot) -or (Test-PathWithin $cacheDir $reso
 $cacheExists = Test-Path -LiteralPath $cacheDir
 if ($cacheExists -and -not (Test-Path -LiteralPath $cacheDir -PathType Container)) { throw "CacheDirectory non è una cartella: $cacheDir" }
 $cacheWasEmptyAtStart = -not $cacheExists -or @(Get-ChildItem -LiteralPath $cacheDir -Force | Select-Object -First 1).Count -eq 0
+$cacheSeedFingerprint = $null
 if ($CacheState -eq 'cold' -and -not $cacheWasEmptyAtStart) {
     throw "CacheState=cold richiede una cartella di cache vuota; i file esistenti restano intatti: $cacheDir"
 }
@@ -370,9 +371,6 @@ if ($CacheState -eq 'warm') {
     if (-not $CacheSeedDirectory) { throw 'CacheState=warm richiede -CacheSeedDirectory con una cache preparata e popolata.' }
     if ($cacheExists) { throw "La destinazione warm deve essere nuova per preservare il seed; destinazione già esistente: $cacheDir" }
     if (-not (Test-Path -LiteralPath $cacheSeedDir -PathType Container)) { throw "Cache seed non è una cartella: $cacheSeedDir" }
-    $cacheCopy = Copy-AstraForgeCacheSeed -SourceDirectory $cacheSeedDir -DestinationDirectory $cacheDir
-    $cacheSeedFingerprint = $cacheCopy.Fingerprint
-    $cacheWasEmptyAtStart = $false
 } elseif ($CacheSeedDirectory) {
     throw '-CacheSeedDirectory si usa solo con -CacheState warm.'
 }
@@ -419,6 +417,11 @@ $availableCommitGiB = [double]$hardwareReport.RAM.AvailableCommitGiB
 Assert-AstraForgeCommitHeadroom -AvailableGiB $availableCommitGiB -MinimumGiB $MinimumAvailableCommitGiB
 if ($availableCommitGiB -lt [int]$gpuProfileConfig.runtime.warnBelowAvailableCommitGiB) {
     Write-Warning ("Commit disponibile {0:N1} GiB, sotto il margine indicativo di {1} GiB per il profilo {2}." -f $availableCommitGiB, $gpuProfileConfig.runtime.warnBelowAvailableCommitGiB, $GpuProfile)
+}
+if ($CacheState -eq 'warm') {
+    $cacheCopy = Copy-AstraForgeCacheSeed -SourceDirectory $cacheSeedDir -DestinationDirectory $cacheDir
+    $cacheSeedFingerprint = $cacheCopy.Fingerprint
+    $cacheWasEmptyAtStart = $false
 }
 $nvidiaSmi = Get-Command nvidia-smi.exe -ErrorAction Stop
 $environmentPath = Join-Path $runDirectory 'environment.json'
