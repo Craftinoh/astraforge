@@ -22,6 +22,8 @@ Among the upstream forks reviewed for this work, AstraForge is the only project 
 
 Contributors can bring a different PC specification without claiming that its GPU is already supported. Start at [CONTRIBUTING.md](CONTRIBUTING.md), collect a reviewed, sanitized inventory with the [hardware intake template](docs/templates/hardware-report.template.md), and follow the [GPU profile submission gate](docs/GPU_PROFILE_SUBMISSION.md). Hardware identity, adapter support, and runtime presets have separate acceptance requirements.
 
+For a hands-on split where one contributor validates a GPU profile while the maintainer handles shared shader/engine changes, use the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
+
 Coding agents must follow [AGENTS.md](AGENTS.md). The [AI contributor guide](docs/AI_CONTRIBUTOR_GUIDE.md) explains the source tree, validation levels, provenance, privacy rules, and includes a task prompt. Copy [the task brief](docs/templates/AI_TASK_PROMPT.md) for each model-assisted change. Pull requests use the repository checklist in `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## Build and run

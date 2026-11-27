@@ -16,7 +16,7 @@ Prepare AstraForge as a profile-driven Xbox compatibility layer. Start with NVID
 - Source license: GPL-3.0. Local patch provenance is in `docs/source-credits.md` and the nested source `LOCAL-CHANGES.md`.
 - Root profile files: `profiles\rtx3070-profiles.json`; the new `profiles\gpu-profiles.json` currently describes only RTX 3070.
 
-## Verified host snapshot
+## Baseline host snapshot — 2026-11-26
 
 Captured 2026-11-26 21:44 CET. RTX 3070 is the first DXGI adapter, device `10DE:2484`, D3D12 shader model 6.8, WaveOps with 32 lanes, PCIe Gen4 x16, NVIDIA driver 610.88. CPU is Ryzen 7 7700X, 8 physical / 16 logical cores, AVX2. RAM is 32 GiB; available physical memory was 15.49 GiB and available commit 14.95 GiB. DIMM speed was not exposed by the accessible CIM/SMBIOS query; DDR5-6000 CL36 remains user-reported. ReBAR is inferred from BAR1 size, not directly verified.
 
@@ -115,3 +115,17 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 - Added sanitized hardware-report and reusable model-task templates under `docs/templates/`, plus a GitHub pull-request checklist for source origin, validation, rollback, and privacy review.
 - Updated the README with contributor entry points. The documented gates explicitly distinguish a hardware inventory from enabled GPU support and distinguish build/unit evidence from gameplay performance evidence.
 - Documentation-only changes; no runtime code or tuning values changed. Both GPU profile JSON files parse, all relative links in the onboarding docs resolve, `git diff --check` passes, and a focused scan found no API key/service endpoint, local account path, or prohibited title/publisher identifier in the new public material. `Test-AstraForgeBenchmarkHarness.ps1` passed all six synthetic checks when run in a PowerShell process with execution-policy bypass; the machine's default policy blocks direct script invocation. These synthetic checks do not establish gameplay performance or GPU compatibility.
+
+## 2026-11-27 — per-machine contributor handoff
+
+- Added `docs/CONTRIBUTOR_HANDOFF.md` to define a practical clone → local hardware inventory → isolated profile experiment → sanitized pull request workflow, with separate responsibilities for the hardware contributor, shader/engine maintainer, and coding model.
+- Linked the handoff from the README and `CONTRIBUTING.md`. It explicitly warns that the current renderer selects the first DXGI adapter and that a manifest entry alone does not enable a new GPU.
+- No engine or profile code changed. Runtime work remains limited by the unset local game directory and, at the latest hardware sample, 10.05 GiB of available commit against the launcher's 12 GiB preflight floor. The sample is transient and should be refreshed before any gameplay run.
+
+## 2026-11-27 — hardware refresh and render-path audit
+
+- Refreshed the local ignored hardware capture with DxDiag. RTX 3070 (`10DE:2484`) remains the first DXGI adapter; driver 610.88, PCIe Gen4 x16, Shader Model 6.8, WaveOps 32, feature level 12_2, mesh shader tier 1, sampler feedback tier 0.9, and ray-tracing tier 1.2 were reported. These feature tiers do not prove translated-title compatibility.
+- The capture reports 32 GiB installed and 31.1 GiB usable RAM. CIM/SMBIOS reports DIMM configured clocks of 4800 MHz although the module identifier corresponds to the user-reported DDR5-6000 kit; effective in-use memory speed remains to be confirmed independently.
+- At 2026-11-27 01:23 CET, Windows reported 10.05 GiB available commit, below the launcher's default 12 GiB preflight floor. `nvidia-smi` reported 1,660 MiB used and 6,358 MiB free globally; this is desktop-wide and not per-process title residency. DXGI reported 7,249 MiB budget for the collector process, which is not the eventual renderer process budget.
+- Source audit confirms runtime code already queries the renderer's own `IDXGIAdapter3` local/non-local budgets and adapts title-buffer residency to local DXGI budget. The current presenter obtains swap-chain dimensions from the title's presented resource. Its two-plane compositor scales planes during composition, but there is no verified independent 1280x720 internal render control or separately configured 1920x1080 output path.
+- The raw hardware and DxDiag files stay under ignored `out/`; they are not published. No game directory was configured, so no launch or gameplay measurement was attempted.

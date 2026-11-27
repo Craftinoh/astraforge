@@ -14,6 +14,8 @@ Thanks for helping make GPU compatibility work reproducible and easy to integrat
 
 Start with [`docs/GPU_PROFILE_SUBMISSION.md`](docs/GPU_PROFILE_SUBMISSION.md) and copy [`docs/templates/hardware-report.template.md`](docs/templates/hardware-report.template.md). Capture the machine facts locally, review the report for identifiers, then share only the sanitized fields needed for the issue or pull request.
 
+For the clone, model setup, role split, and maintainer handoff, follow [`docs/CONTRIBUTOR_HANDOFF.md`](docs/CONTRIBUTOR_HANDOFF.md).
+
 A hardware report alone does not enable a GPU. A profile can be marked supported only after adapter selection, required feature checks, telemetry, build/test coverage, and runtime correctness have been verified for that target. The current active profile remains NVIDIA RTX 3070 Ampere.
 
 ## Validation
