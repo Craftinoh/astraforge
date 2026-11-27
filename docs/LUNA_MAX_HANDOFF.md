@@ -17,23 +17,30 @@ literally before proposing a new patch.
 
 ## Exact state at handoff
 
-- Target: desktop RTX 3070 8 GB, Ryzen 7 7700X 8C/16T, 32 GiB RAM, Windows 11.
+- Target: desktop RTX 3070 8 GB, Ryzen 7 7700X 8C/16T, 32 GiB RAM, Windows 11 Pro 26H2 build 26300.10075.
 - Base: COOL_FOX Pareto-residency descendant through the NVIDIA 8 GB source subtree.
-- Clean Release and diagnostic builds existed before the current descriptor change.
-- The authorized runtime installation was not yet visible in the inspected game-library
-  path. Do not launch until it is complete and the launcher preflight passes.
-- Latest available commit-memory sample was 9.32 GiB, below the 12 GiB launch floor.
-  This is volatile; refresh it immediately before any launch and never bypass the guard.
+- Clean pinned Release and diagnostic builds passed after the current source patch; see
+  O7 below for the build ID, toolchain, and hashes.
+- No `VICTORY_GAME_DIR` is configured. A read-only check found two executables under the
+  standard library root but could not confirm either as the authorized runtime. Do not
+  launch until the user-selected directory is resolved and preflight passes.
+- Hardware sample at 2026-11-27 03:47 CET reported 10.32 GiB available commit, below the
+  12 GiB launch floor, and 11.92 GiB available physical RAM. These values are volatile;
+  refresh immediately before any launch and never bypass the guard.
+- The RTX 3070 remains the first DXGI adapter; driver 610.88, PCIe Gen4 x16, SM 6.8,
+  WaveOps 32, mesh shader tier 1, and ray-tracing tier 1.2 were reported. BAR1 suggests
+  Resizable BAR but does not prove the firmware setting.
 - Vice-Tay reference checkout is outside Git under
   `%LOCALAPPDATA%\AstraForge\references\Vice-Tay`, audited at `cc9ed86`.
-- The current source change canonicalizes resource padding and unused SRV/UAV union
-  words before placed-view shape keying. It is a focused port of Vice-Tay #27 commits
-  `f07e54a2` and `ce914907`.
+- Current focused ports are placed-view descriptor canonicalization (Vice-Tay #27 commits
+  `f07e54a2` and `ce914907`) and opt-in `VICTORY_FILL_TITLE=2` (commit `32a13f7`). Neither
+  is enabled by a supplied profile.
 - Focused test results already obtained:
   - `placed_views_ignore`: 2 passed, 0 failed.
   - `descriptor::tests`: 10 passed, 0 failed.
-- Do not repeat or broaden those tests unless the patch changes further. A full pinned
-  Release/diagnostic build is still required before calling this source group built.
+  - `fill_title_mode_tests`: 3 passed, 0 failed.
+- No runtime launch, image review, shader prewarm, or gameplay capture occurred. Do not
+  infer rendering quality, runtime stability, or FPS from these tests or builds.
 
 ## Remote model-review contract
 
@@ -155,9 +162,9 @@ memory pressure during gameplay, stability, or FPS.
 ## Next exact task: O8 runtime readiness
 
 The reviewed source and documentation commits are pushed. Local `main` and `origin/main`
-both resolve to `86130f718b66ce7a4ad5b576a9e1e26aab6f897a`, and the worktree is clean.
-Inspect read-only whether the authorized installation is complete and refresh hardware and
-commit-headroom telemetry. The last sample had 9.32 GiB available commit, below the 12 GiB
+both resolve to `4b2f9bd50d6ed33fa5b061f5bca545d4694d7518`, and the worktree is clean.
+Resolve the authorized installation directory and refresh hardware and commit-headroom
+telemetry. The latest sample had 10.32 GiB available commit, below the 12 GiB
 launcher floor; do not start the runtime unless a fresh sample passes preflight. If ready,
 keep shader prewarm separate from gameplay settings, capture Stability/Balanced baseline
 first, then A/B `VICTORY_FILL_TITLE=2` with matched routes, cache state, and visual review.

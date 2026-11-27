@@ -20,12 +20,12 @@ application, publisher, executable, save data, or personal paths.
 | Area | State | Evidence boundary |
 |---|---|---|
 | Source | COOL_FOX Pareto-residency descendant plus focused credited ports | Exact origins are in `source-credits.md` and the nested `LOCAL-CHANGES.md` |
-| Publication | Local `main` and `origin/main` are synced at `86130f7`; worktree clean | Source and documentation commits pushed after pinned build and review |
+| Publication | Local `main` and `origin/main` are synced at `4b2f9bd`; worktree clean | Source and documentation commits pushed after pinned build and review |
 | Build | Clean Release and diagnostic artifacts at `20261127-033517-Both-thinlto-native-5aaf5812`; source commit `960828f`, `SourceDirty=false` | Rust 1.98.1/MSVC/DXC, Thin LTO and native CPU; both `--help` checks pass; compilation only |
 | Automated tests | Workspace and GPU-library suites pass; new fill-mode predicates pass 3/3; benchmark harness synthetic checks pass | Unit and synthetic evidence only |
-| Hardware | RTX 3070 is first DXGI adapter; SM 6.8, Wave32, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM | Latest raw inventory remains local and ignored |
-| Runtime data | Installation is still incomplete or unavailable at the inspected game-library path | No shader prewarm, visual review, or gameplay capture yet |
-| Memory readiness | Latest sample reported 9.32 GiB available commit against the 12 GiB launch floor | Volatile; collect again immediately before launch |
+| Hardware | RTX 3070 is first DXGI adapter; driver 610.88, SM 6.8, Wave32, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM; Windows 11 Pro 26H2 | Latest raw inventory remains local and ignored; BAR1 only suggests Resizable BAR |
+| Runtime data | `VICTORY_GAME_DIR` is unset; two executables were found under the standard library root but neither was confirmed as the authorized runtime | No shader prewarm, visual review, or gameplay capture yet |
+| Memory readiness | Latest sample at 03:47 CET reported 10.32 GiB available commit against the 12 GiB launch floor and 11.92 GiB available physical RAM | Volatile; collect again immediately before launch; runtime launch remains blocked by the guard |
 | Model review | Configured remote coding endpoint and one minimal completion verified | Model output is untrusted review input |
 
 ## Work queue
