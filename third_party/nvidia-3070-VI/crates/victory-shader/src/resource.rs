@@ -669,7 +669,7 @@ impl<'a> Tracer<'a> {
         };
         if let Some(reg) = self.inputs[v.0 as usize] {
             return match self.param_of(reg) {
-                Some((_, 0)) => Sum {
+                Some((p, 0)) if self.layout[p].root != RootType::Constants => Sum {
                     base: Some(v),
                     offset: 0,
                     dynamic: None,
@@ -1080,8 +1080,12 @@ impl<'a> Tracer<'a> {
         let Some(v) = dynamic else {
             return "a constant address";
         };
-        if self.inputs[v.0 as usize].is_some() {
-            return "an address in an SGPR that is no root parameter";
+        if let Some(reg) = self.inputs[v.0 as usize] {
+            return if self.param_of(reg).is_some() {
+                "an address from a root parameter that is no address"
+            } else {
+                "an address in an SGPR that is no root parameter"
+            };
         }
         if self
             .leaves(v)
@@ -2528,6 +2532,54 @@ pub(crate) mod tests {
             dynamic: None,
             dynamic2: None,
         }
+    }
+
+    #[test]
+    fn root_constant_is_a_table_offset_not_an_address_base() {
+        let r = track_words(
+            &[
+                0xBE84_0302, // s_mov_b32 s4, s2
+                0xBE85_0380, // s_mov_b32 s5, 0
+                0xF408_0202,
+                0x0000_0020, // s_load_dwordx4 s[8:11], s[4:5], s0 offset:0x20
+                0x8006_0002, // s_add_u32 s6, s2, s0
+                0xBE87_0380, // s_mov_b32 s7, 0
+                0xF408_0303,
+                0xFA00_0040, // s_load_dwordx4 s[12:15], s[6:7], 0x40
+                0xE030_1000,
+                0x8002_0100, // buffer_load_dword v1, v0, s[8:11], 0 offen
+                0xE070_1000,
+                0x8003_0100, // buffer_store_dword v1, v0, s[12:15], 0 offen
+                S_ENDPGM,
+            ],
+            &[param(Constants, 0, 2), param(Table, 2, 1)],
+            HwStage::Cs,
+        );
+        let constant = r.params.iter().find(|p| (p.1, p.2) == (0, 0)).unwrap().0;
+        assert_eq!(
+            r.scalar,
+            [
+                (
+                    (0, 2),
+                    Address {
+                        param: 1,
+                        offset: 0x20,
+                        dynamic: Some(constant),
+                        dynamic2: None,
+                    },
+                ),
+                (
+                    (0, 5),
+                    Address {
+                        param: 1,
+                        offset: 0x40,
+                        dynamic: Some(constant),
+                        dynamic2: None,
+                    },
+                ),
+            ]
+        );
+        assert_eq!(r.descriptors.len(), 2);
     }
 
     #[test]

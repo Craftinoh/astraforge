@@ -375,6 +375,7 @@ fn simulate(insts: &[Inst], wave: u32, saved: Value) -> Left {
             }
             continue;
         };
+        let f16_inline = name == "v_add_f16";
         let lanes = |op: &Operand,
                      vec: &HashMap<Value, Vec<Sym>>,
                      uni: &HashMap<Value, Sym>|
@@ -392,6 +393,9 @@ fn simulate(insts: &[Inst], wave: u32, saved: Value) -> Left {
                     Some(x) => one(uni.get(&x).copied().unwrap_or(Sym::Uni(x))),
                     None => one(Sym::Unknown),
                 },
+                Operand::Const(c @ 240..=248) if f16_inline => {
+                    one(Sym::K(super::lower::inline_f16(c)))
+                }
                 Operand::Const(c) => one(crate::resource::inline(c).map_or(Sym::Unknown, Sym::K)),
                 Operand::Literal(x) => one(Sym::K(x)),
                 _ => one(Sym::Unknown),
@@ -1219,6 +1223,62 @@ mod tests {
         let sec = &sections(&p, 0)[&0];
         assert_eq!(sec.shapes.get(&v2_val), Some(&Shape::K(7)));
         assert_eq!(sec.shapes.get(&v3_val), Some(&Shape::K(7)));
+    }
+
+    #[test]
+    fn v_add_f16_inline_float_constants_are_not_zero_identity() {
+        // Wave32 f16 sum reduction with an extra `v_add_f16 v1, <const>, v1`
+        // step. Code 128 is the true zero identity; 240..=248 are non-zero
+        // half-precision constants and must not be decoded as f32 bit patterns.
+        let run = |src_const: u16| -> (Option<Shape>, Value, Value) {
+            let mut w = vec![sop1(0, 0x3D, 193)];
+            w.extend(vop3(1, 0x101, 128, 256, 0));
+            w.push(vop2(1, 0x32, src_const, 1));
+            for ctrl in [0x00B1u16, 0x004E, 0x0164, 0x0168] {
+                w.push(vop2(1, 0x32, 0xFA, 1));
+                w.push(dpp16(1, ctrl, 0xF, 0xF, false));
+            }
+            w.extend(vop3(2, 0x378, 257, 128, 128));
+            w.push(vop2(1, 0x32, 258, 1));
+            w.extend(vop3(1, 0x360, 257, 128 + 31, 0));
+            w.push(sop1(EXEC, 0x03, 0));
+
+            let p = build(&w, false);
+            let insts = &p.blocks[0].insts;
+            let saved = insts[0].write(Reg::S(0)).unwrap();
+            let v0_in = insts[1].read(Reg::V(0)).unwrap();
+            let s1 = insts[insts.len() - 3].write(Reg::S(1)).unwrap();
+            let sec = &sections(&p, 0)[&0];
+            (sec.shapes.get(&s1).copied(), v0_in, saved)
+        };
+
+        let (zero_shape, v0_in, saved) = run(128);
+        assert_eq!(zero_shape, Some(Shape::Active(Op::AddH, v0_in, saved, 0)));
+        for c in 240..=248u16 {
+            let (shape, _, _) = run(c);
+            assert_eq!(shape, None, "inline float const {c} was treated as identity");
+        }
+
+        let expected_f16: [u32; 9] = [
+            0x3800, 0xB800, 0x3C00, 0xBC00, 0x4000, 0xC000, 0x4400, 0xC400, 0x3118,
+        ];
+        for (i, &want) in expected_f16.iter().enumerate() {
+            let c = 240u16 + i as u16;
+            let w = [
+                sop1(0, 0x3D, 193),
+                vop1(2, 0x01, 128),
+                vop2(1, 0x32, c, 2),
+                sop1(EXEC, 0x03, 0),
+            ];
+            let p = build(&w, false);
+            let v1 = p.blocks[0].insts[2].write(Reg::V(1)).unwrap();
+            let sec = &sections(&p, 0)[&0];
+            assert_eq!(
+                sec.shapes.get(&v1),
+                Some(&Shape::K(want)),
+                "inline float const {c} decoded with wrong f16 bits"
+            );
+        }
     }
 
     #[test]
