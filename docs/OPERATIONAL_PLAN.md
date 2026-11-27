@@ -34,9 +34,9 @@ application, publisher, executable, save data, or personal paths.
 | ID | Work item | State | Completion gate |
 |---|---|---|---|
 | O1 | Provider-neutral model-review wrapper | Complete | Parser and dry run pass; a live bounded review is saved outside Git; secret scan still runs before every commit |
-| O2 | Vice-Tay donor audit | Complete for selected PR #27/#37 paths at `cc9ed86` | Placed-view fix ported; shadow lock, upload queue, texture store, fill-wait mode, and Wave32 candidate assessed individually; only opt-in `VICTORY_FILL_TITLE=2` added, with no profile default change |
+| O2 | Vice-Tay donor audit | Selected PR #27/#37/#114 paths reviewed; combined PR #116 is not ported wholesale | Placed-view and first-piece shadow fixes ported; lock scope, upload queue, texture store, shader translation, descriptor, and streaming changes assessed separately |
 | O3 | Placed-view lifetime and leak review | Unit-tested | Canonicalizers ported; two focused tests and all ten descriptor tests pass; gameplay memory and rendering pending |
-| O4 | Shadow/resource lock contention review | Complete; patch deferred | Two bounded reviews and local ownership audit complete; measure local call volume and mutex contention before selecting a lock-scope change |
+| O4 | Shadow/resource lock contention review | Lock-scope change deferred; independent shadow boundary bug fixed under O13 | Two bounded reviews and local ownership audit complete; measure local call volume and mutex contention before changing the cache lock |
 | O5 | NVIDIA shader correctness review | Complete; visual check pending runtime | Wave32/Wave64 and NaN/BVH paths audited; 281 shader tests pass and a synthetic intersection test ran on the hardware adapter and WARP; no global NaN scrub or ray-disable switch exists |
 | O6 | 8 GB residency and texture pressure review | Static audit complete; runtime validation pending | DXGI budget, texture admission, staging/pool lifetime, host-RAM and commit-pressure paths traced; no source patch justified without runtime pressure evidence |
 | O7 | Incremental source groups | Current group complete at `32a13f7` | Three predicate tests and clean pinned Release/diagnostic builds pass; new runtime A/B remains queued for O8/O10 |
@@ -45,10 +45,12 @@ application, publisher, executable, save data, or personal paths.
 | O10 | Gameplay baseline | Waiting for O8/O9 | Repeatable anonymous indoor/outdoor/high-density routes; cold and warm cohorts; visual inspection and real application-frame classification |
 | O11 | Profile tuning | Waiting for O10 | Compare Stability, Balanced, Performance, and Quality with matched runs; retain only measured improvements without visual or stability regression |
 | O12 | Release candidate | Waiting for O11 | Release and diagnostic artifacts, hashes, sanitized comparative report, changelog, rollback procedure, and public documentation agree |
+| O13 | First partial-piece shadow comparison correctness | In validation | The new 48 MiB regression failed before the fix with debug overflow; debug and optimized Release plus the full GPU library suite now pass. Finish the pinned Release/diagnostic build and record its manifest before publication |
 
 ## Donor integration order
 
-1. Treat Vice-Tay as a measured NVIDIA reference, not as a wholesale merge target.
+1. Treat Vice-Tay as a measured NVIDIA reference, not as a wholesale merge target. Its
+   latest API-audited commit is `123c4b7`, after combined merge `0ef44bc`.
 2. Compare its current commit with AstraForge's selected base by subsystem and exact
    symbol. Start with placed-view lifetime and lock contention because the donor reports
    concrete CPU and memory pressure in those paths.

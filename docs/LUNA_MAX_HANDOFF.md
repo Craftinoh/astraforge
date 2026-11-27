@@ -3,6 +3,23 @@
 Use this file when a new orchestration session resumes the current work. Follow it
 literally before proposing a new patch.
 
+## Latest checkpoint - 2026-11-27 03:19 UTC
+
+- The local Vice-Tay reference clone is still at `cc9ed86`; Git fetch failed earlier
+  because DNS was unavailable. A read-only GitHub API audit now sees default-branch
+  commit `123c4b7`, following merge `0ef44bc` (#116). The combined PR includes #114;
+  it reports combined checks, but its frame-time comparison is not isolated by patch.
+- Ported the focused `Shadow::differing` first-piece alignment correction from Vice-Tay
+  #114, adapted from fxceless #1407 and credited to the original Kelvaroq finding. The
+  added 48 MiB test failed against the old expression with a debug overflow, then passed
+  1/1 in debug and 1/1 in optimized Release after the saturating-subtraction fix.
+- The entire `victory-gpu` library suite now passes: 346 passed, 0 failed, 34 ignored.
+  Existing compiler warnings are unchanged. The clean pinned Release/diagnostic build
+  for this source patch is still pending; it is the next action.
+- After that build and documentation checkpoint, resume O8. Refresh adapter and commit
+  telemetry; do not launch until the installation path is confirmed and the 12 GiB
+  preflight passes. No gameplay or FPS data exists.
+
 ## Mandatory first actions
 
 1. Read `AGENTS.md`, `README.md`, `docs/OPERATIONAL_PLAN.md`, the latest sections of

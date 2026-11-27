@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-11-27 - shadow comparison boundary correctness
+
+- Fixed the first worker's aligned cut in `Shadow::differing`: saturating subtraction keeps a comparison range that starts inside a 64 KiB title-memory piece from wrapping before its start. The previous code panicked with overflow checks and could skip the first slice in Release.
+- Ported the focused correction from Vice-Tay #114, adapted from fxceless #1407, with original finding credit to Kelvaroq's `stellarr-studio/kelvaroq` patch 0009. Added a synthetic 48 MiB regression that reproduced the failure before the fix.
+- The regression passes in debug and Release. This is a correctness result for the tested partitioning path; no gameplay, visual, stability, or FPS result is implied.
+
 ## 2026-11-27 — hard commit-headroom preflight
 
 - Added a shared PowerShell check for the launcher and gameplay measurement entry point. The default floor is 12 GiB; callers may raise it but cannot lower it. Removed `-AllowLowCommit`, and invalid, negative, NaN, and infinite samples fail closed.
