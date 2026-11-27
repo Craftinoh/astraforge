@@ -48,6 +48,8 @@ To roll back only the placed-view canonicalization, revert the focused change se
 
 To roll back the conservative title-fill wait experiment, revert the focused change set named `gpu: add conservative title fill mode`. The default remains disabled in every supplied preset; for an immediate runtime-only rollback before rebuilding, omit `VICTORY_FILL_TITLE` or set it to `0`.
 
+To roll back only the first-partial-piece shadow comparison fix, revert its focused source commit (`fix: preserve first partial shadow compare piece`). This also removes the regression test and restores the unsigned-alignment underflow in `Shadow::differing`; do not roll it back unless a replacement preserves the first title-memory piece in both debug and Release builds.
+
 To roll back the hard commit-floor enforcement, revert commit `7d7bbb8` (`fix: enforce commit headroom preflight`). This restores the earlier explicit low-commit bypass in the launcher/measurement scripts and must be treated as a loss of the mandatory 12 GiB safety gate. Do not use the restored bypass for normal runtime or benchmark runs.
 
 To roll back only the benchmark cache-copy ordering, revert commit `dfe5be8` (`fix: defer warm cache copies until preflight`). This places warm seed cloning before the hardware/commit gate again; it does not alter the hard 12 GiB runtime gate.

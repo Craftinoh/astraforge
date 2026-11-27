@@ -1,6 +1,6 @@
 # Upstream fork comparison for RTX 3070 Ampere
 
-Reviewed public repositories and their default-branch heads on 2026-11-26. These are maintainers' measurements on different builds and scenes; they are evidence for candidate changes, not a common benchmark set.
+Reviewed public repositories and their default-branch heads on 2026-11-26 and refreshed the NVIDIA donor on 2026-11-27. These are maintainers' measurements on different builds and scenes; they are evidence for candidate changes, not a common benchmark set.
 
 ## Selected base: COOL_FOX Pareto-residency descendant
 
@@ -10,11 +10,15 @@ The imported source already has dynamic local DXGI budget accounting, low-budget
 
 ## Recent NVIDIA reference: `TaynanGT/Vice-Tay`
 
-Current audited head is [`cc9ed86`](https://github.com/TaynanGT/Vice-Tay/commit/cc9ed86c78ee44dae1392d0e101f7b3d2a91a9ec). Its maintainer reports one 30-minute RTX 4090 / Series S session at 21.1 FPS median, 17 FPS 1% low, and about 23.5 GiB median process memory. It also reports visible color, glow, face, cloud, reflection, and black-area defects. This is useful donor evidence, not an RTX 3070 forecast and not independent validation.
+The 2026-11-27 GitHub API snapshot is [`123c4b7`](https://github.com/TaynanGT/Vice-Tay/commit/123c4b7fceac985eee2876f8774785a451092aec), following combined validation merge [`0ef44bc`](https://github.com/TaynanGT/Vice-Tay/commit/0ef44bc36e354ad18810fb5e25cad47f832266a8). Its maintainer reports one 30-minute RTX 4090 / Series S session at 21.1 FPS median, 17 FPS 1% low, and about 23.5 GiB median process memory. It also reports visible color, glow, face, cloud, reflection, and black-area defects. This is useful donor evidence, not an RTX 3070 forecast and not independent validation.
+
+The merged [`#116`](https://github.com/TaynanGT/Vice-Tay/pull/116) combines twelve changes, including #114, and reports passing combined CI plus focused GPU, memory, and shader checks. Its paired opening-scene comparison had eight qualifying samples per run at 83.0 ms and 50.7 ms median frame time, but draw counts and pipeline queue depth differed. Treat this as a combined-run observation, not an isolated patch gain or an RTX 3070 estimate.
 
 Its [`#27`](https://github.com/TaynanGT/Vice-Tay/pull/27) documents a concrete placed-view leak: padding and unused descriptor words created millions of false shapes, after which each later placed view became a permanent table entry. AstraForge independently confirmed that its selected base copied those words into `Shape`. The focused resource/view canonicalizers from commits `f07e54a2` and `ce914907` are now ported with two regression tests; all ten local descriptor tests pass. The PR's separate ownerless-entry cap, shader, ambient, sampler, and list changes are not included in this patch.
 
 Its [`#37`](https://github.com/TaynanGT/Vice-Tay/pull/37) is a very broad multi-fork merge. A later donor finding links a six-FPS regression to structured views calling `shadow::exact` under a global lock and gates that path behind `VICTORY_STRUCTURED_RAW`. AstraForge has not accepted that change: the local caller and lock scope still require separate source review, correctness analysis, and tests.
+
+Its [`#114`](https://github.com/TaynanGT/Vice-Tay/pull/114) ports the first-partial-piece alignment fix adapted from [`fxceless/victory-fork#1407`](https://github.com/fxceless/victory-fork/pull/1407), whose description credits the original finding to Kelvaroq's `stellarr-studio/kelvaroq` patch 0009. The selected local source had the same unsigned subtraction in `Shadow::differing`: with a title range starting partway through a 64 KiB piece, the first parallel cut could wrap, skipping the first comparison slice in optimized builds or panicking with overflow checks. The new synthetic 48 MiB regression reproduced the debug overflow before the fix; after the focused saturating-subtraction port it passes in debug and Release. This establishes the specific partitioning behavior only; it does not claim a gameplay-performance or visual change.
 
 ### PR #37 selective follow-up: waits, upload queue, texture store, and Wave32
 
