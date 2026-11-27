@@ -52,7 +52,7 @@ To roll back only the first-partial-piece shadow comparison fix, revert its focu
 
 To roll back only per-heap texture-bake coverage, revert the focused commit `fix: track per-heap texture bake coverage`. This restores the process-global completion counter and the prior behavior that could treat a truncated due-slot snapshot as complete. Keep the queue-revision and snapshot checks together; removing only one reintroduces stale or missing texture coverage.
 
-To roll back the O4 lock observability change, revert its focused source commit. It removes only the diagnostic-only wait counters, log fields, and bucket test; it does not change the Release lock path or cache behavior.
+To roll back the O4 lock observability change, revert root commit `f0c57bb` (`diag: measure exact-view cache mutex contention`). It removes only the diagnostic-only wait counters, log fields, and bucket test; it does not change the Release lock path or cache behavior.
 
 To roll back the hard commit-floor enforcement, revert commit `7d7bbb8` (`fix: enforce commit headroom preflight`). This restores the earlier explicit low-commit bypass in the launcher/measurement scripts and must be treated as a loss of the mandatory 12 GiB safety gate. Do not use the restored bypass for normal runtime or benchmark runs.
 

@@ -4,6 +4,7 @@
 
 - The diagnostics build now records only acquisitions that first find the exact-view cache mutex busy, with average, maximum, and bounded wait-time buckets. The Release build keeps the original blocking lock path and adds no timestamps or timing counters.
 - Added a boundary test for all six wait buckets. The diagnostic GPU-library suite passes serially (408 passed, 35 ignored), and Clippy exits 0 with existing warnings elsewhere.
+- Clean Release and diagnostic builds passed from source commit `f0c57bb6f6c9a0083ba7781592bd3747b8ee1c0a`, build ID `20261127-053816-Both-thinlto-native-ee1e228c`; both `--help` checks pass and manifest hashes match the files. Hashes are recorded in the progress journal; binaries remain outside Git.
 - This is observability for the O4 runtime audit, not a performance optimization. No gameplay contention sample or FPS effect has been measured.
 
 ## 2026-11-27 - per-heap texture bake coverage
