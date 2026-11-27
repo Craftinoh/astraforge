@@ -20,6 +20,7 @@ application, publisher, executable, save data, or personal paths.
 | Area | State | Evidence boundary |
 |---|---|---|
 | Source | COOL_FOX Pareto-residency descendant plus focused credited ports | Exact origins are in `source-credits.md` and the nested `LOCAL-CHANGES.md` |
+| Publication | Local `main` and `origin/main` are synced at `86130f7`; worktree clean | Source and documentation commits pushed after pinned build and review |
 | Build | Clean Release and diagnostic artifacts at `20261127-033517-Both-thinlto-native-5aaf5812`; source commit `960828f`, `SourceDirty=false` | Rust 1.98.1/MSVC/DXC, Thin LTO and native CPU; both `--help` checks pass; compilation only |
 | Automated tests | Workspace and GPU-library suites pass; new fill-mode predicates pass 3/3; benchmark harness synthetic checks pass | Unit and synthetic evidence only |
 | Hardware | RTX 3070 is first DXGI adapter; SM 6.8, Wave32, PCIe Gen4 x16; Ryzen 7 7700X 8C/16T; 32 GiB RAM | Latest raw inventory remains local and ignored |

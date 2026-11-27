@@ -154,14 +154,15 @@ memory pressure during gameplay, stability, or FPS.
 
 ## Next exact task: O8 runtime readiness
 
-Push the reviewed source and documentation commits and verify local `main` equals
-`origin/main`. Then inspect read-only whether the authorized installation is complete and
-refresh hardware and commit-headroom telemetry. The last sample had 9.32 GiB available
-commit, below the 12 GiB launcher floor; do not start the runtime unless a fresh sample
-passes preflight. If ready, keep shader prewarm separate from gameplay settings, capture
-Stability/Balanced baseline first, then A/B `VICTORY_FILL_TITLE=2` with matched routes,
-cache state, and visual review. Keep O6 streaming validation queued. Do not enable mode 2
-in supplied profiles or make visual/FPS claims until those runs pass.
+The reviewed source and documentation commits are pushed. Local `main` and `origin/main`
+both resolve to `86130f718b66ce7a4ad5b576a9e1e26aab6f897a`, and the worktree is clean.
+Inspect read-only whether the authorized installation is complete and refresh hardware and
+commit-headroom telemetry. The last sample had 9.32 GiB available commit, below the 12 GiB
+launcher floor; do not start the runtime unless a fresh sample passes preflight. If ready,
+keep shader prewarm separate from gameplay settings, capture Stability/Balanced baseline
+first, then A/B `VICTORY_FILL_TITLE=2` with matched routes, cache state, and visual review.
+Keep O6 streaming validation queued. Do not enable mode 2 in supplied profiles or make
+visual/FPS claims until those runs pass.
 
 ## Commit and publication gates
 
