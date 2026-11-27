@@ -263,3 +263,8 @@ The closest 8 GB NVIDIA source report measured about 17 FPS (58.2–59.4 ms/fram
 
 - The user supplied the external installation directory and asked for a read-only inspection while its download continues. The directory is present; a depth-limited metadata scan found one executable candidate. This is a partial-install observation only; the candidate is not confirmed as the runtime and was not launched. No file was changed.
 - Refreshed hardware at 11:49 CET: 9.65 GiB available commit and 11.50 GiB available physical RAM. The 12 GiB commit gate still blocks a runtime launch. The unredacted path and complete hardware report remain outside Git.
+
+## 2026-11-27 - runtime executable confirmed
+
+- The user confirmed that the single executable candidate found in the external installation directory is the intended target. The launcher supports passing the directory and executable explicitly, so no private path needs to be saved in the repository or global environment.
+- Refreshed hardware at 11:54 CET: 10.31 GiB available commit and 11.61 GiB available physical RAM. This is still below the mandatory 12 GiB launch floor. No runtime or shader prewarm was started; repeat the memory preflight immediately before the first launch.
