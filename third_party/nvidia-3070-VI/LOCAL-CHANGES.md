@@ -40,4 +40,6 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-gpu/src/{draw.rs,host.rs,resource.rs}`: ported trustno1-coder/VIctory-NVIDIA `21b040da` (render-target reserve given up once targets settle; texture-line room terms). The draw.rs timing counter was placed by hand.
 
+- `crates/victory-gpu/src/{pool.rs,draw.rs,resource.rs}`: local change. While the texture queue's room test says no, the pass over textures picked by index goes on for textures that fit a free piece of a texture block the card already holds (`VICTORY_TEXTURE_PIECES`, on; `=0` restores). In that mode no block is made, no level tiles are given and no texture gets memory of its own; such textures wait as before.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.

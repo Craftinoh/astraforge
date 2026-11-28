@@ -193,6 +193,47 @@ thread_local! {
     /// ([`waiting`]), and the last one asked for did ([`waits`]).
     static CAN_WAIT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static WAITED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    /// The pass on this thread goes on only for the free pieces of the
+    /// blocks there are ([`set_pieces_only`]).
+    static PIECES_ONLY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Whether the texture pass goes on, while the queue's room test says no,
+/// for textures that fit a free piece of a texture block there is
+/// (`VICTORY_TEXTURE_PIECES`, on by default; `=0`: they wait, as before).
+///
+/// The room test weighs the card's use with what it keeps for render
+/// targets not made yet (`crate::resource::targets_room_kept`, up to
+/// 3,072 MB) and for buffer copies. At 720p on an 8 GB card that keeps
+/// about 1.7 GB, so the queue stopped while 1.1 GB lay free in the texture
+/// blocks the card already holds and about 21,000 textures waited: walls,
+/// skin and objects black in the albedo target (run CHECK-d1, captured
+/// frame 1296 of FACE-2). Giving the textures that reserve instead took the
+/// card past its budget, and every new allocation paged (0.1 to 1.6 frames
+/// a second). A free piece costs the card nothing more: no block is made,
+/// no level tiles are given, no texture gets memory of its own.
+fn pieces_on() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_PIECES").is_none_or(|v| v != "0"))
+}
+
+/// Whether the texture blocks hold enough free room for the pass to go on
+/// past the room test ([`pieces_on`]): a quarter of a block at least.
+pub(crate) fn pieces_room() -> bool {
+    pieces_on() && on() && texture_room() >= BLOCK / 4
+}
+
+/// Says whether the texture pass on this thread goes on only for free
+/// pieces ([`pieces_room`]), the room test having said no.
+pub(crate) fn set_pieces_only(only: bool) {
+    PIECES_ONLY.set(only);
+}
+
+/// Within [`waiting`]: the texture being made takes a free piece of a block
+/// there is, or waits; it is not made level by level (`crate::tiles`),
+/// nor with memory of its own.
+pub(crate) fn pieces_only() -> bool {
+    PIECES_ONLY.get() && CAN_WAIT.get()
 }
 
 /// Runs `make`, which may make a host texture that can wait: if no block
@@ -735,14 +776,23 @@ pub(crate) unsafe fn texture(
     if info.SizeInBytes == u64::MAX {
         return None;
     }
-    // Whether a block may be made for it if it fits none ([`gate`]).
+    // Whether a block may be made for it if it fits none ([`gate`]); none
+    // while the pass goes on for free pieces only ([`pieces_only`]).
     WAITED.set(false);
+    let only_pieces = pieces_only();
     let mut ripe = Ripe::now();
-    ripe.grow = match (may_grow(), CAN_WAIT.get()) {
-        (true, _) => Grow::Yes,
-        (false, false) => Grow::Must,
-        (false, true) => Grow::No,
+    ripe.grow = match (only_pieces, may_grow(), CAN_WAIT.get()) {
+        (true, _, _) => Grow::No,
+        (false, true, _) => Grow::Yes,
+        (false, false, false) => Grow::Must,
+        (false, false, true) => Grow::No,
     };
+    if only_pieces && !ripe.pooled(info.SizeInBytes) {
+        // Too large for a piece: it would get memory of its own. It waits.
+        BLOCKS[NOT_MADE].fetch_add(1, Ordering::Relaxed);
+        WAITED.set(true);
+        return None;
+    }
     let taken = lock(&TEXTURES).take_ripe(info.SizeInBytes, info.Alignment.max(1), now(), ripe, || {
         let desc = D3D12_HEAP_DESC {
             SizeInBytes: BLOCK,

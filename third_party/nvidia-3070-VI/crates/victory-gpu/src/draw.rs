@@ -2853,7 +2853,11 @@ impl State {
         // makes room again: so the slots are still looked at (the pass
         // returned here, and a slot whose texture had been streamed out
         // kept its host copy for as long as the card was full).
-        let mut room = crate::resource::room(memory);
+        // With the room test saying no, the pass goes on for the free pieces
+        // of the texture blocks there are (`crate::pool::pieces_room`).
+        let card_room = crate::resource::room(memory);
+        let mut room = card_room || crate::pool::pieces_room();
+        crate::pool::set_pieces_only(!card_room);
         // Bytes uploaded by this pass since the card was last asked
         // whether it has room: asked again every 32 MiB (a pass may upload
         // 192 MB and more, and one asking a pass let the queue run some
@@ -3362,7 +3366,9 @@ impl State {
             since_asked += bytes;
             if room && since_asked >= 32 << 20 {
                 since_asked = 0;
-                room = crate::resource::room(crate::host::host().and_then(|h| h.video_memory()));
+                let card_room = crate::resource::room(crate::host::host().and_then(|h| h.video_memory()));
+                room = card_room || crate::pool::pieces_room();
+                crate::pool::set_pieces_only(!card_room);
             }
             HEAP_TEXTURE_BYTES.fetch_add(bytes, Ordering::Relaxed);
             HEAP_TEXTURES.fetch_add(1, Ordering::Relaxed);
