@@ -644,3 +644,13 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - `victory-formats` lib: 42 passed. DirectStorage tests in `victory-hle`: 19 passed.
 - Expected effect in play, not yet observed: BCPack BC7 textures, the common high-quality colour format, show correct pixel detail where dictionary references occur. Before, such blocks had wrong indices, which looks like noisy or wrong-coloured detail.
 - BC2 remains unsupported. Whether the title uses BC2 is not known.
+
+## 2026-11-28 (afternoon) — best-fit placement in texture blocks
+
+- The texture blocks held 1.1–1.3 GB of free room in pieces that the waiting textures did not fit.
+  - Blocks are already chosen fullest-first (`VICTORY_POOL_FULLEST`).
+  - Inside a block, a piece went in the lowest free range it fit, so small textures cut up large free ranges.
+- Now a piece goes in the range that leaves the least behind, of two the lower (`VICTORY_POOL_BEST_FIT`, on; `=0` restores).
+  - Placement only: no card memory is made or kept by it.
+  - Unit test `a_small_piece_leaves_the_large_range_whole`. `victory-gpu` lib: 367 passed.
+- Not yet measured in play. The final test session should compare the texture-block fullness line and the waiting-texture count with it on and off.
