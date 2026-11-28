@@ -54,4 +54,6 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-formats/src/bcpack.rs`: fix. BC7 dictionary entries hold 16 + 16 index words right after the two widths. The parser skipped one word as "the widths again" and read 31, so every dictionary entry's indices were one pixel off, and BCPack BC7 blocks whose indices refer to the dictionary decoded with wrong pixel indices (endpoints were right). The dictionary test now checks the layout, with a regression value.
 
+- `crates/victory-gpu/src/pool.rs`: inside a texture block a piece now goes in the free range that leaves the least behind (best fit), instead of the lowest range it fits (`VICTORY_POOL_BEST_FIT`, on; `=0` restores). Placement only; with a unit test.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.

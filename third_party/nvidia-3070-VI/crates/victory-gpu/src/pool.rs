@@ -333,6 +333,17 @@ impl Ripe {
 /// Pieces cut from blocks that were not ripe, for want of a ripe one.
 static UNRIPE: AtomicU64 = AtomicU64::new(0);
 
+/// Whether a piece goes in the free range of its block that leaves the least
+/// behind (`VICTORY_POOL_BEST_FIT`, on; `=0`: the lowest range it fits, as
+/// before). Taking the lowest range cut small textures out of large free
+/// ranges, so that the texture blocks held 1.1 to 1.3 GB of free room in
+/// pieces too small for the textures that waited (runs of 2026-11-28, 8 GB
+/// card). Placement only: no memory is made or kept by it.
+fn best_fit() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VICTORY_POOL_BEST_FIT").is_none_or(|v| v != "0"))
+}
+
 /// The free ranges of a block: start and length, never two that touch.
 struct Ranges(BTreeMap<u64, u64>);
 
@@ -341,12 +352,19 @@ impl Ranges {
         Ranges(BTreeMap::from([(0, size)]))
     }
 
-    /// The lowest place for `len` bytes at a multiple of `align`.
+    /// A place for `len` bytes at a multiple of `align`: with [`best_fit`],
+    /// in the free range that leaves the least behind (of two, the lower);
+    /// else the lowest place.
     fn take(&mut self, len: u64, align: u64) -> Option<u64> {
-        let (start, size, at) = self.0.iter().find_map(|(&start, &size)| {
+        let fit = |(&start, &size): (&u64, &u64)| {
             let at = start.next_multiple_of(align);
             (at + len <= start + size).then_some((start, size, at))
-        })?;
+        };
+        let (start, size, at) = if best_fit() {
+            self.0.iter().filter_map(fit).min_by_key(|&(start, size, at)| (start + size - at - len, start))?
+        } else {
+            self.0.iter().find_map(fit)?
+        };
         self.0.remove(&start);
         if at > start {
             self.0.insert(start, at - start);
@@ -892,6 +910,20 @@ mod tests {
         assert!(!r.whole(1024));
         r.give(100, 28);
         assert!(r.whole(1024));
+    }
+
+    /// A small piece goes in the small hole, so that the large free range
+    /// still takes a large piece ([`best_fit`]).
+    #[test]
+    fn a_small_piece_leaves_the_large_range_whole() {
+        let mut r = Ranges::new(1024);
+        assert_eq!(r.take(128, 64), Some(0));
+        assert_eq!(r.take(64, 64), Some(128));
+        assert_eq!(r.take(128, 64), Some(192));
+        // Free: [128, 192) and [320, 1024).
+        r.give(128, 64);
+        assert_eq!(r.take(64, 64), Some(128), "the small hole, not the large range");
+        assert_eq!(r.take(704, 64), Some(320), "the large range is still whole");
     }
 
     #[test]
