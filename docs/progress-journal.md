@@ -719,3 +719,28 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Likely cause of the flashes, not yet isolated by a run: `VICTORY_WC_BAR` refreshes write whole pages, so a page the title writes overwrites what shaders wrote in it (documented in `shadow.rs`). `VICTORY_WC_XMEMALLOC` also skips copy-back for write-combined blocks. Either can hand stale or empty data to a frame.
 - Decision: `VICTORY_WC_BAR` and `VICTORY_WC_XMEMALLOC` stay off. Neither is in any profile. Do not enable them for play.
 - Next, with the user's go-ahead: one Release run of the same build with no extra switches, to confirm the flashes are gone and to measure stutter.
+
+## 2026-11-28 (evening, later) — profile-only run after the flashes; windows and reserve decisions
+
+- Same build (`20261128-160043-Both-default-04d71e48`, source `9588760`), Release, RTX 3070 profile with no extra switches, 720p, after a PC restart.
+  - World reached after 55 s. The internal frame-rate lines read mostly 15–30, with dips to 4 while new textures arrived; the mean of the lines was 21.
+  - Preparation 25.5 ms a frame, copy-back 6.5 ms.
+  - Waits for new card memory: 10.9 s in total, the longest 128 ms. The texture queue was still at its line (6,887 against 5,676 MB), so textures waited.
+  - Process-private memory 18.3–19.0 GB; free RAM 3.8–4.7 GB.
+  - PresentMon wrote no CSV for this run. These are internal counters from one run, not a benchmark, and they are not comparable with the v0.1.2 PresentMon table.
+- Observed by the user: no white/black flashes. The story intro starts and the scene is readable. One character previously black became complete, while many speaking characters stay untextured. This confirms the flashes came from `VICTORY_WC_BAR` and/or `VICTORY_WC_XMEMALLOC`.
+- `VICTORY_WINDOW_KB=1024` with `VICTORY_WINDOW_TAILS=1`: by the user's view, textures arrived more slowly. Peak private memory was not lower in the samples taken (about 19 GB). The run was stopped early. Not adopted.
+- The render-target reserve was re-examined. At 720p the targets hold about 1.3 GB, under half of the 3,072 MB reserve, so the reserve is never given up. Lowering it was already rejected on 2026-11-28 (night, late): at 1,536 MB, residency waits reached 108–308 s. It stays as is.
+- The RAM breakdown from a diagnostic run (about 19.3 GB private):
+  - title memory itself, most of it;
+  - host copies of title memory, 3.6 GB, of which about 1.4 GB lies at window edges;
+  - host-side texture copies, 3.2 GB;
+  - our own small allocations, 1.2 GB;
+  - host lists, about 1 GB (0.68 MB each). The 5.2 GB "grew while lists were made" figure includes other threads' allocations.
+- No release: no measured gain over v0.1.2-preview.
+- Next, in order:
+  1. Non-blocking residency waits (stalls and dips).
+  2. Smaller host copies.
+  3. Priority for textures drawn this frame.
+  4. Only then more texture room.
+  5. A disk cache of converted textures.
