@@ -570,6 +570,8 @@ extern "system" fn execute(this: This, count: u32, lists: *const This) {
         return;
     }
     let _called = crate::timeline::span("the title's ExecuteCommandLists");
+    #[cfg(windows)]
+    let _timed = crate::host::Timed::new(&crate::host::TITLE_TIME[0]);
     #[cfg(all(windows, feature = "diagnostics"))]
     crate::timeline::title_thread();
     #[cfg(windows)]
@@ -934,6 +936,8 @@ extern "system" fn present(
 ) -> HRESULT {
     #[cfg(not(windows))]
     let _ = this;
+    #[cfg(windows)]
+    let _timed = crate::host::Timed::new(&crate::host::TITLE_TIME[1]);
     #[cfg(all(windows, feature = "diagnostics"))]
     crate::copystat::present_begins();
     #[cfg(all(windows, feature = "diagnostics"))]

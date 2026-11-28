@@ -900,3 +900,17 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - The fix belongs to texture room and queue throughput, not to the bake path:
   - priority within the queue, which needs a visibility signal the title does not provide through sampler feedback;
   - more room for textures without the paging stalls rejected on 2026-11-28 (night).
+
+## 2026-11-28 (night) — Release slow frames: the title waits at Present for our submit thread
+
+- The slow-frame line now also gives the time the title's threads spent inside our `ExecuteCommandLists` and inside our `Present`, in Release too. Build `20261128-172942-Release-default-ac622ec2`, profile only, 720p. World after 58 s, internal fps 21.8.
+- 233 slow frames, 45.5 s in total. Summed over threads:
+  - inside our `Present`: 17.7 s;
+  - residency waits: 17.6 s, mapping waits: 1.2 s;
+  - inside our submissions: 0.04 s;
+  - about 20% is not attributed (title work and our other hooks).
+- The longest frame, 5.2 s, had 4.9 s inside `Present` and 6.4 s of residency waits across threads.
+- Reading: in Release the stalls are the title waiting at `Present` for our submission thread (`VICTORY_ASYNC_SUBMIT`), and that thread is held by creating buffers and making them resident.
+  - The memory line counts the churn: 15,110 shared buffers made against 3,873 alive, 11,405 upload buffers and 11,047 card buffers made over a run.
+- This explains why batching residency did not help: it moved the same per-buffer work into creation.
+- Next: recycle released buffers by size class (shared, unordered-access and upload) instead of making new ones, so a reused buffer needs no residency or mapping wait. The pool for staging buffers (`pool.rs`) is the model. Measure with the same slow-frame line and an A/B pair with screens.

@@ -424,6 +424,25 @@ static RESIDENT: [std::sync::atomic::AtomicU64; 3] = [const { std::sync::atomic:
 /// [`resident`]'s callers since the start: where, calls, microseconds.
 static RESIDENT_SITES: Mutex<Vec<(&'static std::panic::Location<'static>, u64, u64)>> = Mutex::new(Vec::new());
 
+/// Nanoseconds the title's threads spent inside our `ExecuteCommandLists`
+/// and inside our `Present` (summed over threads), for [`note_frame`].
+pub(crate) static TITLE_TIME: [std::sync::atomic::AtomicU64; 2] = [const { std::sync::atomic::AtomicU64::new(0) }; 2];
+
+/// Adds the time until it is dropped to a counter of [`TITLE_TIME`].
+pub(crate) struct Timed(&'static std::sync::atomic::AtomicU64, std::time::Instant);
+
+impl Timed {
+    pub(crate) fn new(counter: &'static std::sync::atomic::AtomicU64) -> Timed {
+        Timed(counter, std::time::Instant::now())
+    }
+}
+
+impl Drop for Timed {
+    fn drop(&mut self) {
+        self.0.fetch_add(self.1.elapsed().as_nanos() as u64, Ordering::Relaxed);
+    }
+}
+
 /// Called at each present: a frame of more than 100 ms is said, with what
 /// of it went to waits for new memory to become resident ([`resident`])
 /// and mapped ([`mapped`]), on any thread (`VICTORY_SLOW_FRAMES=0`: not
@@ -437,6 +456,11 @@ pub(crate) fn note_frame(frame: u64) {
         return;
     }
     static LAST: Mutex<Option<(std::time::Instant, u64, u64, u64, u64)>> = Mutex::new(None);
+    static TITLE_BEFORE: [std::sync::atomic::AtomicU64; 2] = [const { std::sync::atomic::AtomicU64::new(0) }; 2];
+    let in_execute = TITLE_TIME[0].load(Ordering::Relaxed);
+    let in_present = TITLE_TIME[1].load(Ordering::Relaxed);
+    let execute_ms = in_execute.saturating_sub(TITLE_BEFORE[0].swap(in_execute, Ordering::Relaxed)) as f64 / 1e6;
+    let present_ms = in_present.saturating_sub(TITLE_BEFORE[1].swap(in_present, Ordering::Relaxed)) as f64 / 1e6;
     static SAID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let now = std::time::Instant::now();
     let counters = (
@@ -472,7 +496,7 @@ pub(crate) fn note_frame(frame: u64) {
             if n <= 300 || n.is_multiple_of(50) {
                 tracing::info!(
                     "slow frame {frame}: {ms:.0} ms; waits for new memory to be resident {} ({:.1} ms), to be mapped {} ({:.1} ms) \
-                     (on all threads, VICTORY_SLOW_FRAMES=0: not said); slow frames so far {n}; mapping waits shared since the start {}",
+                     (on all threads, VICTORY_SLOW_FRAMES=0: not said); the title's threads inside our submissions {execute_ms:.1} ms,                      inside our presents {present_ms:.1} ms; slow frames so far {n}; mapping waits shared since the start {}",
                     counters.0 - r_n,
                     (counters.1 - r_us) as f64 / 1e3,
                     counters.2 - m_n,
