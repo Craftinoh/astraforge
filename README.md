@@ -25,7 +25,7 @@ Tested on one PC: RTX 3070 8 GB, Ryzen 7 7700X, 32 GiB RAM, Windows 11, Series S
 | Start-up screens, menus, story loading | ✅ Visible |
 | Entering the world and playing the first story scene | ✅ No crash in 10 automated runs, each 2–3 minutes in the world and 6 of them on this release's source. A warmed shader cache and pipeline library were used. ⚠️ Longer sessions can stop after about 5 minutes: the title's own watchdog ended it when its update loop made no progress for about 30 s during slow loading. The RTX 3070 profile now gives it 120 s (`VICTORY_WATCHDOG_SECONDS`); a real hang is still stopped |
 | Character skin | ⚠️ Intermittent: correct in some runs, black in others with the same settings. Skin-bake sources are now refreshed before each bake (fxceless port), which fixes one cause but not all |
-| Textures and colours | ⚠️ Flickering; some materials and colours missing |
+| Textures and colours | ⚠️ Flickering; some materials and colours missing. BCPack BC7 blocks that refer to the format dictionary decoded with wrong pixel indices until 2026-11-28 (fixed; the decoder is now byte-exact for BC1/3/4/5/6H/7 on reference streams) |
 | Performance | ⚠️ Low and CPU-bound. The runtime's internal reports show 10–12 fps on average. One PresentMon capture measured 9.8 fps average, 11.6 median and 2.4 for the 1% low. Each frame spends about 55–70 ms of CPU preparation, 30–36 ms copying results back and 7–13 ms on the GPU |
 | VRAM on 8 GB cards | ⚠️ Keep the Stability preset (80 % texture room). 90 % measured 5.2 fps and 94 % measured 2.1 fps |
 | PresentMon frame capture | ⚠️ Works with the official PresentMon 2.x, but often loses ETW events in this workload and then writes no CSV |

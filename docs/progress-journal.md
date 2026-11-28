@@ -629,3 +629,18 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   2. Gate shader-write copy-back on level-2 write-backs (behind a switch).
   3. Let `VICTORY_WC_BAR` work under a lower free-budget line on 8 GB cards.
   4. Then one session: Release reference, sync counters, block fullness, the switches on and off.
+
+## 2026-11-28 (afternoon) — BCPack BC7 decoder fix
+
+- Found with byte-exact comparisons against reference outputs made outside the repository: one-block-type streams for every BC7 mode, with all-zero, all-one and random indices.
+  - All-zero indices decoded right in every mode.
+  - Non-zero indices decoded wrong whenever the block's index reference pointed into the BC7 dictionary, and right with no reference.
+- Cause: each BC7 dictionary entry holds 16 + 16 index words right after its two width bytes. The table parser skipped one word, taking it for a repeat of the widths, and read 31. Every dictionary entry's indices were therefore one pixel off.
+- Fix in `victory-formats/src/bcpack.rs`. The dictionary test now checks the layout, with a regression value for entry 231.
+- After the fix, everything is byte-exact against the references:
+  - BC7: 53 streams, every mode, random, repeated and mixed blocks;
+  - BC6H: 28 streams, every valid mode;
+  - BC1, BC3, BC4, BC5: 22 streams.
+  - `victory-formats` lib: 42 passed. DirectStorage tests in `victory-hle`: 19 passed.
+- Expected effect in play, not yet observed: BCPack BC7 textures, the common high-quality colour format, show correct pixel detail where dictionary references occur. Before, such blocks had wrong indices, which looks like noisy or wrong-coloured detail.
+- BC2 remains unsupported. Whether the title uses BC2 is not known.
