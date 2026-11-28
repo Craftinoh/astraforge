@@ -320,6 +320,55 @@ pub extern "system" fn XMemFree(address: *mut c_void, attributes: u64) {
     }
 }
 
+// `XMemAlloc` attributes: the memory type, four bits from bit 29.
+const MEMTYPE_SHIFT: u64 = 29;
+
+/// Whether an `XMemAlloc` memory type is one the CPU writes combined and
+/// does not read back: graphics write-combined (1), its GPU read-only kind
+/// (2), write-combined command buffers (5), physical write-combined (8) and
+/// write-combined indirect arguments (12).
+fn memtype_write_combined(attributes: u64) -> bool {
+    matches!(attributes >> MEMTYPE_SHIFT & 0xf, 1 | 2 | 5 | 8 | 12)
+}
+
+/// Blocks of [`XMemAllocDefault`] this large or larger are noted as
+/// write-combined when their memory type says so; smaller ones are left
+/// out (the registry is a list that copies are looked up in, and the
+/// copy-back rule leaves small copies alone anyway).
+const WRITE_COMBINED_NOTED: usize = 1 << 20;
+
+/// Whether [`XMemAllocDefault`] blocks of a write-combined memory type are
+/// noted as write-combined (`VICTORY_WC_XMEMALLOC=1`; off by default). The
+/// first run with it on stopped during loading by the title's watchdog, as
+/// other runs did that night; whether the title reads back GPU results in
+/// such blocks is not known yet.
+fn wc_from_memtype() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VICTORY_WC_XMEMALLOC").is_some_and(|v| v == "1"))
+}
+
+/// Says, for the log, the first, second, fourth... block of each memory
+/// type of 1 MiB or more that [`XMemAllocDefault`] gave out.
+fn note_memtype(attributes: u64, at: usize, size: usize) {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static SEEN: [AtomicU64; 16] = [const { AtomicU64::new(0) }; 16];
+    if size < WRITE_COMBINED_NOTED {
+        return;
+    }
+    let kind = (attributes >> MEMTYPE_SHIFT & 0xf) as usize;
+    let n = SEEN[kind].fetch_add(1, Ordering::Relaxed) + 1;
+    if n.is_power_of_two() {
+        tracing::info!(
+            memtype = kind,
+            n,
+            at = format_args!("{at:#x}"),
+            size = format_args!("{size:#x}"),
+            write_combined = memtype_write_combined(attributes),
+            "XMemAllocDefault block of 1 MiB or more"
+        );
+    }
+}
+
 /// The system allocator behind [`XMemAlloc`].
 pub extern "system" fn XMemAllocDefault(size: usize, attributes: u64) -> *mut c_void {
     if attributes & ALLOC_32BIT != 0 {
@@ -346,13 +395,22 @@ pub extern "system" fn XMemAllocDefault(size: usize, attributes: u64) -> *mut c_
     }
     // SAFETY: the block holds the alignment (at least the header) and then
     // `size` bytes.
-    unsafe {
+    let user = unsafe {
         let user = block.add(layout.align());
         user.sub(HEADER)
             .cast::<[usize; 2]>()
             .write([layout.size(), layout.align()]);
-        user.cast()
+        user
+    };
+    note_memtype(attributes, user as usize, size);
+    // A write-combined memory type: the title's CPU writes the block and
+    // does not read it, as with XMemVirtualAlloc's 0x400 protection (the
+    // copy-back rule, `VICTORY_WC_NO_BACK`, then leaves shader writes into
+    // it on the card).
+    if size >= WRITE_COMBINED_NOTED && memtype_write_combined(attributes) && wc_from_memtype() {
+        victory_gpu::title_memory_write_combined(user as usize, size);
     }
+    user.cast()
 }
 
 /// Frees what [`XMemAllocDefault`] returned, given the same attributes.
@@ -369,6 +427,9 @@ pub extern "system" fn XMemFreeDefault(address: *mut c_void, attributes: u64) {
         }
         let user = address.cast::<u8>();
         let [size, align] = user.sub(HEADER).cast::<[usize; 2]>().read();
+        if memtype_write_combined(attributes) && size.saturating_sub(align) >= WRITE_COMBINED_NOTED {
+            victory_gpu::title_memory_write_combined_freed(user as usize, size - align);
+        }
         dealloc(
             user.sub(align),
             Layout::from_size_align_unchecked(size, align),
@@ -1910,6 +1971,19 @@ pub(crate) fn module() -> HleModule {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn memory_types_written_combined_are_told_apart() {
+        let at = |kind: u64| (kind << MEMTYPE_SHIFT) | (12 << ALIGNMENT_SHIFT);
+        for kind in [1, 2, 5, 8, 12] {
+            assert!(memtype_write_combined(at(kind)), "type {kind}");
+        }
+        for kind in [0, 3, 4, 6, 7, 9, 10, 11] {
+            assert!(!memtype_write_combined(at(kind)), "type {kind}");
+        }
+        // The 32-bit flag above the type does not change it.
+        assert!(memtype_write_combined(at(1) | ALLOC_32BIT));
+    }
 
     fn query(address: *const c_void) -> BasicInformation {
         // SAFETY: plain data; zero is a valid value.

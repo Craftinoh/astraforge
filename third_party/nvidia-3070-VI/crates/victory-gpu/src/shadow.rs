@@ -2103,6 +2103,12 @@ pub fn title_memory_write_combined(at: usize, len: usize) {
     all.push((at as u64, (at + len) as u64));
 }
 
+/// [`write_combined_freed`] for the runtime: memory it gave out itself (a
+/// heap block of the title's allocator) and took back.
+pub fn title_memory_write_combined_freed(at: usize, len: usize) {
+    write_combined_freed(at, len);
+}
+
 /// The title let go of `[at, at + len)` (`len` 0: of the allocation at `at`):
 /// write-combined regions in it are forgotten.
 pub(crate) fn write_combined_freed(at: usize, len: usize) {
