@@ -237,6 +237,41 @@ pub(crate) fn not_resident() -> D3D12_HEAP_FLAGS {
     if wait_resident() { D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT } else { D3D12_HEAP_FLAG_NONE }
 }
 
+/// Whether our buffers are made resident by their making, with no
+/// [`resident`] of their own, and the waits for new mappings ([`mapped`])
+/// are shared by the threads that ask at once (`VICTORY_BATCH_RESIDENCY=1`;
+/// off by default until measured). A scene change made some 7,000 buffers
+/// in one frame (diagnostic run of 2026-11-28, frame 1101: shared buffers
+/// 3,486 waits for 1.17 s, unordered access buffers 3,468 for 0.86 s,
+/// upload buffers 149 for 0.54 s), each with its own `MakeResident` after a
+/// making that left it not resident. A buffer made without that flag is
+/// resident when its making returns, the system's work done in that one
+/// call. The mapping wait stays: a list sent before the mapping is done
+/// may read a new buffer's addresses (the device losses of 2026-11-25).
+pub(crate) fn batch_residency() -> bool {
+    static ON: OnceLock<bool> = OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VICTORY_BATCH_RESIDENCY").is_some_and(|v| v == "1"))
+}
+
+/// Whether a [`mapped`] call that began when `sent` round trips had been
+/// sent waits for the last one sent (`last`) instead of sending its own:
+/// one sent after it began was sent after its memory was made.
+fn shares_round_trip(batch: bool, sent: u64, last: u64) -> bool {
+    batch && last > sent
+}
+
+/// The flag our buffers are made with ([`batch_residency`]).
+fn buffer_flags() -> D3D12_HEAP_FLAGS {
+    if batch_residency() { D3D12_HEAP_FLAG_NONE } else { not_resident() }
+}
+
+/// [`resident`] for a buffer made with [`buffer_flags`]: nothing to do when
+/// its making made it resident.
+#[track_caller]
+fn buffer_resident(device: &ID3D12Device, object: &impl Interface) -> windows::core::Result<()> {
+    if batch_residency() { Ok(()) } else { resident(device, object) }
+}
+
 /// A queue of its own that new memory is waited for with ([`mapped`]).
 struct Aside {
     queue: ID3D12CommandQueue,
@@ -262,6 +297,9 @@ pub(crate) fn mapped(device: &ID3D12Device) -> windows::core::Result<()> {
         return Ok(());
     }
     let started = std::time::Instant::now();
+    // Round trips sent so far: one sent after this, while this waited for
+    // the lock, was sent after this memory was made and covers it.
+    let sent = SENT.load(Ordering::Acquire);
     let mut aside = ASIDE.lock().unwrap_or_else(|e| e.into_inner());
     // SAFETY: plain object creation; the objects the list names are kept.
     unsafe {
@@ -307,9 +345,14 @@ pub(crate) fn mapped(device: &ID3D12Device) -> windows::core::Result<()> {
             });
         }
         let Some(a) = aside.as_mut() else { return Ok(()) };
-        a.queue.ExecuteCommandLists(&[Some(a.list.clone())]);
-        a.value += 1;
-        a.queue.Signal(&a.fence, a.value)?;
+        if shares_round_trip(batch_residency(), sent, a.value) {
+            MAPPED_SHARED.fetch_add(1, Ordering::Relaxed);
+        } else {
+            a.queue.ExecuteCommandLists(&[Some(a.list.clone())]);
+            a.value += 1;
+            a.queue.Signal(&a.fence, a.value)?;
+            SENT.store(a.value, Ordering::Release);
+        }
         if a.fence.GetCompletedValue() < a.value {
             a.fence.SetEventOnCompletion(a.value, a.event)?;
             WaitForSingleObject(a.event, INFINITE);
@@ -332,17 +375,33 @@ pub(crate) fn mapped(device: &ID3D12Device) -> windows::core::Result<()> {
 
 /// Times, microseconds and the longest of [`mapped`].
 static MAPPED: [std::sync::atomic::AtomicU64; 3] = [const { std::sync::atomic::AtomicU64::new(0) }; 3];
+/// The last round trip [`mapped`] sent, and the waits that shared one sent
+/// by another call ([`batch_residency`]).
+static SENT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static MAPPED_SHARED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 /// New memory (made with [`not_resident`]) is resident when this returns.
+#[track_caller]
 pub(crate) fn resident(device: &ID3D12Device, object: &impl Interface) -> windows::core::Result<()> {
     if !wait_resident() {
         return Ok(());
     }
+    let site = std::panic::Location::caller();
     let started = std::time::Instant::now();
     let object: ID3D12Pageable = object.cast()?;
     // SAFETY: a live heap or resource of the device's.
     let made = unsafe { device.MakeResident(&[Some(object)]) };
     let us = started.elapsed().as_micros() as u64;
+    {
+        let mut sites = RESIDENT_SITES.lock().unwrap_or_else(|e| e.into_inner());
+        match sites.iter_mut().find(|(at, ..)| std::ptr::eq(*at, site)) {
+            Some((_, n, t)) => {
+                *n += 1;
+                *t += us;
+            }
+            None => sites.push((site, 1, us)),
+        }
+    }
     RESIDENT[0].fetch_add(1, Ordering::Relaxed);
     RESIDENT[1].fetch_add(us, Ordering::Relaxed);
     RESIDENT[2].fetch_max(us, Ordering::Relaxed);
@@ -361,6 +420,9 @@ pub(crate) fn resident(device: &ID3D12Device, object: &impl Interface) -> window
 
 /// Times, microseconds and the longest of [`resident`].
 static RESIDENT: [std::sync::atomic::AtomicU64; 3] = [const { std::sync::atomic::AtomicU64::new(0) }; 3];
+
+/// [`resident`]'s callers since the start: where, calls, microseconds.
+static RESIDENT_SITES: Mutex<Vec<(&'static std::panic::Location<'static>, u64, u64)>> = Mutex::new(Vec::new());
 
 /// Called at each present: a frame of more than 100 ms is said, with what
 /// of it went to waits for new memory to become resident ([`resident`])
@@ -383,19 +445,39 @@ pub(crate) fn note_frame(frame: u64) {
         MAPPED[0].load(Ordering::Relaxed),
         MAPPED[1].load(Ordering::Relaxed),
     );
+    let sites: Vec<(&'static std::panic::Location<'static>, u64, u64)> =
+        RESIDENT_SITES.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    static SITES_BEFORE: Mutex<Vec<(&'static std::panic::Location<'static>, u64, u64)>> = Mutex::new(Vec::new());
+    let before = std::mem::replace(&mut *SITES_BEFORE.lock().unwrap_or_else(|e| e.into_inner()), sites.clone());
     let mut last = LAST.lock().unwrap_or_else(|e| e.into_inner());
     if let Some((at, r_n, r_us, m_n, m_us)) = *last {
         let ms = now.duration_since(at).as_secs_f64() * 1e3;
+        if ms > 500.0 {
+            // Where this frame's residency waits came from.
+            let mut by: Vec<(String, u64, u64)> = sites
+                .iter()
+                .map(|(site, n, us)| {
+                    let (n0, us0) =
+                        before.iter().find(|(b, ..)| std::ptr::eq(*b, *site)).map_or((0, 0), |(_, n, us)| (*n, *us));
+                    (format!("{}:{}", site.file().rsplit(['/', '\\']).next().unwrap_or(""), site.line()), n - n0, us - us0)
+                })
+                .filter(|(_, n, _)| *n > 0)
+                .collect();
+            by.sort_by(|a, b| b.2.cmp(&a.2));
+            let said: Vec<String> = by.iter().take(4).map(|(at, n, us)| format!("{at} {n} ({:.1} ms)", *us as f64 / 1e3)).collect();
+            tracing::info!("slow frame {frame}: residency waits by caller: {}", said.join(", "));
+        }
         if ms > 100.0 {
             let n = SAID.fetch_add(1, Ordering::Relaxed) + 1;
             if n <= 300 || n.is_multiple_of(50) {
                 tracing::info!(
                     "slow frame {frame}: {ms:.0} ms; waits for new memory to be resident {} ({:.1} ms), to be mapped {} ({:.1} ms) \
-                     (on all threads, VICTORY_SLOW_FRAMES=0: not said); slow frames so far {n}",
+                     (on all threads, VICTORY_SLOW_FRAMES=0: not said); slow frames so far {n}; mapping waits shared since the start {}",
                     counters.0 - r_n,
                     (counters.1 - r_us) as f64 / 1e3,
                     counters.2 - m_n,
-                    (counters.3 - m_us) as f64 / 1e3
+                    (counters.3 - m_us) as f64 / 1e3,
+                    MAPPED_SHARED.load(Ordering::Relaxed)
                 );
             }
         }
@@ -1114,6 +1196,16 @@ pub(crate) fn warp_adapter() -> windows::core::Result<IDXGIAdapter> {
 
 #[cfg(test)]
 mod tests {
+    /// A mapping wait shares a round trip only when batching is on and one
+    /// was sent after the wait began ([`shares_round_trip`]).
+    #[test]
+    fn a_mapping_wait_shares_only_a_later_round_trip() {
+        assert!(!super::shares_round_trip(false, 3, 4));
+        assert!(!super::shares_round_trip(true, 4, 4));
+        assert!(!super::shares_round_trip(true, 5, 4));
+        assert!(super::shares_round_trip(true, 3, 4));
+    }
+
     /// A list of ours is found by its name, with the debug layer's note or not.
     #[cfg(feature = "diagnostics")]
     #[test]
@@ -8818,7 +8910,7 @@ impl Host {
             self.device
                 .CreateCommittedResource(
                     &heap,
-                    not_resident(),
+                    buffer_flags(),
                     &desc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
                     None,
@@ -8826,7 +8918,7 @@ impl Host {
                 )
                 .and_then(|()| {
                     let b = buffer.as_ref().ok_or_else(windows::core::Error::empty)?;
-                    resident(&self.device, b)?;
+                    buffer_resident(&self.device, b)?;
                     b.Map(0, None, Some(&mut data))
                 })
         };
@@ -9757,7 +9849,7 @@ impl Host {
             self.device
                 .CreateCommittedResource(
                     &heap,
-                    not_resident(),
+                    buffer_flags(),
                     &desc,
                     D3D12_RESOURCE_STATE_COMMON,
                     None,
@@ -9765,7 +9857,7 @@ impl Host {
                 )
                 .and_then(|()| {
                     let b = buffer.as_ref().ok_or_else(windows::core::Error::empty)?;
-                    resident(&self.device, b)?;
+                    buffer_resident(&self.device, b)?;
                     mapped(&self.device)?;
                     b.Map(0, None, Some(&mut data))
                 })
@@ -9896,7 +9988,7 @@ impl Host {
         let made = unsafe {
             self.device.CreateCommittedResource(
                 &heap,
-                not_resident(),
+                buffer_flags(),
                 &desc,
                 D3D12_RESOURCE_STATE_COMMON,
                 None,
@@ -9907,7 +9999,8 @@ impl Host {
         if let Some(b) = &buffer {
             crate::book::made(b, || "an unordered access buffer".into());
         }
-        let made = made.and_then(|()| buffer.as_ref().map_or(Ok(()), |b| resident(&self.device, b))).and_then(|()| mapped(&self.device));
+        let made =
+            made.and_then(|()| buffer.as_ref().map_or(Ok(()), |b| buffer_resident(&self.device, b))).and_then(|()| mapped(&self.device));
         match made {
             Ok(()) => buffer,
             Err(e) => {

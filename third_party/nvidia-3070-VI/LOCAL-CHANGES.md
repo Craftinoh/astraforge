@@ -66,4 +66,7 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-gpu/src/{host.rs,queue.rs}`: each frame over 100 ms is logged with the residency and mapping waits it contained, on all threads (`VICTORY_SLOW_FRAMES=0` silences it; at most 300 lines, then every 50th). Log only.
 
+- `crates/victory-gpu/src/host.rs`: `VICTORY_BATCH_RESIDENCY=1` (off by default) makes our shared, unordered-access and upload buffers resident by their making, without a separate `MakeResident` each, and lets concurrent mapping waits share a round trip sent after they began; the mapping wait itself stays. Residency waits are also counted by caller and named in slow frames over 500 ms. Unit test `a_mapping_wait_shares_only_a_later_round_trip`.
+- `crates/victory-gpu/src/resource.rs`: resources made with a newer description whose sampler feedback mip region is set are logged. Log only.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.

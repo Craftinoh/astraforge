@@ -853,6 +853,36 @@ pub(crate) struct ResourceDesc1 {
 }
 const _: () = assert!(size_of::<ResourceDesc1>() == 72);
 
+/// Notes a newer description with a sampler feedback mip region (a
+/// feedback map the GPU fills with what it sampled of a texture): the
+/// first ones are said with their size and format, then the count at each
+/// power of two. Log only: whether the title uses them decides whether they
+/// can tell which textures a frame samples.
+///
+/// # Safety
+/// `desc` is null or a newer description.
+pub(crate) unsafe fn note_feedback(desc: *const ResourceDesc1, how: &str) {
+    // SAFETY: the caller's.
+    let Some(d) = (unsafe { desc.as_ref() }) else { return };
+    if d.mip_region == [0; 3] {
+        return;
+    }
+    static N: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+    if n <= 8 || n.is_power_of_two() {
+        tracing::info!(
+            how,
+            n,
+            mip_region = ?d.mip_region,
+            width = d.desc.width,
+            height = d.desc.height,
+            format = d.desc.format,
+            flags = format_args!("{:#x}", d.desc.flags),
+            "a resource with a sampler feedback mip region"
+        );
+    }
+}
+
 /// Where one resource goes in [`allocation_info2`]'s placement.
 #[repr(C)]
 pub(crate) struct AllocationInfo1 {
@@ -3055,6 +3085,8 @@ pub(crate) extern "system" fn create_committed3(
     out: *mut This,
 ) -> HRESULT {
     const COMMON: u32 = 0;
+    // SAFETY: the title passes a newer description here.
+    unsafe { note_feedback(desc.cast(), "committed") };
     create_committed(this, heap, heap_flags, desc, COMMON, clear, iid, out)
 }
 
@@ -3112,6 +3144,8 @@ pub(crate) extern "system" fn create_at_address(
     iid: *const Iid,
     out: *mut This,
 ) -> HRESULT {
+    // SAFETY: the title passes a newer description here.
+    unsafe { note_feedback(desc.cast(), "at an address") };
     // SAFETY: the title passes a description (null is tolerated).
     let Some(&desc) = (unsafe { desc.as_ref() }) else {
         return E_INVALIDARG;
