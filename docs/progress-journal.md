@@ -795,3 +795,20 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - The ahead thread most likely made the textures worse: blocks kept empty took room the texture queue needed.
 - `VICTORY_AHEAD_THREAD` is now off by default (`=1` turns it on). With it off, block making is as before. The slow-frame line stays on.
 - Next: find what the slow frames are made of in the diagnostic build, with a per-frame split of title-thread time beyond residency (descriptor writes, title-memory refreshes, uploads), before changing more code.
+
+## 2026-11-28 (evening) — diagnostic run: what the slow frames are made of
+
+- Build `20261128-163343` diagnostic, profile plus `VICTORY_AHEAD_THREAD=0`, 720p. World reached after 46 s. Internal fps mean 19.1, minimum 5.5; preparation 25 ms, copy-back 6 ms.
+- Observed by the user: much better than the ahead-thread run. The game runs and scenes are readable. Many face and skin textures are still missing and arrive only after a while.
+- Slow frames (over 100 ms): 298, totalling 63 s, median 142 ms, the longest 4.2 s.
+  - Residency and mapping waits inside them totalled 6.8 s, so they do not explain the typical slow frame.
+  - They dominate the long stalls. The 4.2 s frame (1089, a scene change) held 7,772 residency waits (2.24 s) and 7,615 mapping waits (0.47 s): 2.7 of 4.2 s. Each new resource waits for its own `MakeResident` and its own mapping round trip.
+- Per-frame averages from the diagnostic lines:
+  - Recording: 10,000–21,000 list calls, 60–118 ms across all recording threads.
+  - Submitting thread: refreshes about 10 ms, write watch 3 ms, waits for flights 8 ms, copies in card memory 6 ms.
+  - Title threads waited 13–20 ms at presents. The card wait was under 1 ms.
+- Candidates, in order:
+  1. Batch residency at scene changes. Resources made close together share one `MakeResident` call and one mapping round trip, instead of one each; `mapped()` already covers every mapping asked for so far. This attacks the multi-second stalls.
+  2. The cost of our list-call hooks (about 5 µs a call, 10–20k calls a frame), behind the typical 100–200 ms frames.
+  3. Sampler feedback: the API docs describe feedback maps that record which textures and mips the GPU sampled. Our resource path ignores the feedback mip region (`ResourceDesc1`). If the title uses them, they could drive texture priority (step 3) without changing the shader translator. Check first whether the title creates feedback resources.
+- The skin and face textures that arrive late also go through the skin bake path; check it with the texture-queue counters next.
