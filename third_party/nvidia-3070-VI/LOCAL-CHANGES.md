@@ -32,4 +32,6 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-loader/src/{crash.rs,lib.rs}`, `apps/victory/src/run.rs`: local diagnostic aid. Crash reports print the performance-counter value at the crash. With the diagnostics feature, `VICTORY_CRASH_SAVE=<rva>+<len>[,...]` writes those ranges of the main title image to `victory-crash-<rva>.bin` in the temporary folder when a crash is reported (each at most 16 MiB). It is used to read a title's own hang-watchdog table at the moment it stops itself. Off unless set; no behaviour change otherwise.
 
+- `crates/victory-loader/src/crash.rs`: diagnostics builds with `VICTORY_CRASH_STACKS=1` also print every other thread's stack when an unhandled exception is reported, to see where a title that stops itself from a watchdog thread was stuck. Off unless set.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.

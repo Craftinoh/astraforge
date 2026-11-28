@@ -65,6 +65,14 @@ pub fn save_title_ranges_on_crash(base: usize) {
     save_on_crash(ranges);
 }
 
+/// Whether a reported crash also prints every other thread's stack
+/// (`VICTORY_CRASH_STACKS=1`, diagnostics builds; off by default).
+#[cfg(feature = "diagnostics")]
+fn crash_stacks() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VICTORY_CRASH_STACKS").is_some_and(|v| v == "1"))
+}
+
 /// Without diagnostics there is nothing to save.
 #[cfg(not(feature = "diagnostics"))]
 pub fn save_title_ranges_on_crash(_base: usize) {}
@@ -674,6 +682,14 @@ unsafe fn report(what: &str, info: *const EXCEPTION_POINTERS, to_file: bool) {
     ));
     for (i, pc) in unwind(*context).into_iter().enumerate() {
         line(format!("  #{i:<2} {}", locate(pc as usize)));
+    }
+    // `VICTORY_CRASH_STACKS=1`: every other thread's stack too, before the
+    // process goes. A title that stops itself from a watchdog thread (no
+    // progress for some seconds) is stuck on another thread: that one's
+    // stack says where.
+    #[cfg(feature = "diagnostics")]
+    if to_file && crash_stacks() {
+        crate::stacks::dump_stacks();
     }
     if to_file {
         let said = title_output();
