@@ -16,31 +16,31 @@ or a focused engine patch without copying a whole fork or losing authorship and 
 > installed outside this repository. Public reports never name the game; they use
 > anonymous scene labels such as `scene-01`.
 
-## Status — `v0.1.1-preview` (pre-release, 2026-11-27)
+## Status — `v0.1.2-preview` (pre-release, 2026-11-28)
 
 Tested on one PC: RTX 3070 8 GB, Ryzen 7 7700X, 32 GiB RAM, Windows 11, Series S profile, 1280x720, Stability preset.
 
 | Area | State |
 |---|---|
 | Start-up screens, menus, story loading | ✅ Visible |
-| Entering the world and playing the first story scene | ✅ No crash in 10 automated runs, each 2–3 minutes in the world and 6 of them on this release's source. A warmed shader cache and pipeline library were used. ⚠️ Longer sessions can stop after about 5 minutes: the title's own watchdog ended it when its update loop made no progress for about 30 s during slow loading. The RTX 3070 profile now gives it 120 s (`VICTORY_WATCHDOG_SECONDS`); a real hang is still stopped |
+| Entering a high-draw scene | ⚠️ Four exploratory 120 s captures on this source reached the scene without a runtime crash. Longer sessions and further routes remain unverified. The RTX 3070 profile lets the title's own hang watchdog wait 120 s (`VICTORY_WATCHDOG_SECONDS`); a real hang is still stopped |
 | Character skin | ⚠️ Intermittent: correct in some runs, black in others with the same settings. Skin-bake sources are now refreshed before each bake (fxceless port), which fixes one cause but not all |
-| Textures and colours | ⚠️ Flickering; some materials and colours missing. BCPack BC7 blocks that refer to the format dictionary decoded with wrong pixel indices until 2026-11-28 (fixed; the decoder is now byte-exact for BC1/3/4/5/6H/7 on reference streams) |
-| Performance | ⚠️ Low and CPU-bound. The runtime's internal reports show 10–12 fps on average. One PresentMon capture measured 9.8 fps average, 11.6 median and 2.4 for the 1% low. Each frame spends about 55–70 ms of CPU preparation, 30–36 ms copying results back and 7–13 ms on the GPU |
+| Textures and colours | ⚠️ Flickering and black or missing materials remain. The BCPack BC7 dictionary-index fix passed byte-exact reference checks; its effect in play has not been isolated |
+| Performance | ⚠️ Four exploratory 120 s PresentMon captures on the current source classified application frames. Two Release runs measured 8.05 and 19.87 fps average, with 1% lows of 1.08 and 3.32. Scene and cache variation prevent a performance-gain claim; the 30 fps target is unverified |
+| Host memory | ⚠️ The Release runs peaked at 19.08–19.28 GiB of process-private memory and left as little as 3.31–3.54 GiB of commit available. A 16 GiB RAM host has not been validated |
 | VRAM on 8 GB cards | ⚠️ Keep the Stability preset (80 % texture room). 90 % measured 5.2 fps and 94 % measured 2.1 fps |
-| PresentMon frame capture | ⚠️ Works with the official PresentMon 2.x, but often loses ETW events in this workload and then writes no CSV |
+| DLSS and frame generation | ❌ Not integrated in this checkout |
+| PresentMon frame capture | ⚠️ All four new captures wrote classified CSVs. Earlier sessions sometimes lost ETW events and produced no CSV |
 | Other GPUs | ❌ Not supported yet. A candidate RTX 3060 profile is in review as a separate identity |
 
 The acceptance target is at least 30 real application FPS with a 1% low of at least 30,
 measured over repeated gameplay captures. It has **not** been reached. Details are in
-the [release notes](docs/releases/v0.1.1-preview.md) and the [progress journal](docs/progress-journal.md).
+the [release notes](docs/releases/v0.1.2-preview.md) and the [progress journal](docs/progress-journal.md).
 
 ## Quick start
 
-1. **Download** `astraforge-v0.1.1-preview-win64.zip` from
-   [Releases](https://github.com/Craftinoh/astraforge/releases) and check it against `SHA256SUMS.txt`.
-2. **Clone this repository**. The launcher, profiles and preflight checks live here.
-3. **Launch** with your own game directory, using the Stability profile and 720p:
+1. **Clone this repository** from the [v0.1.2-preview release](https://github.com/Craftinoh/astraforge/releases). This preview is source-only; build the runtime with the helper below.
+2. **Launch** with your own application directory, using the Stability profile and 720p:
 
 ```powershell
 .\tools\Start-AstraForge3070.ps1 -Profile Stability -Console series-s `
@@ -68,8 +68,11 @@ Windows SDK. For gameplay measurement you also need PresentMon.
 ```
 
 The helper builds outside the repository, writes a manifest with the source commit, a
-dirty flag and SHA-256 hashes, and remaps source paths so a shared binary carries no
-personal directories. Pre-warm the shader cache for a new build with
+dirty flag and SHA-256 hashes, and remaps Rust source paths. The runtime still embeds
+a compile-time source directory, so check any executable before sharing it. After a
+successful build, the helper removes older managed build
+directories under the artifact root and keeps the new build. Logs, caches and pre-warm
+data are left alone. Pre-warm the shader cache for a new build with
 `tools/Prewarm-AstraForge.ps1` (see the [benchmark procedure](docs/benchmark-procedure.md)).
 
 ## How the project is organized
@@ -105,11 +108,12 @@ maintainer, see the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
 
 ## Current priorities
 
-1. Hardening: the title stops itself when no frame completes for about 30 s (its own watchdog). The cause found is synchronous `MakeResident` for new textures and targets while the card is near its budget, during loading. Fix it without losing the residency safety it gives.
-2. Reduce duplicate memory and copy-back. The RTX 3070 profile now leaves large shader writes into write-combined title memory on the card (VIctory-NVIDIA port): about a third less copy-back. Smaller title-memory windows saved about 600 MB but are off again until loading no longer blocks on residency.
-3. Then frame time: the single submit thread and the copy-back of shader results. The title marks when shader results must reach the CPU (level-2 cache write-backs in its syncs). Copying back only then is the next large change.
-4. Black skin, walls and objects: they are black already in the albedo target, while thousands of textures wait for card room. Every way tried so far to give textures more room on 8 GB (the render-target reserve, free block pieces) made the card page and stall, so card memory must shrink first.
-5. Make PresentMon capture reliable under ETW event loss.
+1. Texture admission and reuse: in one diagnostic run the texture queue reported no room in 28 of 34 samples, with 596 textures still waiting and 826 MB free in pieces inside texture blocks. Reduce stranded room and duplicate copies while preserving rendering and the card budget.
+2. Reduce host memory and copy-back. The RTX 3070 profile leaves large shader writes into write-combined title memory on the card. Smaller title-memory windows saved about 600 MB in earlier runs but are still experimental; a combined RAM variant showed alternating bright and black frames and was stopped.
+3. Hardening: synchronous `MakeResident` can stall loading near the card budget. Fix it without losing residency safety.
+4. Then frame time: the single submit thread and the copy-back of shader results. The title marks when shader results must reach the CPU (level-2 cache write-backs in its syncs). Copying back only then is a candidate, pending correctness evidence.
+5. Black skin, walls and objects: they are black already in the albedo target in earlier captures. More texture room on 8 GB made the card page and stall, so card memory must shrink first.
+6. Make PresentMon capture reliable under ETW event loss.
 
 Rejected on 2026-11-28 after measurement: write-watched private allocations (Vice-Tay #321), turning the texture-block gate off, and a system-memory texture tier. See the [progress journal](docs/progress-journal.md).
 

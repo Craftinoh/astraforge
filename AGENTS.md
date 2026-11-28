@@ -31,6 +31,7 @@ Start with `git status --short --branch` and inspect the current diff. Preserve 
 - Never remove draws, shader work, synchronization, barriers, or resource lifetime handling to make counters look faster.
 - Preserve upstream copyright notices, GPL-3.0 terms, and exact patch provenance. Record each imported change in both `docs/source-credits.md` and the subtree `LOCAL-CHANGES.md` when source is changed.
 - Keep game files, caches, saves, raw captures, generated binaries, unredacted hardware inventories, credentials, and API keys outside Git. Never send credentials or private data to a model or service.
+- Keep only the newest completed build under the default artifact root. `Build-AstraForge.ps1` removes older managed build folders after the new build and manifest succeed; it leaves build logs, shader caches, prewarm data, and unrelated folders alone.
 - Do not call external model APIs or run a game, shader prewarm, or benchmark unless the user has authorized that action. A model suggestion is not evidence.
 - Do not create a commit or push unless requested by the user. When requested, use focused commits, inspect the staged diff, and report the resulting commit and remote status.
 

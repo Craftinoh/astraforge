@@ -1,5 +1,13 @@
 # Change log
 
+## 2026-11-28 - v0.1.2-preview: BCPack BC7 and texture-memory diagnostics
+
+- Corrected BCPack BC7 dictionary-index decoding and added a focused regression. Byte-exact comparisons cover BC1, BC3, BC4, BC5, BC6H and BC7 reference streams; gameplay effect remains unisolated.
+- Added best-fit placement inside texture blocks with an opt-out, plus block-fullness and cache-sync counters. The per-quad sample mask is logged only.
+- Added memory-type logging and opt-in write-combined noting for large `XMemAllocDefault` allocations, plus a 120-second hang-watchdog setting for the RTX 3070 profile. The high-pressure free-piece texture path was turned off by default.
+- Four 120-second PresentMon application-frame captures and their visual and memory limits are recorded in [the release notes](releases/v0.1.2-preview.md). They do not establish a 30 fps gameplay result.
+- The build helper now prunes older managed artifacts after a successful build. The PowerShell parser passes; cleanup awaits a new completed build.
+
 ## 2026-11-27 - black output fixed: revert the portable-heap clamp move (`f8b6af5`)
 
 - Reverted `f8b6af5`. That change lowered the shader view-index clamp on the 1,000,000-view NVIDIA heap to slot 737,855. However, the 2^18 per-draw dynamic descriptors were placed **above** that slot, so the shader clamp redirected every dynamic-table index to the null descriptor. Draws then read null constants and resources, and the presented planes stayed black. The original layout is restored: the clamp is at the last heap slot, and the dynamic descriptors follow the fitted title slots.

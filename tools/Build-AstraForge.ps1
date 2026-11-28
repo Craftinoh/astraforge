@@ -69,9 +69,19 @@ $variant = if ($ThinLto -and $NativeCpu) { 'thinlto-native' }
     elseif ($NativeCpu) { 'native' }
     else { 'default' }
 $buildId = "$timestamp-$Mode-$variant-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
-$buildDirectory = Join-Path $ArtifactRoot $buildId
+New-Item -ItemType Directory -Force -Path $logPath, $artifactPath | Out-Null
+$artifactRootItem = Get-Item -LiteralPath $artifactPath -Force
+if ($artifactRootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+    throw 'ArtifactRoot non può essere un junction o un symlink: la pulizia delle build precedenti richiede una cartella locale verificabile.'
+}
+$artifactRootPath = (Resolve-Path -LiteralPath $artifactPath).Path
+$artifactRootWithSlash = $artifactRootPath.TrimEnd('\') + '\'
+if ($artifactRootPath.Equals($workspacePath, [System.StringComparison]::OrdinalIgnoreCase) -or $artifactRootPath.StartsWith($workspaceWithSlash, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw 'ArtifactRoot risolto deve restare fuori dal repository.'
+}
+$buildDirectory = Join-Path $artifactRootPath $buildId
 $targetDirectory = Join-Path $buildDirectory 'cargo-target'
-New-Item -ItemType Directory -Force -Path $LogRoot, $buildDirectory | Out-Null
+New-Item -ItemType Directory -Force -Path $buildDirectory | Out-Null
 $transcriptPath = Join-Path $LogRoot "$buildId.log"
 $previousThinLto = $env:CARGO_PROFILE_RELEASE_LTO
 $previousCodegenUnits = $env:CARGO_PROFILE_RELEASE_CODEGEN_UNITS
@@ -170,6 +180,43 @@ try {
     Write-Host "Release artifact: $(($artifacts | Where-Object Profile -eq 'release' | Select-Object -First 1).Path)"
     Write-Host "Diagnostic artifact: $(($artifacts | Where-Object Profile -eq 'diag+diagnostics' | Select-Object -First 1).Path)"
     Write-Host "Build manifest: $manifestPath"
+
+    # Prune only completed build directories created by this helper, and only
+    # after the new artifacts and manifest have been written successfully.
+    foreach ($previousBuild in Get-ChildItem -LiteralPath $artifactRootPath -Directory -Force) {
+        if ($previousBuild.Name -eq $buildId) { continue }
+        if ($previousBuild.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+            Write-Warning "Skip cleanup of reparse-point directory: $($previousBuild.Name)"
+            continue
+        }
+        if ($previousBuild.Name -notmatch '^\d{8}-\d{6}-(Release|Diagnostic|Both)-(default|thinlto|native|thinlto-native)-[0-9a-f]{8}$') {
+            continue
+        }
+
+        $previousPath = (Resolve-Path -LiteralPath $previousBuild.FullName).Path
+        if (-not $previousPath.StartsWith($artifactRootWithSlash, [System.StringComparison]::OrdinalIgnoreCase)) {
+            Write-Warning "Skip cleanup outside ArtifactRoot: $($previousBuild.Name)"
+            continue
+        }
+        $previousManifestPath = Join-Path $previousPath 'build-manifest.json'
+        if (-not (Test-Path -LiteralPath $previousManifestPath -PathType Leaf)) { continue }
+        try {
+            $previousManifest = Get-Content -LiteralPath $previousManifestPath -Raw | ConvertFrom-Json
+        } catch {
+            Write-Warning "Skip cleanup of build with unreadable manifest: $($previousBuild.Name)"
+            continue
+        }
+        if ($previousManifest.BuildId -ne $previousBuild.Name -or @($previousManifest.Artifacts).Count -eq 0) {
+            continue
+        }
+
+        try {
+            Remove-Item -LiteralPath $previousPath -Recurse -Force -ErrorAction Stop
+            Write-Host "Removed previous build artifacts: $($previousBuild.Name)"
+        } catch {
+            Write-Warning "Could not remove previous build artifacts '$($previousBuild.Name)': $($_.Exception.Message)"
+        }
+    }
 } finally {
     if ($null -eq $previousThinLto) { Remove-Item Env:CARGO_PROFILE_RELEASE_LTO -ErrorAction SilentlyContinue } else { $env:CARGO_PROFILE_RELEASE_LTO = $previousThinLto }
     if ($null -eq $previousCodegenUnits) { Remove-Item Env:CARGO_PROFILE_RELEASE_CODEGEN_UNITS -ErrorAction SilentlyContinue } else { $env:CARGO_PROFILE_RELEASE_CODEGEN_UNITS = $previousCodegenUnits }

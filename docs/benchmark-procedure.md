@@ -24,7 +24,9 @@ The per-machine optimized candidate is:
 .\tools\Build-AstraForge.ps1 -Mode Both -ThinLto -NativeCpu
 ```
 
-It enables Rust Thin LTO and the Ryzen 7 7700X's native instruction target, including AVX2 where supported. Thin LTO is a compile-time option and is unrelated to runtime `VICTORY_THIN`. A default build can be produced separately with `-Mode Both`; each build receives a unique target/artifact directory outside the checkout, so the Release and diagnostic executables do not overwrite one another. The helper emits a manifest with source commit, flags, and executable hashes. The clean optimized build is `20261127-005831-Both-thinlto-native-c8d108a7`, built from commit `fd423c7` with Rust 1.98.1 and MSVC 14.44.35207. Its Release and diagnostic artifact hashes are listed in the progress journal and external build manifest. The compiler effect on gameplay remains unmeasured until the same route is benchmarked.
+It enables Rust Thin LTO and the Ryzen 7 7700X's native instruction target, including AVX2 where supported. Thin LTO is a compile-time option and is unrelated to runtime `VICTORY_THIN`. A default build can be produced separately with `-Mode Both`; each build receives a unique target/artifact directory outside the checkout, so the Release and diagnostic executables do not overwrite one another. The helper emits a manifest with source commit, flags, and executable hashes. Use that manifest to identify the exact binaries in a capture; compiler effects require matched gameplay measurements.
+
+After a new build and its manifest succeed, the helper removes older build directories that it can identify by their generated names and manifests under the artifact root. It keeps the new build, build logs, shader caches, pre-warm data, and unrelated folders.
 
 Pass the Release artifact printed by the build helper to the profile launcher; changing runtime profiles does not require another build:
 
