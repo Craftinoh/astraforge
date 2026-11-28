@@ -707,3 +707,15 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - No personal compile-time paths were found in the manifest or artifacts (all paths are relative to the build root or use environment variables).
 - Limits: gameplay, frame-time sampling, and visual verification have not been run. The build establishes only compilation and linking success, not FPS, loading time, VRAM use, or visual correctness.
 - Next: the user requested focused commit and push. Staged diff shows only `docs/QWEN_CODER_HANDOFF.md` update, adding the OpenCode goal and preserving the clean published checkpoint. Ready to proceed with commit/push after user confirmation.
+
+## 2026-11-28 (evening) — all-switches release run: white/black flashes
+
+- Build `20261128-160043-Both-default-04d71e48` (source `9588760`), Release, RTX 3070 profile, 720p. Extra switches: `VICTORY_WC_BAR=1`, `VICTORY_WINDOW_KB=1024`, `VICTORY_WINDOW_TAILS=1`, `VICTORY_WC_XMEMALLOC=1`. The PC had been restarted, and 20 GB of RAM was free at launch.
+- Observed by the user: strong white/black flashes and stutter. The run was stopped early at the user's request.
+- From the log:
+  - Waits for new card memory: 7 s in total, the longest 82 ms. This morning's reference run, before the restart and with less free RAM, had 190 s and 2.2 s. The restart and free RAM are the likely main cause, not the switches.
+  - Internal fps ranged from 1.5 to 30, with drops while textures arrived. Copy-back was about 2 ms a frame.
+  - `VICTORY_WC_BAR` placed hundreds of write-combined title buffers in CPU-mapped card memory.
+- Likely cause of the flashes, not yet isolated by a run: `VICTORY_WC_BAR` refreshes write whole pages, so a page the title writes overwrites what shaders wrote in it (documented in `shadow.rs`). `VICTORY_WC_XMEMALLOC` also skips copy-back for write-combined blocks. Either can hand stale or empty data to a frame.
+- Decision: `VICTORY_WC_BAR` and `VICTORY_WC_XMEMALLOC` stay off. Neither is in any profile. Do not enable them for play.
+- Next, with the user's go-ahead: one Release run of the same build with no extra switches, to confirm the flashes are gone and to measure stutter.
