@@ -861,3 +861,31 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - A cache already skips this when the same reader binds the same table in the same list epoch. It is limited to tables with no UAV entries and no shader-selected indices, which leaves out most dispatch and indirect tables.
 - These timings include diagnostic-only work such as operation text and counters, so Release costs are lower. The ranking is unlikely to change.
 - Next: widen the table cache safely. For tables whose entries did not change and whose resources had no writes since, `readable` could be skipped while still declaring UAV write ranges. This touches copy-back correctness and needs its own tests and an A/B run with screens before it can be on by default.
+
+## 2026-11-28 (late evening) — wider descriptor-table cache: no measured gain, stays off
+
+- New switch `VICTORY_READY_ONCE_WIDE=1` (off by default).
+  - The table cache (`VICTORY_READY_ONCE`) now also covers tables with unordered-access entries, and tables whose shader picks entries by index; for the latter, the picked indices are part of the reader key (`picked_key`).
+  - It is safe at an unchanged list epoch: a range's refresh and its declared shader writes are kept once per list until the list writes title memory, and every such write, like every texture state change, moves the epoch.
+  - Unit test `picked_indices_tell_readers_apart`; `victory-gpu` lib 373 passed.
+- Build `20261128-171755-Both-default-861500a6`, Release, profile only, 720p. One run with the switch, then one without:
+
+| | wide on | wide off |
+|---|---:|---:|
+| world reached | 61 s | 49 s |
+| internal fps (mean of lines) | 20.6 | 21.5 |
+| slow frames | 238, 48.8 s | 180, 29.3 s |
+| median / 90th percentile / longest | 144 / 311 / 5,164 ms | 123 / 210 / 3,265 ms |
+
+- No measured gain, so it stays off. Two Release runs of the same configuration differed by 166 to 180 slow frames and 21.5 to 22.5 fps, so single runs cannot show small changes.
+- The 104–155 ms of table work per frame was measured in diagnostic builds, which add per-call bookkeeping. In Release, recording is evidently not the bottleneck it looked like.
+- Screens with the switch on: a fully textured close-up face, normal eyes, 29 fps in the window title. No visual regression seen.
+- Status of the goal:
+  1. Batched residency: worse, off.
+  2. Recording cost: located, but the cache widening shows no Release gain.
+  3. Sampler feedback: not used by the title.
+  4. Skin bakes: run once while the texture queue is far behind.
+  - Neither "scene-change stalls shorter" nor "typical stalls reduced" has been measured yet.
+- Next candidates:
+  - A per-frame breakdown in Release, which the slow-frame line only covers for residency.
+  - Making the bake's source pass take priority over the rest of the texture queue (step 4's fix).

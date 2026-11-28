@@ -4058,12 +4058,15 @@ impl State {
                 (table, n, h.0)
             };
             // Who reads of it, and as what, as far as [`readable`] goes by it.
-            let reader = (std::ptr::from_ref(plan) as usize, plan.direct.len(), STORES.get(), TESTED_DEPTH.get().0);
+            // (With [`ready_once_wide`], the indices the shader picks are part
+            // of who reads: other indices, other entries.)
+            let picked = if ready_once_wide() { picked_key(&selected) } else { 0 };
+            let reader = (std::ptr::from_ref(plan) as usize, plan.direct.len(), STORES.get(), TESTED_DEPTH.get().0, picked);
             if let Some(known) = self.fresh_tables.get_mut(&key) {
                 let first = known.first;
                 // This reader had it brought up to date, and nothing in the
                 // list changed since: nothing to do again.
-                let once = ready_once() && selected.is_empty() && !group.has_uav;
+                let once = ready_once() && (ready_once_wide() || selected.is_empty() && !group.has_uav);
                 if once
                     && known.epoch == list.epoch()
                     && let Some((_, depth)) = known.ready.iter().find(|(r, _)| *r == reader)
@@ -4908,7 +4911,37 @@ struct FreshTable {
     /// tested depth target) read were brought up to date, and whether that read the
     /// tested depth target.
     epoch: u64,
-    ready: Vec<((usize, usize, bool, usize), bool)>,
+    ready: Vec<(Reader, bool)>,
+}
+
+/// Who reads a table, for [`FreshTable::ready`]: the stage's plan, its
+/// count of direct entries, whether it stores, the tested depth target, and
+/// a hash of the indices it picks ([`ready_once_wide`]; 0 without it).
+type Reader = (usize, usize, bool, usize, u64);
+
+/// Whether [`ready_once`] also covers tables with unordered access entries
+/// and tables whose shader picks entries by index, the latter by the
+/// indices picked (`VICTORY_READY_ONCE_WIDE=1`; off by default until
+/// measured). Those were left out, so every dispatch and indirect execution
+/// went through every entry again: 104-155 ms a frame of recording in
+/// diagnostic runs of 2026-11-28. Going through them again with nothing
+/// changed in the list adds nothing: a range's refresh and its declared
+/// shader writes are kept once per list until the list writes title
+/// memory, and each such write, like every texture state change, moves the
+/// list's epoch ([`HostList::changed_something`]), which the cache checks.
+fn ready_once_wide() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VICTORY_READY_ONCE_WIDE").is_some_and(|v| v == "1"))
+}
+
+/// The indices a shader picks (sorted, deduplicated), as part of a
+/// [`Reader`]: other indices give another key.
+fn picked_key(selected: &[u32]) -> u64 {
+    let mut h = RecordHash::default();
+    for &k in selected {
+        h.add([k, 0, 0]);
+    }
+    h.0 ^ selected.len() as u64
 }
 
 /// Whether a table a list reads again, with nothing changed in the list
@@ -5231,6 +5264,17 @@ fn texture_snapshot_complete(snapshot_len: usize, due_count: u64) -> bool {
 
 #[cfg(test)]
 mod tests {
+    /// Picked indices are part of who reads a table: other indices, or
+    /// none, never find another reader's entry ([`super::picked_key`]).
+    #[test]
+    fn picked_indices_tell_readers_apart() {
+        let key = super::picked_key;
+        assert_eq!(key(&[3, 9]), key(&[3, 9]));
+        assert_ne!(key(&[3, 9]), key(&[3, 10]));
+        assert_ne!(key(&[3]), key(&[3, 9]));
+        assert_ne!(key(&[]), key(&[0]));
+    }
+
     use super::{staging_budget_per_frame, texture_snapshot_complete};
 
     #[test]
