@@ -757,3 +757,13 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - A texture that finds no room still makes its own block at once, as before.
 - Tests: `victory-gpu` lib 371 passed (new: `blocks_ahead_are_not_made_by_the_taking_thread`); diagnostics feature check passed.
 - Not measured in play yet. It should shorten the stalls that coincide with new texture blocks. It does not explain the whole ~200 ms gap in the slow frames, which needs a per-frame breakdown in the diagnostic build.
+
+## 2026-11-28 (evening) — step 1: textures that can wait no longer wait for residency
+
+- A texture that fit no block made a 64 MiB block on its own thread, under the pool lock, and waited for `MakeResident` and the mapping. This happened inside the per-frame pass over textures picked by index.
+- With `VICTORY_AHEAD_THREAD` on (default), a texture that can wait now asks our block thread for a block and returns at once. Its slot stays due, and a later pass places it in the new block.
+  - This is the existing "waits a pass" path used when the card has no room, so descriptor publication order and resource lifetime are unchanged.
+  - Textures that cannot wait (read through a table now, or baked) and textures not in blocks still make their memory and wait, as before.
+  - The ahead thread still adds a block only once it is resident and mapped, and the ripeness rule is kept.
+- Tests: `victory-gpu` lib 371 passed (`blocks_ahead_are_not_made_by_the_taking_thread` extended); diagnostics check passed.
+- Not measured in play. Expected: fewer frame stalls when blocks are made. A texture may show one pass later than before.
