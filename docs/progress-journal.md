@@ -914,3 +914,24 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - The memory line counts the churn: 15,110 shared buffers made against 3,873 alive, 11,405 upload buffers and 11,047 card buffers made over a run.
 - This explains why batching residency did not help: it moved the same per-buffer work into creation.
 - Next: recycle released buffers by size class (shared, unordered-access and upload) instead of making new ones, so a reused buffer needs no residency or mapping wait. The pool for staging buffers (`pool.rs`) is the model. Measure with the same slow-frame line and an A/B pair with screens.
+
+## 2026-11-28 (night) — recycling list upload buffers: works, no gain, stays off
+
+- New switch `VICTORY_RECYCLE_UPLOADS=1` (off by default).
+  - A host list's upload buffers (shared buffers with `VICTORY_CARD_STEPS=2`) are kept at the list's reset and reused by power-of-two size class from 64 KiB, at most 256 MB kept.
+  - Unit test `upload_classes_are_powers_of_two_from_64_kib`; `victory-gpu` lib 374 passed.
+- Build `20261128-173647-Release-default-81053b16`, Release, profile only, 720p.
+  - The run with the switch was stopped by the session's memory guard at about world frame 3,140, so there is no run without it from the same pair.
+  - Compared with the earlier Release baseline (`REL-title`) over the same frames, up to 3,140:
+
+| | recycling on (partial) | baseline |
+|---|---:|---:|
+| upload buffers reused / made | 6,201 / 20 | – |
+| slow frames | 187, 43.1 s | 153, 34.7 s |
+| residency waits in them | 14.2 s | 16.2 s |
+| title inside `Present` | 12.7 s | 15.2 s |
+| longest frame | 4,489 ms | 5,179 ms |
+
+- Reuse works, but most residency waits come from the other buffers: unordered-access buffers and host copies of title memory. Slow frames were not fewer. It stays off.
+- Status: the done-when criteria (shorter scene-change stalls, fewer typical stalls) are still not met by any measured change.
+  - Next target: the unordered-access buffers and title-memory host copies made on the submission thread. They must be made off that thread or recycled with their owners' lifetimes.

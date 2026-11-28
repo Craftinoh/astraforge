@@ -496,12 +496,14 @@ pub(crate) fn note_frame(frame: u64) {
             if n <= 300 || n.is_multiple_of(50) {
                 tracing::info!(
                     "slow frame {frame}: {ms:.0} ms; waits for new memory to be resident {} ({:.1} ms), to be mapped {} ({:.1} ms) \
-                     (on all threads, VICTORY_SLOW_FRAMES=0: not said); the title's threads inside our submissions {execute_ms:.1} ms,                      inside our presents {present_ms:.1} ms; slow frames so far {n}; mapping waits shared since the start {}",
+                     (on all threads, VICTORY_SLOW_FRAMES=0: not said); the title's threads inside our submissions {execute_ms:.1} ms,                      inside our presents {present_ms:.1} ms; slow frames so far {n}; mapping waits shared since the start {};                      list upload buffers taken again {} and made {} since the start (VICTORY_RECYCLE_UPLOADS)",
                     counters.0 - r_n,
                     (counters.1 - r_us) as f64 / 1e3,
                     counters.2 - m_n,
                     (counters.3 - m_us) as f64 / 1e3,
-                    MAPPED_SHARED.load(Ordering::Relaxed)
+                    MAPPED_SHARED.load(Ordering::Relaxed),
+                    RECYCLED_TAKEN[0].load(Ordering::Relaxed),
+                    RECYCLED_TAKEN[1].load(Ordering::Relaxed)
                 );
             }
         }
@@ -1220,6 +1222,20 @@ pub(crate) fn warp_adapter() -> windows::core::Result<IDXGIAdapter> {
 
 #[cfg(test)]
 mod tests {
+    /// Uploads are kept by size class: a power of two, 64 KiB at least
+    /// ([`super::upload_class`]); a class holds the upload.
+    #[test]
+    fn upload_classes_are_powers_of_two_from_64_kib() {
+        let class = super::upload_class;
+        assert_eq!(class(1), 64 << 10);
+        assert_eq!(class(64 << 10), 64 << 10);
+        assert_eq!(class((64 << 10) + 1), 128 << 10);
+        assert_eq!(class(3 << 20), 4 << 20);
+        for size in [1u64, 4095, 65537, 1 << 20, (5 << 20) + 3] {
+            assert!(class(size) >= size && class(size).is_power_of_two());
+        }
+    }
+
     /// A mapping wait shares a round trip only when batching is on and one
     /// was sent after the wait began ([`shares_round_trip`]).
     #[test]
@@ -2499,6 +2515,10 @@ struct Deferred {
     /// Destination, source, bytes.
     copies: Vec<Step>,
     uploads: Vec<ID3D12Resource>,
+    /// Upload buffers that go back to [`RECYCLED`] when the list is reset
+    /// ([`recycle_uploads`]): buffer, its mapping, its size class, whether
+    /// it is a shared buffer.
+    recyclable: Vec<Recycled>,
     /// Standalone upload footprints kept through this list's fence (movie planes).
     plane_uploads: Vec<(Chunk, u64)>,
     /// The bytes of `uploads` (counted in [`ALIVE`] while they are held).
@@ -2566,8 +2586,82 @@ impl Deferred {
 impl Drop for Deferred {
     fn drop(&mut self) {
         give_chunks(std::mem::take(&mut self.plane_uploads));
+        give_recycled(std::mem::take(&mut self.recyclable));
         ALIVE[6].fetch_sub(self.uploads.len() as u64, Ordering::Relaxed);
         ALIVE[7].fetch_sub(self.upload_bytes, Ordering::Relaxed);
+    }
+}
+
+/// Whether the upload buffers of host lists are kept when their list is
+/// reset and given to the next list that asks for one of the same size
+/// class (`VICTORY_RECYCLE_UPLOADS=1`; off by default until measured).
+/// Each was made new and dropped at its list's reset: a run made 15,110
+/// shared buffers (the lists' uploads with `VICTORY_CARD_STEPS=2`) for
+/// 3,873 alive, each with its own residency and mapping wait, on our
+/// submission thread, which the title waits for at `Present` (Release run
+/// of 2026-11-28: 17.7 s inside `Present` and 17.6 s of residency waits in
+/// 233 slow frames). A buffer kept is resident and mapped already. It is
+/// given back only at its list's reset, when the list's commands have run,
+/// as dropping it was; at most [`RECYCLED_MOST`] bytes are kept.
+fn recycle_uploads() -> bool {
+    static ON: OnceLock<bool> = OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VICTORY_RECYCLE_UPLOADS").is_some_and(|v| v == "1"))
+}
+
+/// An upload buffer that can be used again ([`recycle_uploads`]).
+struct Recycled {
+    buffer: ID3D12Resource,
+    data: usize,
+    class: u64,
+    shared: bool,
+}
+
+// SAFETY: a free-threaded D3D12 resource and the address of its mapping.
+unsafe impl Send for Recycled {}
+
+/// The upload buffers kept for use again, and their bytes.
+static RECYCLED: Mutex<(Vec<Recycled>, u64)> = Mutex::new((Vec::new(), 0));
+/// The most bytes [`RECYCLED`] keeps.
+const RECYCLED_MOST: u64 = 256 << 20;
+/// Upload buffers taken again and made new since the start ([`recycle_uploads`]).
+pub(crate) static RECYCLED_TAKEN: [std::sync::atomic::AtomicU64; 2] = [const { std::sync::atomic::AtomicU64::new(0) }; 2];
+
+/// The size class of an upload of `size` bytes: a power of two, 64 KiB at
+/// least.
+fn upload_class(size: u64) -> u64 {
+    size.max(64 << 10).next_power_of_two()
+}
+
+/// A kept buffer of `class` bytes and kind, if there is one.
+fn take_recycled(class: u64, shared: bool) -> Option<Recycled> {
+    let mut kept = RECYCLED.lock().unwrap_or_else(|e| e.into_inner());
+    let at = kept.0.iter().position(|r| r.class == class && r.shared == shared);
+    match at {
+        Some(at) => {
+            let r = kept.0.swap_remove(at);
+            kept.1 -= r.class;
+            RECYCLED_TAKEN[0].fetch_add(1, Ordering::Relaxed);
+            Some(r)
+        }
+        None => {
+            RECYCLED_TAKEN[1].fetch_add(1, Ordering::Relaxed);
+            None
+        }
+    }
+}
+
+/// Keeps a reset list's upload buffers for use again, up to
+/// [`RECYCLED_MOST`] bytes; the rest are dropped.
+fn give_recycled(buffers: Vec<Recycled>) {
+    if buffers.is_empty() {
+        return;
+    }
+    let mut kept = RECYCLED.lock().unwrap_or_else(|e| e.into_inner());
+    for r in buffers {
+        if kept.1 + r.class <= RECYCLED_MOST {
+            kept.1 += r.class;
+            kept.0.push(r);
+        }
     }
 }
 
@@ -7280,7 +7374,23 @@ impl HostList {
     /// shortcut: one buffer per copy; pool them once uploads are frequent.
     pub(crate) fn upload(&self, host: &Host, size: u64) -> Option<(ID3D12Resource, *mut u8)> {
         // With [`card_steps`] the card may be the one that fills it.
-        let (buffer, data) = if card_steps::stage() > 1 { host.shared_buffer(size)? } else { host.upload_buffer(size)? };
+        let shared = card_steps::stage() > 1;
+        if recycle_uploads() {
+            let class = upload_class(size);
+            let (buffer, data) = match take_recycled(class, shared) {
+                Some(r) => (r.buffer, r.data as *mut u8),
+                None => {
+                    let (buffer, data) = if shared { host.shared_buffer(class)? } else { host.upload_buffer(class)? };
+                    name(&buffer, || format!("list upload {class:#x}"));
+                    (buffer, data)
+                }
+            };
+            let mut deferred = self.deferred();
+            deferred.hold_upload(buffer.clone(), class);
+            deferred.recyclable.push(Recycled { buffer: buffer.clone(), data: data as usize, class, shared });
+            return Some((buffer, data));
+        }
+        let (buffer, data) = if shared { host.shared_buffer(size)? } else { host.upload_buffer(size)? };
         name(&buffer, || format!("list upload {size:#x}"));
         self.deferred().hold_upload(buffer.clone(), size);
         Some((buffer, data))

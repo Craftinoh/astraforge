@@ -71,4 +71,6 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-gpu/src/{draw.rs,list.rs,copystat.rs}`: diagnostics time list calls by call site and three steps of `State::bind` (log only). `VICTORY_READY_ONCE_WIDE=1` (off by default; no gain measured) widens the descriptor-table cache to tables with unordered-access entries and to tables read by picked index, keyed by the picked indices; unit test `picked_indices_tell_readers_apart`.
 
+- `crates/victory-gpu/src/{host.rs,queue.rs}`: slow frames also log the title threads' time inside our submissions and presents. `VICTORY_RECYCLE_UPLOADS=1` (off by default; no gain measured) keeps host-list upload buffers at list reset and reuses them by power-of-two size class (at most 256 MB kept); unit test `upload_classes_are_powers_of_two_from_64_kib`.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.
