@@ -744,3 +744,16 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   3. Priority for textures drawn this frame.
   4. Only then more texture room.
   5. A disk cache of converted textures.
+
+## 2026-11-28 (evening) — step 1: blocks ahead off the texture path
+
+- In the profile-only run, the slow frames (4–7 fps, 130–250 ms) had only 24–30 ms of preparation, no GPU time and 5–7 ms of copy-back. About 200 ms of each is not in those counters. The Release log does not break it down further.
+- One blocking wait on the texture path was found by reading the code.
+  - After a texture took its piece, the same thread made the next block ahead while holding the texture pool's lock: a 64 MiB heap, `MakeResident`, then a wait until the card had mapped it.
+  - Those waits run up to 128 ms in play (2.2 s before the restart). Every other thread after a texture waited behind the lock, for a block nobody needed yet.
+- Now a thread of ours makes the blocks ahead without the pool's lock (`VICTORY_AHEAD_THREAD`, on; `=0` restores).
+  - It stops when enough empty blocks exist or the card has no room ([`may_grow`]).
+  - A block is added once it is resident and mapped, stamped with the submissions begun by then, so the existing rule that pieces come from blocks older than running lists still holds.
+  - A texture that finds no room still makes its own block at once, as before.
+- Tests: `victory-gpu` lib 371 passed (new: `blocks_ahead_are_not_made_by_the_taking_thread`); diagnostics feature check passed.
+- Not measured in play yet. It should shorten the stalls that coincide with new texture blocks. It does not explain the whole ~200 ms gap in the slow frames, which needs a per-frame breakdown in the diagnostic build.
