@@ -693,3 +693,17 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Limits: no pinned Windows build, gameplay run, frame-time sample or visual review has been performed for this change. It does not establish faster texture loading, lower RAM/VRAM use, higher FPS, or removal of black textures.
 - Next: run the pinned Windows build, then use a controlled diagnostic session to compare stale/aliased texture refresh counts and visual captures before changing any preset.
 - Added `docs/QWEN_CODER_HANDOFF.md` as the current continuation brief for Qwen Coder Next 30B or another coding agent. README, the operational plan, AI contributor guide, and historical Claude handoff now point to the current checkpoint. The handoff preserves the exact test/build boundary, artifact-retention rule, privacy rules, and the next source questions without treating model output as evidence.
+
+## 2026-11-28 — pinned Windows build completed
+
+- Build command: `cmd /c "cd /d C:\Users\Antonio\Desktop\emulator && ""C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"" -arch=x64 -host_arch=x64 >nul && powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Build-AstraForge.ps1 -Mode Both"`
+- Build ID: `20261128-160043-Both-default-04d71e48`
+- Source commit: `9588760`, working tree clean (no uncommitted changes).
+- Release artifact: `victory.exe` (10107904 bytes), SHA256: `E731DBB81537A600FE2CA9EF7370FD7D399A4D49D79AA7B20DD5653D1B1C2FC5`
+- Diagnostic artifact: `victory.exe` (14673920 bytes), SHA256: `D127B221E60ACFBB48EF10DB6505183125227D7EF0D423D6D5E480DCE3E11BE0`
+- Manifest fields: `SourceRoot`, `SourceCommit`, `SourceDirty=false`, `RustVersion`, `CargoVersion`, `Toolchain`, `Mode=Both`, `SourcePathsRemapped=true`.
+- No errors in build logs; `victory-gpu` generated 5 warnings in diagnostic profile (unused `batched` variable, unused `Slot` field, dead `Title` variant, two `drop` on `Copy` types).
+- Build helper removed one older managed artifact (`20261128-135631-Both-default-2926a4f5`), leaving only the new build under the managed root.
+- No personal compile-time paths were found in the manifest or artifacts (all paths are relative to the build root or use environment variables).
+- Limits: gameplay, frame-time sampling, and visual verification have not been run. The build establishes only compilation and linking success, not FPS, loading time, VRAM use, or visual correctness.
+- Next: the user requested focused commit and push. Staged diff shows only `docs/QWEN_CODER_HANDOFF.md` update, adding the OpenCode goal and preserving the clean published checkpoint. Ready to proceed with commit/push after user confirmation.
