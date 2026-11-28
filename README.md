@@ -105,8 +105,8 @@ maintainer, see the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
 
 ## Current priorities
 
-1. Hardening: the title stops itself when its update loop makes no progress for about 30 s (its own watchdog). Find the stall with `VICTORY_CRASH_STACKS=1` and remove it.
-2. Reduce duplicate memory further. The RTX 3070 profile now uses 1 MiB windows with tails: about 550–650 MB fewer host copies and about 20 ms less copy-back per frame, measured over three run pairs. Both VRAM and RAM are still close to full on 8 GB / 32 GB machines.
+1. Hardening: the title stops itself when no frame completes for about 30 s (its own watchdog). The cause found is synchronous `MakeResident` for new textures and targets while the card is near its budget, during loading. Fix it without losing the residency safety it gives.
+2. Reduce duplicate memory and copy-back. The RTX 3070 profile now leaves large shader writes into write-combined title memory on the card (VIctory-NVIDIA port): about a third less copy-back. Smaller title-memory windows saved about 600 MB but are off again until loading no longer blocks on residency.
 3. Then frame time: the single submit thread and the copy-back of shader results.
 4. Find the remaining cause of intermittent black skin.
 5. Make PresentMon capture reliable under ETW event loss.

@@ -511,3 +511,16 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Candidate fixes, to be measured:
   1. `EnqueueMakeResident` with a fence that the queue waits on, so the CPU does not block.
   2. Keep new committed textures and targets within the budget during loading, so that residency does not page.
+
+## 2026-11-28 (night) — write-combined copy-back port; window grid taken back out of the profile
+
+- Ported VIctory-NVIDIA `50c15a14` and `2f81d0c8` (`VICTORY_WC_NO_BACK`, `VICTORY_WC_NO_BACK_MIN_KB`).
+  - With no minimum, the user saw wrong faces in play: small results the title reads back stayed on the card. This matches the donor's own note about stale exposure.
+  - With a 64 KiB minimum, three interleaved run pairs gave copy-back of 21.5, 20.2 and 21.2 MB a frame, against 33.5 MB in the one comparison run that reached the world. Copy-back time, frame time and fps stayed within run-to-run noise. The user saw no new defect.
+  - Adopted in the RTX 3070 profile at 64 KiB.
+- Window grid (1 MiB with tails) taken back out of the RTX 3070 profile.
+  - Runs with it stopped during loading from the title's watchdog in 4 of 12 cases, against 0 of 3 on the 4 MiB grid that night.
+  - Finer windows mean many more window buffers made while loading. More new memory means more synchronous `MakeResident` waits, which is the stall found above.
+  - The evidence is thin, and the memory saving stays documented. To be re-enabled once residency no longer blocks.
+- Intermittent black face reproduced in two runs at the same scene (about world frame 1300). In another run the same face was correct, so it is timing-dependent and not caused by the write-combined port.
+- No release this night: the loading stalls stop too many runs to publish a binary for everyone.
