@@ -498,3 +498,16 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Added `VICTORY_CRASH_STACKS=1` (diagnostics builds): a reported crash prints every thread's stack, which shows where the update loop is stuck at the moment the watchdog fires.
 - Tests: `victory-loader` lib 40 passed, 43 with diagnostics. Release and diagnostic builds succeed. The benchmark harness synthetic suite passes.
 - Next: run with `VICTORY_CRASH_STACKS=1` until the watchdog fires again, then fix the 30-second stall it shows.
+
+## 2026-11-28 (night) — the stall behind the watchdog stop
+
+- Caught with `VICTORY_CRASH_STACKS=1` (run HANG-2, during loading). The stop is the title watchdog's progress check (no update-loop pass for 30 checks of about a second), not a crash in our code.
+- The title's update-loop thread was in the frame-pacing wait under its update function: the function enqueues a frame, and while two frames are in flight it spins (`monitorx`/`mwaitx` with `SleepEx`) until a frame completes. The title's main thread was in its usual long wait and is not involved.
+- At that moment three of our list-recording threads (`victory-list-2`, `-5`, `-7`) were inside `ID3D12Device::MakeResident`, called by `host::resident` for new committed textures and render targets (`resource::host_texture_as`, from `make_twinned` and `set_targets`). The other recording threads waited on them.
+  - The run's log counted 34.4 s spent in `resident` over 7,000 calls, the longest 683 ms.
+  - With the card near its budget, a synchronous `MakeResident` waits for the system to page other memory out. No frame completed, the title stayed two frames ahead, and its watchdog stopped it.
+- `VICTORY_WAIT_RESIDENT` (on by default) creates such memory non-resident and waits for it, because reading memory that is not yet mapped lost the device in earlier upstream runs. Turning it off is not a fix.
+- RAZDA4A-XEN (`dev`) only splits off plain buffers from this wait (`resident_buffer`). Textures and targets still wait.
+- Candidate fixes, to be measured:
+  1. `EnqueueMakeResident` with a fence that the queue waits on, so the CPU does not block.
+  2. Keep new committed textures and targets within the budget during loading, so that residency does not page.
