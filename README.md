@@ -23,7 +23,7 @@ Tested on one PC: RTX 3070 8 GB, Ryzen 7 7700X, 32 GiB RAM, Windows 11, Series S
 | Area | State |
 |---|---|
 | Start-up screens, menus, story loading | ✅ Visible |
-| Entering the world and playing the first story scene | ✅ No crash in 10 automated runs, each 2–3 minutes in the world and 6 of them on this release's source. A warmed shader cache and pipeline library were used. ⚠️ Longer sessions can stop after about 5 minutes: the title's own hang watchdog ends it when one of its threads stays in a watched wait for 300 s (under investigation) |
+| Entering the world and playing the first story scene | ✅ No crash in 10 automated runs, each 2–3 minutes in the world and 6 of them on this release's source. A warmed shader cache and pipeline library were used. ⚠️ Longer sessions can stop after about 5 minutes: the title's own watchdog ends it when its update loop makes no progress for about 30 s, seen during long loading stalls (under investigation) |
 | Character skin | ⚠️ Intermittent: correct in some runs, black in others with the same settings. Skin-bake sources are now refreshed before each bake (fxceless port), which fixes one cause but not all |
 | Textures and colours | ⚠️ Flickering; some materials and colours missing |
 | Performance | ⚠️ Low and CPU-bound. The runtime's internal reports show 10–12 fps on average. One PresentMon capture measured 9.8 fps average, 11.6 median and 2.4 for the 1% low. Each frame spends about 55–70 ms of CPU preparation, 30–36 ms copying results back and 7–13 ms on the GPU |
@@ -105,8 +105,8 @@ maintainer, see the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
 
 ## Current priorities
 
-1. Hardening: find the title thread that stays in a watched wait for 300 s, which makes the title stop itself, and the wait our layer never completes.
-2. Reduce duplicate memory: copies of title memory, starting with the 4 MiB "windows" outside buffers (2.7 GB alive, about 1.4 GB of it ever asked for). Both VRAM and RAM are full on 8 GB / 32 GB machines.
+1. Hardening: the title stops itself when its update loop makes no progress for about 30 s (its own watchdog). Find the stall with `VICTORY_CRASH_STACKS=1` and remove it.
+2. Reduce duplicate memory further. The RTX 3070 profile now uses 1 MiB windows with tails: about 550–650 MB fewer host copies and about 20 ms less copy-back per frame, measured over three run pairs. Both VRAM and RAM are still close to full on 8 GB / 32 GB machines.
 3. Then frame time: the single submit thread and the copy-back of shader results.
 4. Find the remaining cause of intermittent black skin.
 5. Make PresentMon capture reliable under ETW event loss.

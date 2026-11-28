@@ -481,3 +481,20 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Next:
   1. Hardening: identify the title thread stuck in a watched scope with `VICTORY_STACKS` snapshots near 280–290 s, then find the wait our layer never completes.
   2. Memory: measure the window grid and tails switches by window bytes, free RAM, VRAM and internal fps.
+
+## 2026-11-28 (night, later) — window grid in the RTX 3070 profile, and what the title's watchdog really checks
+
+- Window copies outside buffers on a 1 MiB grid with tails (`VICTORY_WINDOW_KB=1024`, `VICTORY_WINDOW_TAILS=1`), three interleaved pairs of automated 720p runs on one diagnostic binary:
+  - Host copies of title memory alive: 2,777 and 2,725 MB, against 3,306, 3,258 and 3,390 MB on the 4 MiB grid.
+  - Window copies: 1,967 MB against 2,492 MB (first pair).
+  - Frame preparation: 89 and 111 ms against 116, 139 and 240 ms. Copy-back: 42 and 47 ms against 62, 68 and 71 ms.
+  - Internal fps unchanged (6.2 and 5.8 against 6.2, 6.0 and 4.5).
+  - One run of the three on the finer grid stopped during loading from the title's watchdog (below). The same stop happened four times on the 4 MiB grid on 2026-11-27, so it is not attributed to the grid.
+  - Adopted in `profiles/rtx3070-profiles.json` (`baselineEnvironment`). The RTX 3060 candidate profile is unchanged.
+- The watchdog's table was saved at that stop (`VICTORY_CRASH_SAVE`). No thread had an open watched scope: every count was 0.
+  - The stop came from the watchdog's second check. When no scope is open, it compares a global progress timestamp, written by the title's update loops at the start of each pass, with the value it saw last.
+  - After 30 one-second checks without a change, it stops the title.
+  - So the title's update loop did not run for about 30 s. In the log, that window was in loading, with no frames and with thousands of waits for new card memory to become resident.
+- Added `VICTORY_CRASH_STACKS=1` (diagnostics builds): a reported crash prints every thread's stack, which shows where the update loop is stuck at the moment the watchdog fires.
+- Tests: `victory-loader` lib 40 passed, 43 with diagnostics. Release and diagnostic builds succeed. The benchmark harness synthetic suite passes.
+- Next: run with `VICTORY_CRASH_STACKS=1` until the watchdog fires again, then fix the 30-second stall it shows.
