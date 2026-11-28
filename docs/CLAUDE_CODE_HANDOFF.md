@@ -1,5 +1,9 @@
 # Claude Code continuation handoff
 
+> Historical checkpoint: for the current 2026-11-28 resume state, use
+> [`QWEN_CODER_HANDOFF.md`](QWEN_CODER_HANDOFF.md). Do not follow the stale worktree
+> description below without reconciling it against Git and the latest progress journal.
+
 Updated 2026-11-27. Read this after `AGENTS.md`, `README.md`,
 `docs/OPERATIONAL_PLAN.md`, and the latest `docs/progress-journal.md` entry. Then read
 `docs/fork-comparison.md`, `docs/source-credits.md`, and

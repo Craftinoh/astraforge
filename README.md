@@ -117,8 +117,9 @@ maintainer, see the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
 
 Rejected on 2026-11-28 after measurement: write-watched private allocations (Vice-Tay #321), turning the texture-block gate off, and a system-memory texture tier. See the [progress journal](docs/progress-journal.md).
 
-The [operational plan](docs/OPERATIONAL_PLAN.md) has the full queue. The
-[Claude Code handoff](docs/CLAUDE_CODE_HANDOFF.md) is written for continuing agents.
+The [operational plan](docs/OPERATIONAL_PLAN.md) has the full queue. The current
+[Qwen Coder handoff](docs/QWEN_CODER_HANDOFF.md) is written for continuing agents;
+the older [Claude Code handoff](docs/CLAUDE_CODE_HANDOFF.md) is retained as history.
 
 ## Privacy and benchmark policy
 

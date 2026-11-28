@@ -16,6 +16,17 @@ private application, publisher, executable, save data, or personal paths. Instal
 files are read-only. Keep caches, captures, runtime data, and raw hardware reports
 outside the repository and installation.
 
+## Current resume note — 2026-11-28
+
+The detailed 2026-11-27 checkpoint below is retained as history. The current resume
+state is `docs/QWEN_CODER_HANDOFF.md` plus the latest progress-journal entry. The active
+focused change adds per-view-heap texture notifications and exact mapped-alias write
+projection, with focused tests and a cross-crate check passing. Its pinned Windows
+build, gameplay validation, and visual validation remain pending. Complete that build,
+documentation review, focused commit, and push before starting the next memory-policy
+experiment. No performance or black-texture improvement is established by this source
+change yet.
+
 ## Current checkpoint — 2026-11-27
 
 - **Source base:** COOL_FOX Pareto-residency descendant through the NVIDIA 8 GB source

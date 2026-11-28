@@ -19,6 +19,9 @@ This guide gives a coding model the same repository context and evidence rules u
 | `tools/Invoke-AstraForgeModelReview.ps1` | Bounded read-only review through a local OpenAI-compatible provider configuration |
 
 The repository root is documentation and tooling; run Cargo commands inside `third_party/nvidia-3070-VI/`.
+For the current maintainer checkpoint, coding agents should also read
+[`QWEN_CODER_HANDOFF.md`](QWEN_CODER_HANDOFF.md). The model name does not change the
+evidence, privacy, provenance, or validation rules in this guide.
 
 ## Model workflow
 
