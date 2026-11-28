@@ -566,3 +566,25 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - `VICTORY_INPLACE=1` (in-place windows, existing upstream switch), one run: 75 windows (364 MB) were read in place, and private memory was 15.4 GB against 16.7 GB. The run stopped during loading with all seven recording threads waiting on a lock inside the NVIDIA user-mode driver while binding. Held back until that is understood.
 - Tooling note: force-stopped runs leave `AstraForge-*` ETW sessions running, and the next launch then fails before the runtime starts. Stop them with `logman stop <name> -ets`.
 - Still open: the title watchdog stops part of the runs during loading. Black textures are much reduced in the counters but not gone, and the user has not yet reviewed them in play.
+
+## 2026-11-28 (early morning) — free pieces turned off, watchdog patience, memory types
+
+- `VICTORY_TEXTURE_PIECES` isolation, same diagnostic binary and watchdog patience, one run each:
+  - Off: the world reached at 79 s; 3.8 fps; preparation 220 ms; residency waits 17.7 s in all, longest 0.4 s.
+  - On: the world reached at 128 s; 0.03 fps; preparation 10.8 s per frame; residency waits 85 s, longest 4 s.
+  - The earlier good run with it on was luck. Filled pieces keep blocks resident that the system could page otherwise, and the card pages instead. Now off by default; it was on in `0b003a6`.
+- Title watchdog patience (`VICTORY_WATCHDOG_SECONDS`).
+  - The function is found by signature, and 8 of 8 places are patched, as the run log says.
+  - Before it, the four memory-type runs stopped during loading, both with the switch on and with it off.
+  - With 120 s, both isolation runs reached the world, one of them at 0.03 fps. Set to 120 in the RTX 3070 profile.
+  - A real hang is still stopped, after about two minutes.
+- `XMemAllocDefault` memory types.
+  - The allocation attributes carry a memory type, and several types are CPU write-combined.
+  - The title asks for blocks of 1 MiB or more of the graphics write-combined type: 82 MB, 16 MB, 8 MB.
+  - Noting them as write-combined (`VICTORY_WC_XMEMALLOC=1`) was followed by stops during loading in both runs with it on. With patience not yet in place, that cannot be told apart from the general stops. It stays off until measured with patience.
+- VRAM in a diagnostic run, about 6,065 MB of a 6,906 MB budget:
+  - texture blocks about 2,880 MB, of which 1,100 MB were free pieces or spare empty blocks;
+  - render targets 1,349 MB, including two 3840x2160 targets at 720p output;
+  - card copies of title buffers 1,007 MB;
+  - about 830 MB other.
+- Next: spare empty texture blocks on 8 GB cards; why 4K targets are made at 720p; a lower cap for card copies of title buffers. Each to be measured with watchdog patience on.

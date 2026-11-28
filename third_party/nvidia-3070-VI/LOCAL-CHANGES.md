@@ -42,4 +42,10 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-gpu/src/{pool.rs,draw.rs,resource.rs}`: local change. While the texture queue's room test says no, the pass over textures picked by index goes on for textures that fit a free piece of a texture block the card already holds (`VICTORY_TEXTURE_PIECES`, on; `=0` restores). In that mode no block is made, no level tiles are given and no texture gets memory of its own; such textures wait as before.
 
+- `crates/victory-gpu/src/pool.rs`: `VICTORY_TEXTURE_PIECES` is now off by default (`=1` turns it on). The isolation runs below showed it caused residency paging.
+
+- `crates/victory-game/src/watchdog.rs`, `crates/victory-loader/src/{console_insn.rs,lib.rs}`, `apps/victory/src/run.rs`: local hardening. With `VICTORY_WATCHDOG_SECONDS=<n>` (more than 30), the title's hang watchdog waits about n one-second checks without progress before it stops the title, instead of 30. Its function is located by a 14-byte signature that must occur exactly once, and exactly eight loads of the count are changed, each only if it still holds 30. Only readable committed ranges of the image are scanned. The per-thread check of watched waits (300 s) is unchanged.
+
+- `crates/victory-hle/src/modules/xmem.rs`, `crates/victory-gpu/src/{shadow.rs,lib.rs}`: `XMemAllocDefault` reads the allocation's memory type. With `VICTORY_WC_XMEMALLOC=1` (off), blocks of 1 MiB or more of a write-combined type are noted as write-combined for `VICTORY_WC_NO_BACK`, and forgotten when freed. Blocks of 1 MiB or more are logged by memory type.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.

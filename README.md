@@ -23,7 +23,7 @@ Tested on one PC: RTX 3070 8 GB, Ryzen 7 7700X, 32 GiB RAM, Windows 11, Series S
 | Area | State |
 |---|---|
 | Start-up screens, menus, story loading | ✅ Visible |
-| Entering the world and playing the first story scene | ✅ No crash in 10 automated runs, each 2–3 minutes in the world and 6 of them on this release's source. A warmed shader cache and pipeline library were used. ⚠️ Longer sessions can stop after about 5 minutes: the title's own watchdog ends it when its update loop makes no progress for about 30 s, seen during long loading stalls (under investigation) |
+| Entering the world and playing the first story scene | ✅ No crash in 10 automated runs, each 2–3 minutes in the world and 6 of them on this release's source. A warmed shader cache and pipeline library were used. ⚠️ Longer sessions can stop after about 5 minutes: the title's own watchdog ended it when its update loop made no progress for about 30 s during slow loading. The RTX 3070 profile now gives it 120 s (`VICTORY_WATCHDOG_SECONDS`); a real hang is still stopped |
 | Character skin | ⚠️ Intermittent: correct in some runs, black in others with the same settings. Skin-bake sources are now refreshed before each bake (fxceless port), which fixes one cause but not all |
 | Textures and colours | ⚠️ Flickering; some materials and colours missing |
 | Performance | ⚠️ Low and CPU-bound. The runtime's internal reports show 10–12 fps on average. One PresentMon capture measured 9.8 fps average, 11.6 median and 2.4 for the 1% low. Each frame spends about 55–70 ms of CPU preparation, 30–36 ms copying results back and 7–13 ms on the GPU |
@@ -108,7 +108,7 @@ maintainer, see the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
 1. Hardening: the title stops itself when no frame completes for about 30 s (its own watchdog). The cause found is synchronous `MakeResident` for new textures and targets while the card is near its budget, during loading. Fix it without losing the residency safety it gives.
 2. Reduce duplicate memory and copy-back. The RTX 3070 profile now leaves large shader writes into write-combined title memory on the card (VIctory-NVIDIA port): about a third less copy-back. Smaller title-memory windows saved about 600 MB but are off again until loading no longer blocks on residency.
 3. Then frame time: the single submit thread and the copy-back of shader results.
-4. Black skin, walls and objects: they are black already in the albedo target, while thousands of textures wait for card room. Textures now also fill the free pieces of texture blocks the card already holds (`VICTORY_TEXTURE_PIECES`, on): about 4 times fewer waiting textures, with no new card memory. Giving textures more room by other means caused paging stalls on 8 GB.
+4. Black skin, walls and objects: they are black already in the albedo target, while thousands of textures wait for card room. Every way tried so far to give textures more room on 8 GB (the render-target reserve, free block pieces) made the card page and stall, so card memory must shrink first.
 5. Make PresentMon capture reliable under ETW event loss.
 
 Rejected on 2026-11-28 after measurement: write-watched private allocations (Vice-Tay #321), turning the texture-block gate off, and a system-memory texture tier. See the [progress journal](docs/progress-journal.md).
