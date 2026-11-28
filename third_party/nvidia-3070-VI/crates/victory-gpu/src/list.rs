@@ -1551,6 +1551,19 @@ extern "system" fn set_pipeline(this: This, pipeline: This) {
     let _ = this;
 }
 
+/// The console's per-quad sample mask (`OMSetSampleMaskX`): which samples
+/// of each 2x2 quad pixel shaders may write. Not applied: the host's sample
+/// mask is part of the pipeline. Its values are logged, each new one once
+/// (up to 16), to tell whether the title ever masks samples.
+extern "system" fn sample_mask(_this: This, mask: u64) {
+    static SEEN: std::sync::Mutex<Vec<u64>> = std::sync::Mutex::new(Vec::new());
+    let mut seen = SEEN.lock().unwrap_or_else(|e| e.into_inner());
+    if seen.len() < 16 && !seen.contains(&mask) {
+        seen.push(mask);
+        tracing::info!(mask = format_args!("{mask:#x}"), "per-quad sample mask set by the title (not applied)");
+    }
+}
+
 /// Pipeline syncs: waits for earlier work and cache flushes, at the top or
 /// bottom of the pipe `(flags, control, address, size)`. The host orders
 /// nothing between dispatches by itself: what shaders wrote is waited for
@@ -1559,6 +1572,7 @@ extern "system" fn set_pipeline(this: This, pipeline: This) {
 /// (Arguments may be what earlier shaders wrote from here on:
 /// `State::synced`.)
 extern "system" fn sync(this: This, flags: u32, control: u32, address: u64, size: u64) {
+    crate::queue::note_sync(flags, false);
     #[cfg(windows)]
     {
         with_state(this, |_, state| state.synced());
@@ -2345,7 +2359,7 @@ const fn newer_slot(slot: usize) -> usize {
 /// shortcut: 0x470's purpose is unknown; ignored until a title shows it
 /// matters.
 const NEWER_METHODS: [(usize, *const ()); 3] = [
-    (142, ignored_state as *const ()),
+    (142, sample_mask as *const ()),
     (146, barrier_groups as *const ()),
     (148, allocate_upload as *const ()),
 ];

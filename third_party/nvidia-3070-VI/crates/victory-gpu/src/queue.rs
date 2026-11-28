@@ -694,14 +694,48 @@ extern "system" fn execute_x(this: This, count: u32, lists: *const This, _token:
 }
 /// Signal with sync settings for the top and bottom of the pipe; our
 /// submissions are complete when they return, so it signals at once.
+/// The bottom-of-pipe settings start with the sync flags (a 32-bit word);
+/// they are counted ([`note_sync`]), the top ones are ignored by the
+/// console too.
 extern "system" fn signal2_x(
     this: This,
     fence: This,
     value: u64,
-    _bottom: *const u8,
+    bottom: *const u8,
     _top: *const u8,
 ) -> HRESULT {
+    let flags = if bottom.is_null() {
+        0
+    } else {
+        // SAFETY: the title's sync parameters, starting with their flags.
+        unsafe { bottom.cast::<u32>().read_unaligned() }
+    };
+    note_sync(flags, true);
     signal(this, fence, value)
+}
+
+/// The console's flag for writing the shader caches' level 2 back to
+/// memory: what shaders wrote is visible to the CPU only after one.
+pub(crate) const GL2_WRITEBACK: u32 = 0x8000;
+
+/// Counts the title's syncs by whether they write level 2 back: pipeline
+/// syncs in lists, and fence signals with sync settings (`signal`: true).
+/// Said at each power of two of the calls.
+pub(crate) fn note_sync(flags: u32, signal: bool) {
+    use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
+    // List syncs with and without writeback; signals with and without.
+    static N: [AtomicU64; 4] = [const { AtomicU64::new(0) }; 4];
+    let at = usize::from(signal) * 2 + usize::from(flags & GL2_WRITEBACK == 0);
+    let n = N[at].fetch_add(1, Relaxed) + 1;
+    if n.is_power_of_two() && n >= 16 {
+        tracing::info!(
+            "the title's syncs since the start: in lists {} writing level 2 back, {} not; fence signals with sync settings {} writing it back, {} not",
+            N[0].load(Relaxed),
+            N[1].load(Relaxed),
+            N[2].load(Relaxed),
+            N[3].load(Relaxed)
+        );
+    }
 }
 /// Markers and events only matter to profilers.
 extern "system" fn marker(_: This) {}
