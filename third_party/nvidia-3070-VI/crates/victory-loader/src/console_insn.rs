@@ -651,3 +651,59 @@ mod tests {
         assert!(jump(0x1000, 0x9000_0000_0000).is_none(), "out of reach");
     }
 }
+
+/// Replaces the byte at `at` in the title's code with `new` if it is `was`,
+/// before the title's threads run (no atomic exchange): whether it was
+/// replaced. For per-build patches located by signature (`victory_game`).
+///
+/// # Safety
+/// `at` lies in mapped code of the title that no thread runs yet.
+pub unsafe fn patch_title_byte(at: usize, was: u8, new: u8) -> bool {
+    use windows_sys::Win32::System::Diagnostics::Debug::FlushInstructionCache;
+    use windows_sys::Win32::System::Memory::{PAGE_EXECUTE_READWRITE, VirtualProtect};
+    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+    let byte = at as *mut u8;
+    let mut old = 0u32;
+    // SAFETY: one byte of mapped code, made writable for the store and put
+    // back; no thread runs it yet (the caller's contract).
+    unsafe {
+        if VirtualProtect(byte.cast(), 1, PAGE_EXECUTE_READWRITE, &mut old) == 0 {
+            return false;
+        }
+        let done = byte.read_volatile() == was;
+        if done {
+            byte.write_volatile(new);
+        }
+        VirtualProtect(byte.cast(), 1, old, &mut old);
+        FlushInstructionCache(GetCurrentProcess(), byte.cast(), 1);
+        done
+    }
+}
+
+/// The committed, readable ranges (start, length) of `[base, base + size)`,
+/// for reading the title's image without touching pages that fault.
+pub fn title_readable_ranges(base: usize, size: usize) -> Vec<(usize, usize)> {
+    use windows_sys::Win32::System::Memory::{
+        MEM_COMMIT, MEMORY_BASIC_INFORMATION, PAGE_GUARD, PAGE_NOACCESS, VirtualQuery,
+    };
+    let (mut at, end) = (base, base.saturating_add(size));
+    let mut ranges = Vec::new();
+    while at < end {
+        // SAFETY: plain data filled in by the query.
+        let mut info: MEMORY_BASIC_INFORMATION = unsafe { std::mem::zeroed() };
+        // SAFETY: a valid out pointer of the right size.
+        if unsafe { VirtualQuery(at as *const _, &mut info, size_of_val(&info)) } == 0 {
+            break;
+        }
+        let region_end = (info.BaseAddress as usize + info.RegionSize).min(end);
+        let readable = info.State == MEM_COMMIT && info.Protect & (PAGE_NOACCESS | PAGE_GUARD) == 0 && info.Protect != 0;
+        if readable && region_end > at {
+            ranges.push((at, region_end - at));
+        }
+        if region_end <= at {
+            break;
+        }
+        at = region_end;
+    }
+    ranges
+}

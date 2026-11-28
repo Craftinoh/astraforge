@@ -50,6 +50,8 @@ pub use crash::{
 pub use crash::save_on_crash;
 #[cfg(windows)]
 pub use crash::save_title_ranges_on_crash;
+#[cfg(windows)]
+pub use console_insn::{patch_title_byte, title_readable_ranges};
 pub use prepare::{PrepareError, PreparedImage, prepare};
 pub use resolve::{ImportResolver, Provenance, Resolution};
 #[cfg(all(windows, feature = "diagnostics"))]

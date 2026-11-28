@@ -77,6 +77,7 @@ pub fn run(
     victory_hle::runtime::set_main_image(image.base());
     victory_hle::runtime::set_image_path(image.base(), exe);
     victory_loader::save_title_ranges_on_crash(image.base());
+    watchdog_patience(image.base(), image.info().size_of_image as usize);
     println!(
         "mapped at      {:#x} (preferred {:#x})",
         image.base(),
@@ -535,4 +536,31 @@ mod cpu_check_tests {
 #[cfg(not(windows))]
 pub fn run(_: &Path, _: Unimplemented, _: bool, _: bool, _: Console) -> Result<()> {
     anyhow::bail!("running titles requires Windows")
+}
+
+/// `VICTORY_WATCHDOG_SECONDS=<n>` (n over 30): the title's hang watchdog
+/// waits about n seconds without progress instead of 30 before it stops
+/// the title (`victory_game::watchdog`). Only when its signature is found
+/// once and every place holds what the known build holds.
+fn watchdog_patience(base: usize, size: usize) {
+    let Some(checks) = std::env::var("VICTORY_WATCHDOG_SECONDS").ok().and_then(|v| victory_game::watchdog::checks_for(&v)) else {
+        return;
+    };
+    // In each readable range of the image (the signature lies in its code).
+    let mut found = Vec::new();
+    for (at, len) in victory_loader::title_readable_ranges(base, size) {
+        // SAFETY: committed, readable pages of the mapped image, read only.
+        let range = unsafe { std::slice::from_raw_parts(at as *const u8, len) };
+        if let Some(sites) = victory_game::watchdog::patience_sites(range) {
+            found.push(sites.into_iter().map(|s| at - base + s).collect::<Vec<_>>());
+        }
+    }
+    let [sites] = found.as_slice() else {
+        eprintln!("watchdog       left as it is: its signature was not found once");
+        return;
+    };
+    let title = victory_game::watchdog::TITLE_CHECKS;
+    // SAFETY: each site lies in the title's mapped code, not run yet.
+    let patched = sites.iter().filter(|&&at| unsafe { victory_loader::patch_title_byte(base + at, title, checks) }).count();
+    println!("watchdog       about {checks} s without progress before it stops the title ({patched} of {} places)", sites.len());
 }
