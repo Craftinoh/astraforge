@@ -62,6 +62,20 @@ These checks establish focused logic and cross-crate compilation only. They do n
 4. The build helper must remove older managed artifact directories only after the new build and manifest succeed. Do not manually accumulate old builds; do not delete outside the helper's managed artifact root.
 5. If the build passes, record it in `docs/progress-journal.md`. The user has requested a focused commit and push; inspect the staged diff before doing both and report the commit plus remote status.
 
+## OpenCode goal — ready to paste
+
+```text
+Continue AstraForge development from the current main branch. Read AGENTS.md and every required project document before editing, then inspect git status and the complete diff. Preserve the clean published checkpoint and follow docs/QWEN_CODER_HANDOFF.md.
+
+First complete the pending pinned Windows build for both Release and Diagnostic. Check the manifest, warnings, artifact cleanup behavior, and embedded-path privacy. Record the exact command and result in docs/progress-journal.md. If the build fails, trace and fix only the concrete cause, then rebuild.
+
+After the build, continue the user's texture and memory optimization goal: inspect the existing runtime call paths, relevant upstream PRs/commits, and the technical material supplied locally by the maintainer. Use that material to understand behavior, but write public explanations in the project's own terms and do not identify or cite the private material. Prioritize safe texture upload parallelism, bounded/reused temporary buffers, residency pressure, alias correctness, and evidence-based GPU-to-CPU copyback. Do not implement speculative async submission, lazy copyback, tiled-resource mapping, or GPU detiling without tracing synchronization, cache visibility, resource lifetime, and rollback behavior first.
+
+Make one small, reversible change at a time. Add regression tests and source attribution for imported code; update docs/source-credits.md, subtree LOCAL-CHANGES.md, and docs/progress-journal.md as required. Run the pinned build and relevant focused tests after source changes. Do not run the private application, benchmark, or shader prewarm unless the user authorizes that run. Do not claim FPS, loading, RAM/VRAM, or visual improvements without the benchmark and visual evidence required by AGENTS.md.
+
+The user has authorized focused commits and pushes. Before publishing, review the staged diff and scan for personal paths, private identifiers, unsupported claims, and generated/private files. Push only focused, validated changes. Finish with Changed, Evidence, Limits, and Next.
+```
+
 ## Next engineering investigation
 
 After the current change is safely built and published, inspect the local reference material supplied by the maintainer for memory-coherency, tiled-resource, copy-queue, residency, and texture-upload contracts. Keep that material outside Git and do not name or cite the private documentation in public project files. Explain any resulting implementation in original project language and retain exact public-source provenance for copied source changes.
