@@ -935,3 +935,22 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Reuse works, but most residency waits come from the other buffers: unordered-access buffers and host copies of title memory. Slow frames were not fewer. It stays off.
 - Status: the done-when criteria (shorter scene-change stalls, fewer typical stalls) are still not met by any measured change.
   - Next target: the unordered-access buffers and title-memory host copies made on the submission thread. They must be made off that thread or recycled with their owners' lifetimes.
+
+## 2026-11-28 (night) — user play session, profile only
+
+- Build `20261128-173647-Release-default-81053b16`, RTX 3070 profile with every experiment off, 720p, played by the user.
+- Observed by the user:
+  - About 9 fps while loading, then a steady 22 fps (the log reads 21–22).
+  - At first faces are black. Some characters then load and look normal, others stay black.
+  - In the open boat scene: distant trees show bright "radioactive" green, trees on islets have no leaves, and the islets are black.
+  - A screen at 16 fps in the boat scene shows correct water, sky, clouds, boat and characters, with bright green specks on the far shore.
+- From the log at the same time:
+  - The texture queue held 17,176 slots, only 7 of them due.
+  - The room line was 6,995 MB in use, with 1,540 MB free inside texture blocks and 1,704 MB kept for render targets, against a 5,745 MB line. New textures waited.
+  - About 110 draws a frame were dropped for a missing pipeline, and about 430 indirect executions. The diagnostic reasons are mostly the ray-tracing structure builder, which is off by design, plus three compute pipelines with under one drop a frame each.
+- Reading:
+  - Missing leaves and black islets fit textures still waiting for room. Alpha-tested foliage whose texture is not there yet is discarded.
+  - The green on distant vegetation looks like a format or level mix-up rather than a missing texture: the stand-in for missing textures is grey.
+- Next:
+  1. Recover the free room fragmented inside texture blocks (1.5 GB here), so that waiting textures fit without making new blocks.
+  2. Capture the green vegetation in a diagnostic run to find its format.
