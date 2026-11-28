@@ -606,3 +606,26 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - Console GPU caches are not coherent with the CPU. GPU writes to non-coherent memory become visible to the CPU only after an L2 writeback that the title asks for: barriers, explicit pipeline flushes, or signals with flush flags. This is the basis for copying shader writes back only when the title asks, a larger change not yet started.
 - VRAM: the texture blocks hold 1.1–1.3 GB of free room that new textures do not always fit. These are pieces left by released textures, not spare empty blocks, which are already cut to 2 above 85 % of the budget. The texture line now logs block fullness, to decide on compaction.
 - Next, with the user's go-ahead for runs: measure a Release build of current `main` as the reference for the fps goal; read block fullness from one diagnostic run.
+
+## 2026-11-28 (midday) — cache-sync behaviour, sample mask, BCPack BC7 mismatch
+
+- Method tables checked against the console API: every queue, device and command-list method we implement sits at the right slot.
+  - List method `0x470`, marked unknown upstream, is the per-quad sample mask. It is logged now, not applied.
+  - List methods `0x418`/`0x420` are the top- and bottom-of-pipe syncs.
+- The title's pipeline syncs fall into two kinds:
+  - partial flushes that only wait for shaders to finish (`0x100000`, `0x700000`);
+  - full syncs that also write the shader level-2 cache back to memory and invalidate caches (`0xc280`, `0xc380`, `0xc3c0`).
+  - On the console, shader writes to non-coherent memory are visible to the CPU only after such a write-back. Copying shader results back only after a write-back could cut the copy-back, which costs 60–100 ms a frame. The size of the gain depends on how many submissions end without one.
+  - New counters log both kinds, for list syncs and for fence signals with sync settings. Signal settings were ignored before.
+- BCPack: our decoder was compared locally against a reference implementation kept outside the repository, on synthetic block streams.
+  - BC1, BC3, BC4 and BC5: byte-exact in 22 of 22 cases.
+  - BC7: every compared block differs in its index bits, while the endpoints match, in both random and repeated-block streams.
+  - Synthetic random blocks may reach paths a real encoder never produces, so this must be confirmed on real texture streams before changing the decoder. It is a candidate cause of wrong texture detail.
+  - BC2 is not supported by our decoder. Whether the title uses it is not known.
+- Graphics pipeline deserialization failures (about 16,000 a run) are harmless: the title creates the same pipelines from containers.
+- `VICTORY_WC_BAR` (one card copy of write-combined title buffers, mapped by the CPU) is possible here: this RTX 3070 has a full-size BAR (8 GiB). The copy is made only while a fifth of the card budget is free, which an 8 GB card rarely has.
+- Next, all to be implemented before one test session, as the user asked:
+  1. Find the BC7 index difference in `victory-formats/src/bcpack.rs`, with a unit test.
+  2. Gate shader-write copy-back on level-2 write-backs (behind a switch).
+  3. Let `VICTORY_WC_BAR` work under a lower free-budget line on 8 GB cards.
+  4. Then one session: Release reference, sync counters, block fullness, the switches on and off.

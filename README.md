@@ -107,7 +107,7 @@ maintainer, see the [contributor handoff](docs/CONTRIBUTOR_HANDOFF.md).
 
 1. Hardening: the title stops itself when no frame completes for about 30 s (its own watchdog). The cause found is synchronous `MakeResident` for new textures and targets while the card is near its budget, during loading. Fix it without losing the residency safety it gives.
 2. Reduce duplicate memory and copy-back. The RTX 3070 profile now leaves large shader writes into write-combined title memory on the card (VIctory-NVIDIA port): about a third less copy-back. Smaller title-memory windows saved about 600 MB but are off again until loading no longer blocks on residency.
-3. Then frame time: the single submit thread and the copy-back of shader results.
+3. Then frame time: the single submit thread and the copy-back of shader results. The title marks when shader results must reach the CPU (level-2 cache write-backs in its syncs). Copying back only then is the next large change.
 4. Black skin, walls and objects: they are black already in the albedo target, while thousands of textures wait for card room. Every way tried so far to give textures more room on 8 GB (the render-target reserve, free block pieces) made the card page and stall, so card memory must shrink first.
 5. Make PresentMon capture reliable under ETW event loss.
 
