@@ -780,3 +780,18 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - That is a shader-translator change. Not started.
 - Build `20261128-163343-Both-default-e3aaa12e` (Release and diagnostic) completed with the step-1 changes: blocks ahead on our thread, waiting textures not blocking on residency, and the slow-frame line.
 - Next: the user's final test session on this build, Release, profile only. Then read the slow-frame lines to see what the remaining stalls are.
+
+## 2026-11-28 (evening) — step-1 run: worse; the ahead thread is off by default
+
+- Build `20261128-163343-Both-default-e3aaa12e`, Release, profile only, 21.8 GB RAM free at launch. Stopped early at the user's request.
+- Observed by the user: worse than the previous run. All characters, the main character included, stayed as untextured silhouettes.
+- From the log:
+  - Internal fps 30 in the menus, then 0.6–10 in the world. The previous profile-only run was mostly 15–30.
+  - 179 slow frames (over 100 ms), median 180 ms, the longest 5.2 s. Residency and mapping waits inside them totalled about 7 s of roughly 45 s.
+  - The texture queue still had no room: 6,613 against 5,602 MB.
+  - The ahead thread made at least 32 blocks ahead, about 2 GB of empty blocks. No texture waited a pass for a block; the deferral counter never logged.
+- Conclusions:
+  - Residency waits are not the main cause of the stalls. The premise of step 1 was wrong for this card and scene.
+  - The ahead thread most likely made the textures worse: blocks kept empty took room the texture queue needed.
+- `VICTORY_AHEAD_THREAD` is now off by default (`=1` turns it on). With it off, block making is as before. The slow-frame line stays on.
+- Next: find what the slow frames are made of in the diagnostic build, with a per-frame split of title-thread time beyond residency (descriptor writes, title-memory refreshes, uploads), before changing more code.

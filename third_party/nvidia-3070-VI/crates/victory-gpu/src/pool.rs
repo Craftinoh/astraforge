@@ -836,8 +836,11 @@ fn texture_block(device: &ID3D12Device) -> Option<ID3D12Heap> {
 }
 
 /// Whether the blocks made ahead ([`ahead`]) are made by a thread of ours
-/// (`VICTORY_AHEAD_THREAD`, on; `=0`: by the thread that took a piece, as
-/// before). That thread made the next block right after its piece, holding
+/// (`VICTORY_AHEAD_THREAD=1`; off by default: by the thread that took a
+/// piece). Off since its first run (2026-11-28, Release, 8 GB card): the
+/// thread made 32 blocks ahead within minutes, 2 GB held empty while the
+/// texture queue had no room, and characters stayed untextured; residency
+/// waits were 7 of about 45 s of slow frames, so they were not the stalls. That thread made the next block right after its piece, holding
 /// the pool's lock through the system's residency work and the mapping
 /// wait ([`texture_block`]): every thread after a texture waited with it,
 /// for a block nobody needed yet. Made here, a block is added only once it
@@ -846,7 +849,7 @@ fn texture_block(device: &ID3D12Device) -> Option<ID3D12Heap> {
 /// its block at once, as before.
 fn ahead_thread() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_AHEAD_THREAD").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("VICTORY_AHEAD_THREAD").is_some_and(|v| v == "1"))
 }
 
 /// Asked for blocks ahead, and told so.
