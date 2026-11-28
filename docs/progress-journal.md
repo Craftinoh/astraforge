@@ -554,3 +554,15 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   2. Shrink our own card and host copies.
   3. Only then give textures more room.
 - No release: loading stops by the title watchdog still end too many runs.
+
+## 2026-11-28 (night, last) — textures into free block pieces; in-place windows held back
+
+- The control run's room line read: 6,064 MB in use, less 1,100 MB free in texture blocks, plus 96 MB kept for buffer copies and 1,721 MB kept for render targets, giving 6,781 MB against a 5,525 MB line. So the queue had no room while 1.1 GB of card memory we already hold lay free in the blocks.
+- New `VICTORY_TEXTURE_PIECES` (on by default). With the room test saying no, the pass goes on for textures that fit a free piece of an existing block. No new block, no level tiles and no dedicated allocation, so no new card memory and no residency call.
+- Runs with the same diagnostic binary:
+  - On: textures waiting about 6,300 on average, against about 24,200 off. Free block room was 70 MB on and 1,227 MB off.
+  - Residency waits were low with it on (2.3 s per run).
+  - Of the two runs with it on, one reached the world without a stop; the other was stopped by the title watchdog during loading. The off runs had the same stop elsewhere this night, so it is not attributed.
+- `VICTORY_INPLACE=1` (in-place windows, existing upstream switch), one run: 75 windows (364 MB) were read in place, and private memory was 15.4 GB against 16.7 GB. The run stopped during loading with all seven recording threads waiting on a lock inside the NVIDIA user-mode driver while binding. Held back until that is understood.
+- Tooling note: force-stopped runs leave `AstraForge-*` ETW sessions running, and the next launch then fails before the runtime starts. Stop them with `logman stop <name> -ets`.
+- Still open: the title watchdog stops part of the runs during loading. Black textures are much reduced in the counters but not gone, and the user has not yet reviewed them in play.
