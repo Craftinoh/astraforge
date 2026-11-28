@@ -48,4 +48,6 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-hle/src/modules/xmem.rs`, `crates/victory-gpu/src/{shadow.rs,lib.rs}`: `XMemAllocDefault` reads the allocation's memory type. With `VICTORY_WC_XMEMALLOC=1` (off), blocks of 1 MiB or more of a write-combined type are noted as write-combined for `VICTORY_WC_NO_BACK`, and forgotten when freed. Blocks of 1 MiB or more are logged by memory type.
 
+- `crates/victory-gpu/src/host.rs`: the texture line also logs how full the texture blocks are (`pool::fill`, which had no caller): blocks, MB held and free, counts by quarter of fullness, blocks given back. Log only.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.

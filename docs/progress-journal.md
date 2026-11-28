@@ -588,3 +588,21 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - card copies of title buffers 1,007 MB;
   - about 830 MB other.
 - Next: spare empty texture blocks on 8 GB cards; why 4K targets are made at 720p; a lower cap for card copies of title buffers. Each to be measured with watchdog patience on.
+
+## 2026-11-28 (late morning) — card-copy caps, console API behaviour, VRAM targets
+
+- Card-copy cap (`VICTORY_CARD_BUFFERS_MB`), diagnostic binary with watchdog patience, one run each:
+  - 2,048 MB (current default for 8 GB): 4.1 fps, preparation 224 ms, copy-back 97 ms.
+  - 1,024 MB: 1.3 fps, 552 ms and 169 ms, because more buffers are read over the bus.
+  - 512 MB: the launch produced no runtime log.
+  - The default is kept.
+- Console API behaviour checked against the runtime:
+  - Extended indirect argument type 105 is the single-pass dispatch. Its only field is dispatch flags, and the title passes 0. The current handling matches.
+  - The queue's method order matches our table for every method we implement. Some console-only queue methods are absent (the explicit-flush signal and the extended wait among them). No calls to them were logged.
+  - Device methods `0x1c8` and `0x218`, documented upstream as unknown, are the graphics and compute pipeline deserialization calls.
+    - Their description layout confirms what upstream had inferred for compute.
+    - The title falls back to creating pipelines from containers when they fail: about 16,000 graphics deserialization failures in a run, while 2,783 pipelines were made and 2,726 bound.
+    - Only ray-tracing draws were dropped for a missing pipeline. These failures are not a cause of missing objects.
+  - Console GPU caches are not coherent with the CPU. GPU writes to non-coherent memory become visible to the CPU only after an L2 writeback that the title asks for: barriers, explicit pipeline flushes, or signals with flush flags. This is the basis for copying shader writes back only when the title asks, a larger change not yet started.
+- VRAM: the texture blocks hold 1.1–1.3 GB of free room that new textures do not always fit. These are pieces left by released textures, not spare empty blocks, which are already cut to 2 above 85 % of the budget. The texture line now logs block fullness, to decide on compaction.
+- Next, with the user's go-ahead for runs: measure a Release build of current `main` as the reference for the fps goal; read block fullness from one diagnostic run.
