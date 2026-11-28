@@ -812,3 +812,20 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   2. The cost of our list-call hooks (about 5 µs a call, 10–20k calls a frame), behind the typical 100–200 ms frames.
   3. Sampler feedback: the API docs describe feedback maps that record which textures and mips the GPU sampled. Our resource path ignores the feedback mip region (`ResourceDesc1`). If the title uses them, they could drive texture priority (step 3) without changing the shader translator. Check first whether the title creates feedback resources.
 - The skin and face textures that arrive late also go through the skin bake path; check it with the texture-queue counters next.
+
+## 2026-11-28 (late evening) — residency by caller; sampler feedback; skin bake; batched buffer residency
+
+- Diagnostic run with residency callers named (build `20261128-164629`):
+  - The scene change at frame 1101 had its waits almost all on buffers: shared buffers (host copies of title memory) 3,486 waits for 1.17 s, unordered-access buffers 3,468 for 0.86 s, upload buffers 149 for 0.54 s. Textures had 295 waits for 0.17 s.
+  - 231 slow frames, median 142 ms, the longest 4.5 s.
+- Sampler feedback: 19 resources had the newer description's mip-region words set. All were ordinary render targets (format 28, 3840×2160 and 1920×1080) or a buffer, with region width and height 0. No feedback-map format and no region of 4×4 or more was seen.
+  - The title does not appear to use sampler feedback maps, so they cannot drive texture priority. Step 3 needs another signal.
+- Skin and decoration bakes, from the same run:
+  - By frame 1362: 32 bakes over 385 sources. 268 sources were current and 117 were not (46 showed another view, 62 held other bytes) and were brought up to date just before the bake.
+  - At that bake the texture queue held 33,435 slots, 16,252 of them due.
+  - Bakes run once, while the queue is far behind and the card has no room. A source that is not on the card at that moment is baked empty and stays so, which fits faces and skin that are late or missing.
+- New: `VICTORY_BATCH_RESIDENCY=1` (off by default until measured).
+  - Our buffers are made resident by their making, without one `MakeResident` each.
+  - Mapping waits that start while another round trip is pending share the next one. The mapping wait itself stays, as protection against the device losses of 2026-11-25.
+  - Tests: `victory-gpu` lib 372 passed.
+- Planned at the end, on the user's request: rename the runtime variables from `VICTORY_*` to `ASTRAFORGE_*`, keeping the old names as aliases so ports from upstream still apply.
