@@ -42,6 +42,56 @@ pub fn save_on_crash(ranges: Vec<(usize, usize, std::path::PathBuf)>) {
     let _ = SAVE.set(ranges);
 }
 
+/// Debugging aid: `VICTORY_CRASH_SAVE=<rva>+<len>[,<rva>+<len>...]` (hex
+/// or decimal) names ranges of the main title image, `base` on, written to
+/// `victory-crash-<rva>.bin` in the system's temporary folder when a crash
+/// is reported ([`save_on_crash`]). For reading an engine's own tables at
+/// the moment it stopped itself (a hang watchdog's table of open waits,
+/// for one), next to the counter value the report gives.
+#[cfg(feature = "diagnostics")]
+pub fn save_title_ranges_on_crash(base: usize) {
+    let Ok(list) = std::env::var("VICTORY_CRASH_SAVE") else {
+        return;
+    };
+    let ranges = crash_save_ranges(&list, base, &std::env::temp_dir());
+    for (address, len, file) in &ranges {
+        tracing::info!(
+            address = format_args!("{address:#x}"),
+            len,
+            file = %file.display(),
+            "title memory saved if a crash is reported (VICTORY_CRASH_SAVE)"
+        );
+    }
+    save_on_crash(ranges);
+}
+
+/// Without diagnostics there is nothing to save.
+#[cfg(not(feature = "diagnostics"))]
+pub fn save_title_ranges_on_crash(_base: usize) {}
+
+/// The ranges of a `VICTORY_CRASH_SAVE` list, image-relative to `base`;
+/// entries that do not parse, are empty or longer than 16 MiB are left out.
+#[cfg_attr(not(any(feature = "diagnostics", test)), allow(dead_code))]
+fn crash_save_ranges(list: &str, base: usize, dir: &std::path::Path) -> Vec<(usize, usize, std::path::PathBuf)> {
+    let number = |s: &str| {
+        let s = s.trim();
+        match s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
+            Some(hex) => usize::from_str_radix(hex, 16).ok(),
+            None => s.parse().ok(),
+        }
+    };
+    list.split(',')
+        .filter_map(|entry| {
+            let (rva, len) = entry.split_once('+')?;
+            let (rva, len) = (number(rva)?, number(len)?);
+            if len == 0 || len > 16 << 20 {
+                return None;
+            }
+            Some((base.checked_add(rva)?, len, dir.join(format!("victory-crash-{rva:x}.bin"))))
+        })
+        .collect()
+}
+
 /// The file crash reports are appended to, besides being printed.
 static LOG: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
 
@@ -605,6 +655,12 @@ unsafe fn report(what: &str, info: *const EXCEPTION_POINTERS, to_file: bool) {
         context.Rsp,
         context.Rbp
     ));
+    // For reading timestamps the title keeps (its own watchdogs measure
+    // with this counter).
+    let mut counter = 0i64;
+    // SAFETY: writes one i64.
+    unsafe { windows_sys::Win32::System::Performance::QueryPerformanceCounter(&mut counter) };
+    line(format!("  performance counter now {counter} ({counter:#x})"));
     line(format!(
         "  r8 {:#x} r9 {:#x} r10 {:#x} r11 {:#x} r12 {:#x} r13 {:#x} r14 {:#x} r15 {:#x}",
         context.R8,
@@ -771,6 +827,17 @@ fn memory_at(address: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn crash_save_ranges_are_image_relative_and_bounded() {
+        let dir = std::path::Path::new("d");
+        let r = crash_save_ranges("0x10+0x20, 32+8,bad,0x40+0,0x50+0x2000000", 0x1000, dir);
+        assert_eq!(r.len(), 2);
+        assert_eq!((r[0].0, r[0].1), (0x1010, 0x20));
+        assert_eq!(r[0].2, dir.join("victory-crash-10.bin"));
+        assert_eq!((r[1].0, r[1].1), (0x1020, 8));
+    }
+
     use windows_sys::Win32::System::Diagnostics::Debug::{
         EXCEPTION_RECORD, RtlCaptureContext, RtlCaptureStackBackTrace,
     };

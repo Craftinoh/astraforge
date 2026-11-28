@@ -76,6 +76,7 @@ pub fn run(
     drop(original);
     victory_hle::runtime::set_main_image(image.base());
     victory_hle::runtime::set_image_path(image.base(), exe);
+    victory_loader::save_title_ranges_on_crash(image.base());
     println!(
         "mapped at      {:#x} (preferred {:#x})",
         image.base(),
