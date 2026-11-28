@@ -362,6 +362,47 @@ pub(crate) fn resident(device: &ID3D12Device, object: &impl Interface) -> window
 /// Times, microseconds and the longest of [`resident`].
 static RESIDENT: [std::sync::atomic::AtomicU64; 3] = [const { std::sync::atomic::AtomicU64::new(0) }; 3];
 
+/// Called at each present: a frame of more than 100 ms is said, with what
+/// of it went to waits for new memory to become resident ([`resident`])
+/// and mapped ([`mapped`]), on any thread (`VICTORY_SLOW_FRAMES=0`: not
+/// said). The frame-rate line gives averages only: the frames of 130 to
+/// 250 ms in play showed 25 to 30 ms of preparation and nothing on the
+/// card, and nothing said where the rest went. At most 300 lines a run,
+/// then every 50th.
+pub(crate) fn note_frame(frame: u64) {
+    static ON: OnceLock<bool> = OnceLock::new();
+    if !*ON.get_or_init(|| std::env::var_os("VICTORY_SLOW_FRAMES").is_none_or(|v| v != "0")) {
+        return;
+    }
+    static LAST: Mutex<Option<(std::time::Instant, u64, u64, u64, u64)>> = Mutex::new(None);
+    static SAID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let now = std::time::Instant::now();
+    let counters = (
+        RESIDENT[0].load(Ordering::Relaxed),
+        RESIDENT[1].load(Ordering::Relaxed),
+        MAPPED[0].load(Ordering::Relaxed),
+        MAPPED[1].load(Ordering::Relaxed),
+    );
+    let mut last = LAST.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((at, r_n, r_us, m_n, m_us)) = *last {
+        let ms = now.duration_since(at).as_secs_f64() * 1e3;
+        if ms > 100.0 {
+            let n = SAID.fetch_add(1, Ordering::Relaxed) + 1;
+            if n <= 300 || n.is_multiple_of(50) {
+                tracing::info!(
+                    "slow frame {frame}: {ms:.0} ms; waits for new memory to be resident {} ({:.1} ms), to be mapped {} ({:.1} ms) \
+                     (on all threads, VICTORY_SLOW_FRAMES=0: not said); slow frames so far {n}",
+                    counters.0 - r_n,
+                    (counters.1 - r_us) as f64 / 1e3,
+                    counters.2 - m_n,
+                    (counters.3 - m_us) as f64 / 1e3
+                );
+            }
+        }
+    }
+    *last = Some((now, counters.0, counters.1, counters.2, counters.3));
+}
+
 /// Whether memory the card was given stays with it while there is room (on
 /// by default; `VICTORY_KEEP_FREED=0`: it is given back as before). A shader
 /// that reads past a view (a raw load through a typed, structured or

@@ -64,4 +64,6 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-gpu/src/pool.rs`: with `VICTORY_AHEAD_THREAD` on, a texture that can wait (the pass over textures picked by index) and fits no block no longer makes a block and waits for its residency and mapping: it asks our thread for one and waits a pass, its slot left due. Textures that cannot wait still make their block at once. Unit test extended.
 
+- `crates/victory-gpu/src/{host.rs,queue.rs}`: each frame over 100 ms is logged with the residency and mapping waits it contained, on all threads (`VICTORY_SLOW_FRAMES=0` silences it; at most 300 lines, then every 50th). Log only.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.

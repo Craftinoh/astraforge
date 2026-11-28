@@ -767,3 +767,4 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - The ahead thread still adds a block only once it is resident and mapped, and the ripeness rule is kept.
 - Tests: `victory-gpu` lib 371 passed (`blocks_ahead_are_not_made_by_the_taking_thread` extended); diagnostics check passed.
 - Not measured in play. Expected: fewer frame stalls when blocks are made. A texture may show one pass later than before.
+- Added a slow-frame line: each frame over 100 ms logs how many residency and mapping waits it contained and their time, on all threads (`VICTORY_SLOW_FRAMES=0` silences it). It is in Release builds too, to tell in the final test whether the remaining ~200 ms of the slow frames are residency work or something else.
