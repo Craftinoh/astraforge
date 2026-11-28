@@ -768,3 +768,15 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Tests: `victory-gpu` lib 371 passed (`blocks_ahead_are_not_made_by_the_taking_thread` extended); diagnostics check passed.
 - Not measured in play. Expected: fewer frame stalls when blocks are made. A texture may show one pass later than before.
 - Added a slow-frame line: each frame over 100 ms logs how many residency and mapping waits it contained and their time, on all threads (`VICTORY_SLOW_FRAMES=0` silences it). It is in Release builds too, to tell in the final test whether the remaining ~200 ms of the slow frames are residency work or something else.
+
+## 2026-11-28 (evening) — steps 2 and 3 scoped; build for the final test
+
+- Correction: the "host textures, 3.2 GB" in the memory line are card textures (`HOST_TEXTURES` bytes, also used for the render-target reserve), not PC memory.
+  - The PC-memory lever of step 2 is the host copies of title memory: 3.6 GB, of which 2.4 GB are windows outside buffers on a 4 MiB grid.
+  - Only 1.4 GB of those windows lie between the lowest and highest address asked for, and 1.7 GB of their pages were ever copied.
+  - Narrower windows (`VICTORY_WINDOW_KB=1024`, `VICTORY_WINDOW_TAILS=1`) were slower in play today. Step 2 needs a different approach, such as committing window pages only when first copied. Not started.
+- Step 3 (priority for textures drawn this frame): the texture queue orders slots by write number (newest and oldest views, `TextureQueue::due`). It knows which slots are read through tables, but not which slots picked by index a frame's shaders actually sample.
+  - Real priority for visible textures needs the translated shaders to mark the indices they read, such as one bit per index in a buffer the queue reads.
+  - That is a shader-translator change. Not started.
+- Build `20261128-163343-Both-default-e3aaa12e` (Release and diagnostic) completed with the step-1 changes: blocks ahead on our thread, waiting textures not blocking on residency, and the slow-frame line.
+- Next: the user's final test session on this build, Release, profile only. Then read the slow-frame lines to see what the remaining stalls are.
