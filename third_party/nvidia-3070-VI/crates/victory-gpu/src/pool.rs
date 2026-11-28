@@ -309,10 +309,20 @@ struct Ripe {
     fullest: bool,
     /// Blocks ahead are asked of a thread of ours ([`ahead_thread`]).
     threaded: bool,
+    /// The texture can wait for a place ([`waiting`]): with `threaded`, a
+    /// block it needs is asked of our thread, not made and waited for.
+    can_wait: bool,
 }
 
 impl Ripe {
-    const ALL: Ripe = Ripe { started: 0, finished: 0, ahead: 0, grow: Grow::Yes, fullest: false, threaded: false };
+    const ALL: Ripe =
+        Ripe { started: 0, finished: 0, ahead: 0, grow: Grow::Yes, fullest: false, threaded: false, can_wait: false };
+
+    /// Whether a block this texture needs is asked of our thread and the
+    /// texture waits a frame ([`ahead_thread`]), instead of being made here.
+    fn defers(self) -> bool {
+        self.threaded && self.can_wait && self.ahead > 0 && self.grow == Grow::Yes
+    }
 
     fn now() -> Ripe {
         let (started, finished) = crate::host::submissions();
@@ -324,6 +334,7 @@ impl Ripe {
             grow: Grow::Yes,
             fullest: fullest(),
             threaded: ahead_thread(),
+            can_wait: CAN_WAIT.get(),
         }
     }
 
@@ -524,6 +535,20 @@ impl<B: Clone> Pool<B> {
                 // No block without room on the card for a texture that can
                 // wait ([`gate`]).
                 if ripe.grow == Grow::No {
+                    return None;
+                }
+                // A texture that can wait does not wait here for the
+                // system's residency work: our thread makes the block, and
+                // the texture takes a piece of it on a later pass.
+                if ripe.defers() {
+                    ask_ahead();
+                    let n = DEFERRED.fetch_add(1, Ordering::Relaxed) + 1;
+                    if n.is_power_of_two() {
+                        tracing::info!(
+                            "textures that waited a pass for a block made by a thread of ours instead of waiting for it \
+                             (VICTORY_AHEAD_THREAD=0: made at once): {n}"
+                        );
+                    }
                     return None;
                 }
                 let memory = self.grow(now, &mut make)?;
@@ -828,6 +853,8 @@ fn ahead_thread() -> bool {
 static AHEAD_ASKED: (Mutex<bool>, std::sync::Condvar) = (Mutex::new(false), std::sync::Condvar::new());
 /// Blocks made ahead by [`ahead_blocks`] since the start.
 static AHEAD_MADE: AtomicU64 = AtomicU64::new(0);
+/// Textures that waited a pass for such a block ([`Ripe::defers`]).
+static DEFERRED: AtomicU64 = AtomicU64::new(0);
 
 /// Asks the thread of [`ahead_blocks`] (started the first time) to make
 /// blocks until [`ahead`] of them are empty.
@@ -938,8 +965,9 @@ pub(crate) unsafe fn texture(
     });
     #[cfg_attr(not(feature = "diagnostics"), allow(unused_variables))]
     let Some((piece, heap, again)) = taken else {
-        // Not made for want of a place (and not for its size): it waits.
-        if ripe.grow == Grow::No && ripe.pooled(info.SizeInBytes) {
+        // Not made for want of a place (and not for its size), or its block
+        // is being made by our thread: it waits.
+        if (ripe.grow == Grow::No || ripe.defers()) && ripe.pooled(info.SizeInBytes) {
             BLOCKS[NOT_MADE].fetch_add(1, Ordering::Relaxed);
             WAITED.set(true);
         }
@@ -1139,6 +1167,17 @@ mod tests {
         assert_eq!((pool.blocks(), made.get()), (1, 1));
         assert_eq!(pool.take_ripe(BLOCK / 2, 65536, 0, ripe, make).unwrap().1, 1);
         assert_eq!((pool.blocks(), made.get()), (1, 1));
+        // The block is full: a texture that can wait makes none and waits
+        // ([`Ripe::defers`]); one that cannot makes its block as before.
+        let waits = Ripe { can_wait: true, ..ripe };
+        assert!(pool.take_ripe(BLOCK / 2, 65536, 0, waits, make).is_none());
+        assert_eq!((pool.blocks(), made.get()), (1, 1));
+        // The block our thread made comes: the texture takes a piece of it.
+        pool.add(7, 0);
+        assert_eq!(pool.take_ripe(BLOCK / 2, 65536, 0, waits, make).unwrap().1, 7);
+        assert_eq!(made.get(), 1);
+        assert_eq!(pool.take_ripe(BLOCK, 65536, 0, ripe, make).unwrap().1, 2);
+        assert_eq!(made.get(), 2);
     }
 
     /// Without room on the card no block is made for a texture that can
