@@ -200,7 +200,7 @@ thread_local! {
 
 /// Whether the texture pass goes on, while the queue's room test says no,
 /// for textures that fit a free piece of a texture block there is
-/// (`VICTORY_TEXTURE_PIECES`, on by default; `=0`: they wait, as before).
+/// (`VICTORY_TEXTURE_PIECES=1`; off by default: they wait, as before).
 ///
 /// The room test weighs the card's use with what it keeps for render
 /// targets not made yet (`crate::resource::targets_room_kept`, up to
@@ -212,9 +212,14 @@ thread_local! {
 /// card past its budget, and every new allocation paged (0.1 to 1.6 frames
 /// a second). A free piece costs the card nothing more: no block is made,
 /// no level tiles are given, no texture gets memory of its own.
+///
+/// Off since the isolation runs of 2026-11-28: on, frames took 10.8 s of
+/// preparation and 85 s went to residency waits (longest 4 s), against
+/// 220 ms and 17.7 s off. Filled pieces keep blocks resident that the
+/// system could otherwise page, and the card pages instead.
 fn pieces_on() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_PIECES").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_PIECES").is_some_and(|v| v == "1"))
 }
 
 /// Whether the texture blocks hold enough free room for the pass to go on
