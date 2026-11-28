@@ -889,3 +889,14 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Next candidates:
   - A per-frame breakdown in Release, which the slow-frame line only covers for residency.
   - Making the bake's source pass take priority over the rest of the texture queue (step 4's fix).
+
+## 2026-11-28 (late evening) — step 4 answered: the bake path does not lose its sources
+
+- Before each decoration bake (skin and face details baked into the title's own textures), the runtime does two things:
+  - It runs the texture pass with the bake budget (`VICTORY_BAKE_TEXTURES_MS`, 1,500 ms). Its sources cannot wait: they get a block even when the card has no room.
+  - Then `bring_bake_sources` brings exactly the slots the bake draw picks from up to date, whatever the pass reached.
+- The counters of the diagnostic run (frame 1362) agree: 32 bakes, 385 sources. 0 had no host copy, 0 were not mapped, 0 failed. The 117 sources that were not current were brought up to date before the bake.
+- So late or missing face and skin textures are not lost bakes. They are ordinary texture-queue lag: 16,252 slots due at that point, with the queue held back at its room line on an 8 GB card.
+- The fix belongs to texture room and queue throughput, not to the bake path:
+  - priority within the queue, which needs a visibility signal the title does not provide through sampler feedback;
+  - more room for textures without the paging stalls rejected on 2026-11-28 (night).
