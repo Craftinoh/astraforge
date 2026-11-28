@@ -9054,6 +9054,27 @@ impl Meter {
                 );
             }
             {
+                // How full the texture blocks are: their free room is room
+                // the card already holds, which new textures do not always
+                // fit (pieces of the size asked for).
+                let f = crate::pool::fill();
+                tracing::info!(
+                    "texture blocks: {} holding {} MB with {} MB free; under a quarter full {} ({} MB held), a quarter to a half {} ({} MB),                      a half to three quarters {} ({} MB), more {} ({} MB); {} given back since the start",
+                    f[0],
+                    (f[0] * (64 << 20)).saturating_sub(f[1]) >> 20,
+                    f[1] >> 20,
+                    f[2],
+                    f[3] >> 20,
+                    f[4],
+                    f[5] >> 20,
+                    f[6],
+                    f[7] >> 20,
+                    f[8],
+                    f[9] >> 20,
+                    f[10]
+                );
+            }
+            {
                 let mode = crate::watch::page_writes();
                 let [writes, bytes, guarded, plain] = [0, 1, 2, 3].map(|i| crate::watch::WRITTEN[i].load(Ordering::Relaxed));
                 let [kept, dropped, slots, uploaded] =
