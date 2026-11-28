@@ -829,3 +829,21 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - Mapping waits that start while another round trip is pending share the next one. The mapping wait itself stays, as protection against the device losses of 2026-11-25.
   - Tests: `victory-gpu` lib 372 passed.
 - Planned at the end, on the user's request: rename the runtime variables from `VICTORY_*` to `ASTRAFORGE_*`, keeping the old names as aliases so ports from upstream still apply.
+
+## 2026-11-28 (late evening) — batched buffer residency measured: worse, stays off
+
+- Build `20261128-165414-Both-default-fa49858b`, Release, profile only, 720p, 22.7 GB RAM free. One run with `VICTORY_BATCH_RESIDENCY=1`, then one without, back to back.
+
+| | batched on | batched off |
+|---|---:|---:|
+| world reached | 52 s | 45 s |
+| internal fps (mean of lines) | 19.9 | 22.5 |
+| slow frames (>100 ms) | 281, 53.7 s | 166, 28.3 s |
+| slow frames: median / 90th percentile / longest | 143 / 271 / 3,746 ms | 132 / 208 / 3,203 ms |
+| residency waits inside slow frames | 0.3 s | 5.9 s |
+| mapping waits inside slow frames | 1.0 s | 1.6 s (234 shared with batching on) |
+
+- The separate residency waits disappeared, but the system's work moved into buffer creation, and the run as a whole was slower. One run each: noisy, but not better on any frame-time measure. `VICTORY_BATCH_RESIDENCY` stays off by default.
+- Over the whole "off" run, residency calls numbered 84,000 for 32 s, the longest 50 ms. So residency is a steady cost, not only a scene-change spike.
+- Screens: the desktop sampler now works (every 20 s, kept locally). A close-up in the batched run shows a fully textured face (skin, lips, hair) with wrong, glowing violet eyes. Backlit characters in the other run are textured.
+- Next: step 2, the cost of our list-call hooks (10–20k calls a frame). Then the wrong eye texture, which may be one specific format or view path.
