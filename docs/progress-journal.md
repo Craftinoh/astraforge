@@ -524,3 +524,33 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
   - The evidence is thin, and the memory saving stays documented. To be re-enabled once residency no longer blocks.
 - Intermittent black face reproduced in two runs at the same scene (about world frame 1300). In another run the same face was correct, so it is timing-dependent and not caused by the write-combined port.
 - No release this night: the loading stalls stop too many runs to publish a binary for everyone.
+
+## 2026-11-28 (night, late) — black albedo, the render-target reserve, and one combined test
+
+- Captured the black face (`VICTORY_DUMP_TARGETS` at world frame 1296).
+  - The G-buffer's albedo target already has the face, the hands and the room's walls black, while the lips, glasses, hair and the other character are right. So the black comes from missing textures, not from light.
+  - At that frame about 21,000 textures picked by index were waiting. The queue had refused 488 passes for lack of room with the card at 5,742 of 6,852 MB.
+  - In another run the same face was right: the outcome depends on timing.
+- Cause of the refusals: the texture queue keeps `VICTORY_CARD_ROOM_FOR_TARGETS_MB` (3,072) less the render targets made. At 720p, targets hold about 1.2 GB, so about 1.9 GB stays kept for the whole run.
+- Ported from VIctory-NVIDIA in one batch:
+  - `6726920a`: BC7 rotation in BCPack.
+  - `89fd9361`: view table cap.
+  - `30b979ee`: arena retries.
+  - `aec85efb`: raw view clamp.
+  - `826ba150`: violet probe filter.
+  - `21b040da`: the reserve is given up once targets settle; it does not fire at 720p with the default 3,072 MB.
+  - Not taken: lane tickets and dynamic slot identity (conflicts), and early depth (it would invalidate the shader cache for a switch that is off).
+- One combined test with the reserve at 1,536 MB in the RTX 3070 profile, so that it settles at 720p: rejected.
+  - Internal fps fell to 0.1–1.6.
+  - Synchronous residency waits reached 108–308 s per run, with single calls up to 3 s.
+  - Two of five runs stopped before the world.
+  - With the textures given that room, the card goes over budget and every new allocation pages.
+  - On an 8 GB card the reserve works as headroom against paging. The override was removed.
+- Control with the ports and the default reserve:
+  - The diagnostic run was in line with earlier runs: 5.95 fps, preparation 140 ms, copy-back 56 ms.
+  - The Release run was stopped by the title watchdog during loading while frames still came at 30 fps. That stall predates these ports.
+- Lesson: on 8 GB, black textures and residency stalls share one cause, too little card memory. Next:
+  1. Make residency non-blocking.
+  2. Shrink our own card and host copies.
+  3. Only then give textures more room.
+- No release: loading stops by the title watchdog still end too many runs.
