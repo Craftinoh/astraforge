@@ -1655,8 +1655,12 @@ impl State {
     /// could not be given a view.
     pub(crate) fn bind(&mut self, list: &HostList, p: &HostPipeline, compute: bool) -> bool {
         let l = &list.list;
+        #[cfg(feature = "diagnostics")]
+        let timed = std::time::Instant::now();
         // Textures picked by index, before anything asks for them.
         self.early_textures(list, p, compute);
+        #[cfg(feature = "diagnostics")]
+        BIND_NS[0].fetch_add(timed.elapsed().as_nanos() as u64, Ordering::Relaxed);
         if crate::host::walls_trace() {
             self.walls_census(p, compute);
         }
@@ -1745,7 +1749,11 @@ impl State {
             if t.stores && crate::picked::on() && crate::picked::picks(&stage.shader, &t.picks) {
                 crate::picked::runs_in(list);
             }
+            #[cfg(feature = "diagnostics")]
+            let timed = std::time::Instant::now();
             let made = self.tables(list, &t.tables, compute);
+            #[cfg(feature = "diagnostics")]
+            BIND_NS[1].fetch_add(timed.elapsed().as_nanos() as u64, Ordering::Relaxed);
             STORES.set(true);
             if made.iter().any(|m| m.1 == u32::MAX) {
                 once!("a draw whose descriptor table found no free slots is dropped");
@@ -1768,7 +1776,12 @@ impl State {
                 } else {
                     crate::memory::Use::Reads
                 };
-                let Some(ready) = self.memory_ready(list, &t, compute, use_) else {
+                #[cfg(feature = "diagnostics")]
+                let timed = std::time::Instant::now();
+                let ready = self.memory_ready(list, &t, compute, use_);
+                #[cfg(feature = "diagnostics")]
+                BIND_NS[2].fetch_add(timed.elapsed().as_nanos() as u64, Ordering::Relaxed);
+                let Some(ready) = ready else {
                     once!("a shader that reads title memory by address without a view heap to hold its views: the draw is dropped");
                     return false;
                 };
@@ -5320,3 +5333,9 @@ mod record_hash_tests {
         assert!(zeros.iter().all(|h| seen.insert(*h)));
     }
 }
+
+/// Inside [`State::bind`], nanoseconds since the last recording line: the
+/// pass over textures picked by index, the descriptor tables, and title
+/// memory by address (diagnostics).
+#[cfg(feature = "diagnostics")]
+pub(crate) static BIND_NS: [std::sync::atomic::AtomicU64; 3] = [const { std::sync::atomic::AtomicU64::new(0) }; 3];

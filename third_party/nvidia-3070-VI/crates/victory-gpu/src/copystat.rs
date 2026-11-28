@@ -1022,6 +1022,56 @@ fn submitter(all: &mut Vec<(u32, Submitter)>, id: u32) -> &mut Submitter {
     &mut all[at].1
 }
 
+/// List-call time by the line of `list.rs` that made the call (nanoseconds,
+/// calls), since the last recording line: which of our list methods cost
+/// most. Gathered per thread, a couple of milliseconds at a time.
+static SITES: Mutex<Vec<(&'static std::panic::Location<'static>, u64, u64)>> = Mutex::new(Vec::new());
+
+thread_local! {
+    static SITES_UNSENT: std::cell::RefCell<Vec<(&'static std::panic::Location<'static>, u64, u64)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// [`recorded`], with the call's place.
+pub(crate) fn recorded_at(started: std::time::Instant, site: &'static std::panic::Location<'static>) {
+    let ns = started.elapsed().as_nanos() as u64;
+    let flush = SITES_UNSENT.with(|u| {
+        let mut u = u.borrow_mut();
+        match u.iter_mut().find(|(at, ..)| std::ptr::eq(*at, site)) {
+            Some((_, t, n)) => {
+                *t += ns;
+                *n += 1;
+            }
+            None => u.push((site, ns, 1)),
+        }
+        (u.iter().map(|(_, t, _)| t).sum::<u64>() >= 2_000_000).then(|| std::mem::take(&mut *u))
+    });
+    if let Some(sent) = flush {
+        let mut all = SITES.lock().unwrap_or_else(|e| e.into_inner());
+        for (site, t, n) in sent {
+            match all.iter_mut().find(|(at, ..)| std::ptr::eq(*at, site)) {
+                Some((_, tt, nn)) => {
+                    *tt += t;
+                    *nn += n;
+                }
+                None => all.push((site, t, n)),
+            }
+        }
+    }
+    recorded(started);
+}
+
+/// The most costly list-call places since the last call, per frame.
+fn sites_said(frames: f64) -> String {
+    let mut all = std::mem::take(&mut *SITES.lock().unwrap_or_else(|e| e.into_inner()));
+    all.sort_by(|a, b| b.1.cmp(&a.1));
+    all.iter()
+        .take(8)
+        .map(|(at, t, n)| format!("list.rs:{} {:.0} calls {:.1} ms", at.line(), *n as f64 / frames, *t as f64 / 1e6 / frames))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 /// A list call on this thread that began at `started` has returned.
 pub(crate) fn recorded(started: std::time::Instant) {
     let took = started.elapsed();
@@ -1177,6 +1227,16 @@ pub(crate) fn log(frames: f64) {
         mb(c[C::TexChanged as usize]),
         c[C::TexHot as usize],
     );
+    tracing::info!("recording per frame by place in list.rs: {}", sites_said(frames.max(1.0)));
+    {
+        let ms = |i: usize| crate::draw::BIND_NS[i].swap(0, Relaxed) as f64 / 1e6 / frames.max(1.0);
+        tracing::info!(
+            "binding per frame: textures picked by index {:.1} ms, descriptor tables {:.1} ms, title memory by address {:.1} ms",
+            ms(0),
+            ms(1),
+            ms(2)
+        );
+    }
     tracing::info!(
         "recording per frame ({frames:.0} frames): {:.0} list calls {:.1} ms (all recording \
          threads); {:.1} ms waiting for pipelines; dynamic slots: {:.0} tables asked, {:.0} \

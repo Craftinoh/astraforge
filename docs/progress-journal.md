@@ -847,3 +847,17 @@ Method change: one change at a time, judged by log counters (VRAM in use, textur
 - Over the whole "off" run, residency calls numbered 84,000 for 32 s, the longest 50 ms. So residency is a steady cost, not only a scene-change spike.
 - Screens: the desktop sampler now works (every 20 s, kept locally). A close-up in the batched run shows a fully textured face (skin, lips, hair) with wrong, glowing violet eyes. Backlit characters in the other run are textured.
 - Next: step 2, the cost of our list-call hooks (10–20k calls a frame). Then the wrong eye texture, which may be one specific format or view path.
+
+## 2026-11-28 (late evening) — step 2: where list recording time goes
+
+- Diagnostic builds now time list calls by the line of `list.rs` that made them, and three steps inside `State::bind`. Log only.
+- Two diagnostic runs (builds `20261128-170541`, `20261128-171102`), profile only, 720p. Per frame, all recording threads:
+  - `ExecuteIndirect`: 1,700–4,800 calls, 69–97 ms (about 25–30 µs each).
+  - `Dispatch`: 720–1,400 calls, 35–79 ms (about 40–80 µs each).
+  - `Draw`: 230–880 calls, 9–19 ms. `DispatchMesh`: 8–11 ms. All state-setting calls together: under 5 ms.
+  - Inside `bind`: descriptor tables 104–155 ms; textures picked by index 4–14 ms; title memory by address under 1 ms.
+- So the recording cost is the descriptor-table step (`State::tables`).
+  - For every table it walks, it hashes the table's records and calls `readable` on each entry (a view lookup plus bringing that resource's host copy and state up to date).
+  - A cache already skips this when the same reader binds the same table in the same list epoch. It is limited to tables with no UAV entries and no shader-selected indices, which leaves out most dispatch and indirect tables.
+- These timings include diagnostic-only work such as operation text and counters, so Release costs are lower. The ranking is unlikely to change.
+- Next: widen the table cache safely. For tables whose entries did not change and whose resources had no writes since, `readable` could be skipped while still declaring UAV write ranges. This touches copy-back correctness and needs its own tests and an A/B run with screens before it can be on by default.
