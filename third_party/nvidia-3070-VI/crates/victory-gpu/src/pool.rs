@@ -307,15 +307,24 @@ struct Ripe {
     /// block with room is taken first ([`fullest`]).
     grow: Grow,
     fullest: bool,
+    /// Blocks ahead are asked of a thread of ours ([`ahead_thread`]).
+    threaded: bool,
 }
 
 impl Ripe {
-    const ALL: Ripe = Ripe { started: 0, finished: 0, ahead: 0, grow: Grow::Yes, fullest: false };
+    const ALL: Ripe = Ripe { started: 0, finished: 0, ahead: 0, grow: Grow::Yes, fullest: false, threaded: false };
 
     fn now() -> Ripe {
         let (started, finished) = crate::host::submissions();
         // Not more than are kept ([`room`]): they would go and be made again.
-        Ripe { started, finished, ahead: ahead().min(SPARES.load(Ordering::Relaxed)), grow: Grow::Yes, fullest: fullest() }
+        Ripe {
+            started,
+            finished,
+            ahead: ahead().min(SPARES.load(Ordering::Relaxed)),
+            grow: Grow::Yes,
+            fullest: fullest(),
+            threaded: ahead_thread(),
+        }
     }
 
     /// Whether a piece of `len` bytes is cut from a block at all.
@@ -534,11 +543,12 @@ impl<B: Clone> Pool<B> {
             }
             let empty = self.blocks.iter().flatten().filter(|b| b.free.whole(BLOCK)).count();
             // (None ahead without room on the card: [`gate`].)
-            if empty < ripe.ahead
-                && ripe.grow == Grow::Yes
-                && let Some(memory) = self.grow(now, &mut make)
-            {
-                self.add(memory, ripe.started);
+            if empty < ripe.ahead && ripe.grow == Grow::Yes {
+                if ripe.threaded {
+                    ask_ahead();
+                } else if let Some(memory) = self.grow(now, &mut make) {
+                    self.add(memory, ripe.started);
+                }
             }
         }
         let block = self.blocks[i].as_mut()?;
@@ -772,6 +782,101 @@ fn give_back_with(texture: &ID3D12Resource, piece: Piece) {
     }
 }
 
+/// A new block of texture memory, resident and mapped into the card's
+/// address space ([`crate::host::resident`], [`crate::host::mapped`]: both
+/// wait, up to a tenth of a second and more while the system makes room).
+fn texture_block(device: &ID3D12Device) -> Option<ID3D12Heap> {
+    let desc = D3D12_HEAP_DESC {
+        SizeInBytes: BLOCK,
+        Properties: D3D12_HEAP_PROPERTIES { Type: D3D12_HEAP_TYPE_DEFAULT, ..Default::default() },
+        Alignment: 0,
+        Flags: D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES | crate::host::not_resident(),
+    };
+    let mut heap: Option<ID3D12Heap> = None;
+    // SAFETY: plain creation.
+    if let Err(e) = unsafe { device.CreateHeap(&desc, &mut heap) } {
+        crate::residency::allocation_error(&e);
+        tracing::warn!(error = %e, "no block of texture memory");
+    }
+    if let Some(h) = &heap
+        && let Err(e) = crate::host::resident(device, h).and_then(|()| crate::host::mapped(device))
+    {
+        tracing::warn!(error = %e, "a block of texture memory is not resident");
+        return None;
+    }
+    if heap.is_some() {
+        BLOCKS[MADE].fetch_add(1, Ordering::Relaxed);
+    }
+    heap
+}
+
+/// Whether the blocks made ahead ([`ahead`]) are made by a thread of ours
+/// (`VICTORY_AHEAD_THREAD`, on; `=0`: by the thread that took a piece, as
+/// before). That thread made the next block right after its piece, holding
+/// the pool's lock through the system's residency work and the mapping
+/// wait ([`texture_block`]): every thread after a texture waited with it,
+/// for a block nobody needed yet. Made here, a block is added only once it
+/// is resident and mapped, stamped with the submissions begun by then, so
+/// it ripens as before ([`Ripe`]). A texture that finds no room still makes
+/// its block at once, as before.
+fn ahead_thread() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VICTORY_AHEAD_THREAD").is_none_or(|v| v != "0"))
+}
+
+/// Asked for blocks ahead, and told so.
+static AHEAD_ASKED: (Mutex<bool>, std::sync::Condvar) = (Mutex::new(false), std::sync::Condvar::new());
+/// Blocks made ahead by [`ahead_blocks`] since the start.
+static AHEAD_MADE: AtomicU64 = AtomicU64::new(0);
+
+/// Asks the thread of [`ahead_blocks`] (started the first time) to make
+/// blocks until [`ahead`] of them are empty.
+fn ask_ahead() {
+    static STARTED: std::sync::Once = std::sync::Once::new();
+    STARTED.call_once(|| {
+        if let Err(e) = std::thread::Builder::new().name("texture blocks ahead".into()).spawn(ahead_blocks) {
+            tracing::warn!(error = %e, "no thread for texture blocks ahead");
+        }
+    });
+    let (asked, told) = &AHEAD_ASKED;
+    *asked.lock().unwrap_or_else(|e| e.into_inner()) = true;
+    told.notify_one();
+}
+
+/// The thread that makes texture blocks ahead ([`ahead_thread`]), without
+/// the pool's lock while it does.
+fn ahead_blocks() {
+    let (asked, told) = &AHEAD_ASKED;
+    loop {
+        {
+            let mut a = asked.lock().unwrap_or_else(|e| e.into_inner());
+            while !*a {
+                a = told.wait(a).unwrap_or_else(|e| e.into_inner());
+            }
+            *a = false;
+        }
+        loop {
+            let want = ahead().min(SPARES.load(Ordering::Relaxed));
+            let empty = lock(&TEXTURES).blocks.iter().flatten().filter(|b| b.free.whole(BLOCK)).count();
+            // No room on the card for one ([`gate`]): none.
+            if empty >= want || !may_grow() {
+                break;
+            }
+            let Some(host) = crate::host::host() else { break };
+            let Some(heap) = texture_block(&host.device) else {
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                break;
+            };
+            let started = crate::host::submissions().0;
+            lock(&TEXTURES).add(heap, started);
+            let n = AHEAD_MADE.fetch_add(1, Ordering::Relaxed) + 1;
+            if n.is_power_of_two() {
+                tracing::info!("texture blocks made ahead by a thread of ours (VICTORY_AHEAD_THREAD=0: by the texture's): {n}");
+            }
+        }
+    }
+}
+
 /// A texture of `desc` (no target, depth or unordered access) in a block;
 /// `None`: not pooled, or the host refused.
 ///
@@ -817,26 +922,8 @@ pub(crate) unsafe fn texture(
         return None;
     }
     let taken = lock(&TEXTURES).take_ripe(info.SizeInBytes, info.Alignment.max(1), now(), ripe, || {
-        let desc = D3D12_HEAP_DESC {
-            SizeInBytes: BLOCK,
-            Properties: D3D12_HEAP_PROPERTIES { Type: D3D12_HEAP_TYPE_DEFAULT, ..Default::default() },
-            Alignment: 0,
-            Flags: D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES | crate::host::not_resident(),
-        };
-        let mut heap: Option<ID3D12Heap> = None;
-        // SAFETY: plain creation.
-        if let Err(e) = unsafe { device.CreateHeap(&desc, &mut heap) } {
-            crate::residency::allocation_error(&e);
-            tracing::warn!(error = %e, "no block of texture memory");
-        }
-        if let Some(h) = &heap
-            && let Err(e) = crate::host::resident(device, h).and_then(|()| crate::host::mapped(device))
-        {
-            tracing::warn!(error = %e, "a block of texture memory is not resident");
-            return None;
-        }
+        let heap = texture_block(device);
         if heap.is_some() {
-            BLOCKS[MADE].fetch_add(1, Ordering::Relaxed);
             if ripe.grow == Grow::Must {
                 let n = BLOCKS[PAST].fetch_add(1, Ordering::Relaxed) + 1;
                 if n.is_power_of_two() {
@@ -1035,6 +1122,23 @@ mod tests {
         assert_eq!(pool.take(BLOCK / 2, 65536, 0, make).unwrap().1, 6);
         assert_eq!(made.get(), n);
         assert!(pool.take(BLOCK, 65536, 0, make).is_none());
+    }
+
+    /// With blocks ahead asked of our thread ([`ahead_thread`]), the thread
+    /// that takes a piece makes only the block it needs, none ahead.
+    #[test]
+    fn blocks_ahead_are_not_made_by_the_taking_thread() {
+        let mut pool: Pool<u64> = Pool::new(SPARE_KEPT);
+        let made = std::cell::Cell::new(0);
+        let make = || {
+            made.set(made.get() + 1);
+            Some(made.get())
+        };
+        let ripe = Ripe { ahead: 2, threaded: true, ..Ripe::ALL };
+        assert_eq!(pool.take_ripe(BLOCK / 2, 65536, 0, ripe, make).unwrap().1, 1);
+        assert_eq!((pool.blocks(), made.get()), (1, 1));
+        assert_eq!(pool.take_ripe(BLOCK / 2, 65536, 0, ripe, make).unwrap().1, 1);
+        assert_eq!((pool.blocks(), made.get()), (1, 1));
     }
 
     /// Without room on the card no block is made for a texture that can
