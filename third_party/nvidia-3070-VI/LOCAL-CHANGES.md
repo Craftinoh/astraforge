@@ -56,4 +56,6 @@ Upstream `main` later advanced to `25ff2168267d967c5e428f94726a7384e59cd5b7`. Th
 
 - `crates/victory-gpu/src/pool.rs`: inside a texture block a piece now goes in the free range that leaves the least behind (best fit), instead of the lowest range it fits (`VICTORY_POOL_BEST_FIT`, on; `=0` restores). Placement only; with a unit test.
 
+- `crates/victory-gpu/src/descriptor/host.rs`: the texture queue selects only the newest retries and the newest/oldest fresh views a pass can serve before sorting. Ported the queue-selection part of [`fxceless/victory-fork#1031`](https://github.com/fxceless/victory-fork/pull/1031), commit `db88f96`, by Lkxex. The old full-sort order is the rollback reference; an equivalence test compares due times, retry mixes and pass limits. No resident-mip or tile-mapping hunk was imported. Gameplay effect is unmeasured.
+
 No other upstream source file is intentionally modified. The checkout's upstream commit history is not present because the initial import used a read-only GitHub API snapshot rather than Git transport. Local commits record each focused correction and its tests. Earlier local history records the imported snapshot, Clippy fix, upstream documentation sync, physical-core worker port, dynamic descriptor heap identity guard, in-flight descriptor deferral, launcher cleanup, comment anonymization, and other verified local fixes.
